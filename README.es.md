@@ -2,7 +2,7 @@
 
 # Console UI
 
-Usa todo Windows desde el sillón con el control: un cursor asistido, un teclado en pantalla con sugerencias inteligentes y, próximamente, una pantalla de inicio tipo consola.
+Usa todo Windows desde el sillón con el control: un cursor asistido, un teclado en pantalla con sugerencias inteligentes y una pantalla de inicio tipo consola.
 
 > En desarrollo. Aún sin versión publicada; se compila desde el código.
 
@@ -11,6 +11,7 @@ Usa todo Windows desde el sillón con el control: un cursor asistido, un teclado
 - **Cursor asistido**: el stick izquierdo mueve el mouse con una aceleración predecible, frena sobre botones y enlaces (leídos con UI Automation) y se queda quieto un instante al hacer clic. El stick derecho hace scroll y la cruceta envía flechas.
 - **Teclado en pantalla**: con Y se abre sobre cualquier app sin quitarle el foco. Cuadrícula QWERTY con ñ, tildes manteniendo el botón, símbolos, y un diseño de dos mitades como opción.
 - **Sugerencias**: completan la palabra y ponen la tilde (`esta` → `está`), usan la palabra anterior como contexto y predicen la siguiente. Aprenden de ti, se guardan cifradas con DPAPI y nunca en campos de contraseña. Español por defecto; el inglés se activa desde el teclado.
+- **Pantalla de Inicio**: mantén Menu para ver a pantalla completa tus juegos de Steam y Epic (con su arte oficial de fondo), tus apps fijadas con sus íconos reales y la música que suena. Al abrir un juego, el control pasa a él.
 - **Modo juego**: mantén View + Menu para dejarle el control a los juegos (dos vibraciones cortas) y otra vez para recuperar el cursor (una vibración).
 - **Laboratorios**: cada decisión de diseño se midió con el usuario antes de adoptarla (ver `labs/`).
 
@@ -24,14 +25,15 @@ Usa todo Windows desde el sillón con el control: un cursor asistido, un teclado
 | B | Esc | Cerrar el teclado |
 | Y | Abrir el teclado | Espacio |
 | LB / RB | Atrás / adelante | Mayúscula / símbolos |
-| RT | – | Tomar la primera sugerencia |
-| View / Menu | Vista de tareas / menú Inicio | – / Intro |
+| RT | Mantener + cruceta: volumen, canción anterior/siguiente | Tomar la primera sugerencia |
+| View / Menu | Vista de tareas / menú Inicio (mantener: pantalla de Inicio) | – / Intro |
 | Mantener View + Menu | Dejar el control a los juegos, y volver | |
 
 ## Requisitos
 
 - Windows 10 u 11 (x64) con un control XInput (compatible con Xbox). Los de PlayStation funcionan con Steam Input o DS4Windows.
 - WebView2 (incluido en Windows actual).
+- Opcional: [HidHide](https://github.com/nefarius/HidHide) (MIT), para que el menú Inicio y otras apps de la Tienda no reaccionen al control mientras mueve el cursor.
 
 ## Desarrollo
 
@@ -39,7 +41,7 @@ Usa todo Windows desde el sillón con el control: un cursor asistido, un teclado
 cargo build --release
 ```
 
-- `target/release/console-ui.exe`: la app (ícono en la bandeja, teclado). `--lab` abre el laboratorio del teclado (`--exp=suggest` para comparar sugerencias).
+- `target/release/console-ui.exe`: la app; abre la pantalla de Inicio. `--background` la inicia solo en la bandeja, `--lab` abre el laboratorio del teclado (`--exp=suggest` para comparar sugerencias).
 - `target/release/padd.exe`: solo el núcleo de entrada, en consola.
 - `target/release/cursor-lab.exe`: el laboratorio del cursor.
 - `cargo test`: pruebas unitarias (curvas, almacenamiento cifrado).

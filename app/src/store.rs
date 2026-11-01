@@ -22,14 +22,19 @@ const MAX_WORD: usize = 32;
 const MAX_WORDS: usize = 20_000;
 const MAX_PAIRS: usize = 60_000;
 
+pub const MAX_PINNED: usize = 24;
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Settings {
     pub languages: Vec<String>,
+    /// Apps pinned to the home screen; None until the user changes them.
+    #[serde(default)]
+    pub pinned: Option<Vec<String>>,
 }
 
 impl Default for Settings {
     fn default() -> Self {
-        Self { languages: vec!["es".into()] }
+        Self { languages: vec!["es".into()], pinned: None }
     }
 }
 
@@ -77,8 +82,20 @@ impl Store {
         if langs.is_empty() || langs.iter().any(|l| !LANGUAGES.contains(&l.as_str())) {
             return Err("idiomas no válidos".into());
         }
+        self.update_settings(|s| s.languages = langs)
+    }
+
+    /// `ids` must already be validated against the library.
+    pub fn set_pinned(&self, ids: Vec<String>) -> Result<(), String> {
+        if ids.len() > MAX_PINNED {
+            return Err("demasiadas apps fijadas".into());
+        }
+        self.update_settings(|s| s.pinned = Some(ids))
+    }
+
+    fn update_settings(&self, f: impl FnOnce(&mut Settings)) -> Result<(), String> {
         let mut s = self.settings.lock().map_err(|e| e.to_string())?;
-        s.languages = langs;
+        f(&mut s);
         write_atomic(&self.dir.join("settings.json"), &serde_json::to_vec_pretty(&*s).map_err(|e| e.to_string())?)
     }
 

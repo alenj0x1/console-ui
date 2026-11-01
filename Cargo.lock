@@ -883,10 +883,12 @@ name = "console-ui-app"
 version = "0.1.0"
 dependencies = [
  "padcore",
+ "png",
  "serde",
  "serde_json",
  "tauri",
  "tauri-build",
+ "windows",
  "windows-sys 0.61.2",
 ]
 

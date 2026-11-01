@@ -59,3 +59,9 @@ By target size (mean): 28 px 11.1 s → 2.5 s, 48 px 5.4 s → 1.7 s, 80 px 2.1 
 - The gain is mostly on small targets, where `curva` overshot repeatedly (22 misses on 28 px vs 1).
 - **Decision:** `asistido` is the default profile.
 - Caveat: in the lab the brake knows the exact target; on the desktop it depends on what UI Automation exposes (apps with poor accessibility get no brake). Rating 3.3/5 leaves room to tune later.
+
+### Desktop tuning — 2026-11-01
+
+On the real desktop the `asistido` boost (×2.4 from 55 % tilt, 0.7 s ramp) felt too fast: lab targets were close, so it rarely kicked in there. Base speed, curve, brake and click freeze stay as validated; the boost now needs 75 % tilt, tops out at ×1.7 and builds over 1 s (max 1.36 instead of 1.92 screen heights/s). Not re-measured in the lab yet.
+
+Then ×1.7 from 75 % felt "a bit slow"; settled in between: ×2.0 from 65 % tilt over 0.85 s (max 1.6 screen heights/s).

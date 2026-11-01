@@ -159,6 +159,16 @@ impl Injector {
     }
 }
 
+/// Whether Windows considers the button pressed right now (any source).
+pub fn button_is_down(b: MouseButton) -> bool {
+    let vk = match b {
+        MouseButton::Left => VK_LBUTTON,
+        MouseButton::Right => VK_RBUTTON,
+        MouseButton::Middle => VK_MBUTTON,
+    };
+    unsafe { GetAsyncKeyState(vk as i32) as u16 & 0x8000 != 0 }
+}
+
 pub fn mouse_button(b: MouseButton, down: bool) {
     let flags = match (b, down) {
         (MouseButton::Left, true) => MOUSEEVENTF_LEFTDOWN,
@@ -192,6 +202,9 @@ pub fn key_named(name: &str) -> bool {
         "right" => VK_RIGHT,
         "up" => VK_UP,
         "down" => VK_DOWN,
+        "volume_up" => VK_VOLUME_UP,
+        "volume_down" => VK_VOLUME_DOWN,
+        "mute" => VK_VOLUME_MUTE,
         _ => return false,
     };
     key_tap(vk);

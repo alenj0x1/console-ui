@@ -2,7 +2,7 @@ English | [Español](README.es.md)
 
 # Console UI
 
-Use all of Windows from the couch with a game controller: an assisted cursor, an on-screen keyboard with smart suggestions, and (coming next) a console-style home screen.
+Use all of Windows from the couch with a game controller: an assisted cursor, an on-screen keyboard with smart suggestions, and a console-style home screen.
 
 > Early development. Not released yet; build it from source.
 
@@ -11,6 +11,7 @@ Use all of Windows from the couch with a game controller: an assisted cursor, an
 - **Assisted cursor**: the left stick moves the mouse with a predictable acceleration, slows down over buttons and links (read through UI Automation) and holds still for a moment when you click. Right stick scrolls; the d-pad sends arrow keys.
 - **On-screen keyboard**: press Y to open it over any app without stealing focus. QWERTY grid with ñ, accents on hold, symbols, and a two-halves layout as an option.
 - **Suggestions**: complete the word and restore accents (`esta` → `está`), use the previous word as context and predict the next one. They learn from you, stored encrypted with DPAPI and never in password fields. Spanish by default; English can be turned on from the keyboard.
+- **Home screen**: hold Menu for a full-screen view of your Steam and Epic games (official art as the background), pinned apps with their real icons and the music that is playing. Launching a game hands the controller to it.
 - **Game mode**: hold View + Menu to leave the controller to games (two short rumbles) and again to get the cursor back (one rumble).
 - **Labs**: every design choice was measured with the user before adopting it (see `labs/`).
 
@@ -24,14 +25,15 @@ Use all of Windows from the couch with a game controller: an assisted cursor, an
 | B | Esc | Close the keyboard |
 | Y | Open the keyboard | Space |
 | LB / RB | Back / forward | Shift / symbols |
-| RT | – | Take the first suggestion |
-| View / Menu | Task view / Start menu | – / Enter |
+| RT | Hold + d-pad: volume, previous/next track | Take the first suggestion |
+| View / Menu | Task view / Start menu (hold: home screen) | – / Enter |
 | Hold View + Menu | Turn the controller over to games, and back | |
 
 ## Requirements
 
 - Windows 10 or 11 (x64) with an XInput (Xbox-compatible) controller. PlayStation controllers work through Steam Input or DS4Windows.
 - WebView2 runtime (included in current Windows).
+- Optional: [HidHide](https://github.com/nefarius/HidHide) (MIT), so the Start menu and other Store apps don't react to the controller while it moves the cursor.
 
 ## Development
 
@@ -39,7 +41,7 @@ Use all of Windows from the couch with a game controller: an assisted cursor, an
 cargo build --release
 ```
 
-- `target/release/console-ui.exe`: the app (tray icon, keyboard overlay). `--lab` opens the keyboard lab (`--exp=suggest` for the suggestions comparison).
+- `target/release/console-ui.exe`: the app; it opens the home screen. `--background` starts it in the tray only, `--lab` opens the keyboard lab (`--exp=suggest` for the suggestions comparison).
 - `target/release/padd.exe`: the input core alone, in a console.
 - `target/release/cursor-lab.exe`: the cursor lab.
 - `cargo test`: unit tests (curves, encrypted store).

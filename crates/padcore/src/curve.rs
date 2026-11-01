@@ -75,15 +75,17 @@ pub fn builtin_profiles() -> Vec<CursorProfile> {
             assist: None,
         },
         // Run 1 showed overshoot near targets: lower base speed for aiming,
-        // a boost that builds steadily from mid tilt for travel, and help at
-        // the target itself.
+        // a boost that builds steadily near full tilt for travel, and help at
+        // the target itself. The boost was ×2.4 from 55 % tilt in lab run 2;
+        // on the real desktop (longer trips) that felt too fast, and ×1.7
+        // from 75 % felt a bit slow: now ×2.0 from 65 % tilt over 0.85 s.
         CursorProfile {
             id: "asistido".into(),
             deadzone: 0.12,
             outer: 0.95,
             exponent: 2.0,
             max_speed: 0.8,
-            accel: Some(Accel { threshold: 0.55, delay: 0.0, ramp: 0.7, factor: 2.4, decay: 2.5 }),
+            accel: Some(Accel { threshold: 0.65, delay: 0.0, ramp: 0.85, factor: 2.0, decay: 2.5 }),
             precision: 0.3,
             assist: Some(Assist { hover_factor: 0.45, click_freeze_ms: 90 }),
         },
@@ -175,7 +177,8 @@ mod tests {
             assert!(s - last < 0.05 || last == 0.0, "no jumps between ticks");
             last = s;
         }
-        assert!((last - 0.8 * 2.4).abs() < 1e-3);
+        let a = c.profile.accel.clone().unwrap();
+        assert!((last - c.profile.max_speed * a.factor).abs() < 1e-3);
         c.velocity(0.0, 0.0, 0.0, false, 0.005);
         assert!((speed(c.velocity(1.0, 0.0, 0.0, false, 0.005)) - 0.8).abs() < 0.01);
     }
@@ -190,6 +193,6 @@ mod tests {
         for _ in 0..200 {
             c.velocity(1.0, 0.0, 0.0, true, 0.005);
         }
-        assert!(speed(c.velocity(1.0, 0.0, 0.0, true, 0.005)) > 1.8, "travel is not braked");
+        assert!(speed(c.velocity(1.0, 0.0, 0.0, true, 0.005)) > 1.3, "travel is not braked");
     }
 }

@@ -24,15 +24,15 @@
 
 html, body { margin: 0; color: var(--text); font-family: var(--font-text); }
 
-/* Controller button glyph: neutral ring, the letter says which button. */
+/* Controller button glyph: a filled tone, no outline; the letters say which button. */
 .glyph {
   display: inline-grid;
   place-items: center;
   min-width: 20px;
   height: 20px;
-  padding: 0 5px;
+  padding: 0 6px;
   border-radius: 10px;
-  box-shadow: inset 0 0 0 1px var(--ring-strong);
+  background: rgba(255, 255, 255, 0.1);
   font-family: var(--font-mono);
   font-size: 11px;
   line-height: 1;

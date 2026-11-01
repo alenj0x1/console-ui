@@ -2,8 +2,9 @@
 //!
 //! Modes: `Off` lets games have the controller untouched; `Cursor` drives the
 //! mouse and a few keys; `Keyboard` hands navigation events to the on-screen
-//! keyboard. Holding View + Menu toggles Off ↔ on; Y opens the keyboard and B
-//! closes it.
+//! keyboard; `Home` hands them to the home screen. Holding View + Menu toggles
+//! Off ↔ on; Y opens the keyboard and B closes it; holding Menu opens and
+//! closes the home screen.
 
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -22,6 +23,7 @@ pub enum Mode {
     Off,
     Cursor,
     Keyboard,
+    Home,
 }
 
 #[derive(Clone, Debug)]
@@ -30,6 +32,8 @@ pub enum Event {
     Disconnected,
     ModeChanged(Mode),
     Ui(UiEvent),
+    /// B pressed while the host said input is blocked (admin window in front).
+    Rescue,
 }
 
 #[derive(Clone, Debug)]
@@ -39,9 +43,12 @@ pub struct EngineConfig {
     pub toggle_hold: Duration,
     /// View / Menu released before this counts as a tap.
     pub tap_max: Duration,
+    /// Holding Menu this long opens (or closes) the home screen.
+    pub home_hold: Duration,
     pub repeat_delay: Duration,
     pub repeat_every: Duration,
-    /// Y opens the keyboard (needs a host that shows it, e.g. the app).
+    /// Y opens the keyboard and holding Menu the home screen (needs a host
+    /// that shows them, e.g. the app).
     pub keyboard_enabled: bool,
     /// B does not close the keyboard (lab).
     pub keyboard_locked: bool,
@@ -54,6 +61,7 @@ impl EngineConfig {
             start_mode: Mode::Cursor,
             toggle_hold: Duration::from_millis(600),
             tap_max: Duration::from_millis(500),
+            home_hold: Duration::from_millis(500),
             repeat_delay: Duration::from_millis(400),
             repeat_every: Duration::from_millis(60),
             keyboard_enabled: false,
@@ -76,6 +84,12 @@ const TAP_MAP: [(u16, VIRTUAL_KEY); 4] = [
 ];
 
 const DPAD_KEYS: [VIRTUAL_KEY; 4] = [VK_UP, VK_DOWN, VK_LEFT, VK_RIGHT];
+/// D-pad while holding RT: volume up / down, previous / next track.
+const DPAD_MEDIA_KEYS: [VIRTUAL_KEY; 4] = [VK_VOLUME_UP, VK_VOLUME_DOWN, VK_MEDIA_PREV_TRACK, VK_MEDIA_NEXT_TRACK];
+const MEDIA_TRIGGER: f32 = 0.5;
+
+/// How long after input stops being blocked stuck buttons are released.
+const RESYNC_FOR: Duration = Duration::from_secs(2);
 
 /// Short vibration patterns: (on, off) pairs.
 const PULSE_ON: &[(u64, u64)] = &[(110, 0)];
@@ -96,6 +110,8 @@ pub struct Engine {
     chord_used: bool,
     view_down: Option<Instant>,
     menu_down: Option<Instant>,
+    /// Menu was held long enough to toggle the home screen: its release is not a tap.
+    menu_hold_used: bool,
     dpad_next: [Option<Instant>; 4],
     mouse_down: [bool; 3],
     rumble: Vec<(Instant, bool)>,
@@ -106,6 +122,14 @@ pub struct Engine {
     last_move: Instant,
     nav: UiNav,
     ui_out: Vec<UiEvent>,
+    /// The host found that Windows blocks our input (an admin window has the
+    /// focus): B asks the host to hand the focus back instead of sending Esc.
+    blocked: bool,
+    rescue: bool,
+    /// After input was blocked, Windows may have dropped a button release
+    /// (the button stays "pressed" system-wide); until then, release any
+    /// button the controller is not holding.
+    resync_until: Option<Instant>,
 }
 
 impl Engine {
@@ -125,6 +149,7 @@ impl Engine {
             chord_used: false,
             view_down: None,
             menu_down: None,
+            menu_hold_used: false,
             dpad_next: [None; 4],
             mouse_down: [false; 3],
             rumble: Vec::new(),
@@ -134,6 +159,9 @@ impl Engine {
             last_move: now,
             nav: UiNav::default(),
             ui_out: Vec::new(),
+            blocked: false,
+            rescue: false,
+            resync_until: None,
         }
     }
 
@@ -141,6 +169,29 @@ impl Engine {
     pub fn with_hover(mut self, hover: Arc<Hover>) -> Self {
         self.hover = Some(hover);
         self
+    }
+
+    pub fn set_blocked(&mut self, blocked: bool) {
+        // Entering or leaving a blocked window: a release sent around the
+        // change may have been dropped.
+        if self.blocked != blocked {
+            self.resync_until = Some(Instant::now() + RESYNC_FOR);
+        }
+        self.blocked = blocked;
+    }
+
+    fn resync_buttons(&mut self, pad: &PadState, now: Instant) {
+        if self.resync_until.is_some_and(|t| now >= t) {
+            self.resync_until = None;
+        }
+        if self.resync_until.is_none() {
+            return;
+        }
+        for (i, (b, mb)) in MOUSE_MAP.iter().enumerate() {
+            if !pad.held(*b) && !self.mouse_down[i] && inject::button_is_down(*mb) {
+                inject::mouse_button(*mb, false);
+            }
+        }
     }
 
     pub fn mode(&self) -> Mode {
@@ -220,30 +271,63 @@ impl Engine {
             out.push(Event::ModeChanged(m));
         }
         let pressed = pad.buttons & !self.prev.buttons;
+        if let Some(m) = self.menu_hold(&pad, now) {
+            out.push(Event::ModeChanged(m));
+            self.prev = pad;
+            return;
+        }
         match self.mode {
             Mode::Cursor if self.cfg.keyboard_enabled && pressed & btn::Y != 0 => {
                 self.set_mode(Mode::Keyboard);
                 out.push(Event::ModeChanged(Mode::Keyboard));
             }
-            Mode::Cursor => self.cursor(&pad, dt, now),
+            Mode::Cursor => {
+                self.resync_buttons(&pad, now);
+                self.cursor(&pad, dt, now);
+                if std::mem::take(&mut self.rescue) {
+                    out.push(Event::Rescue);
+                }
+            }
             Mode::Keyboard if !self.cfg.keyboard_locked && pressed & btn::B != 0 => {
                 self.set_mode(Mode::Cursor);
                 out.push(Event::ModeChanged(Mode::Cursor));
             }
-            Mode::Keyboard => self.keyboard(&pad, now, out),
+            Mode::Keyboard | Mode::Home => self.navigate(&pad, now, out),
             Mode::Off => {}
         }
         self.prev = pad;
     }
 
-    fn keyboard(&mut self, pad: &PadState, now: Instant, out: &mut Vec<Event>) {
+    /// Tracks Menu presses: a long hold toggles Cursor ↔ Home.
+    fn menu_hold(&mut self, pad: &PadState, now: Instant) -> Option<Mode> {
+        let pressed = pad.buttons & !self.prev.buttons;
+        if pressed & btn::START != 0 {
+            self.menu_down = Some(now);
+            self.menu_hold_used = false;
+        }
+        if !pad.held(btn::START) || self.menu_hold_used || self.chord_used || !self.cfg.keyboard_enabled {
+            return None;
+        }
+        let held = self.menu_down.is_some_and(|t| now - t >= self.cfg.home_hold);
+        let next = match self.mode {
+            Mode::Cursor if held => Mode::Home,
+            Mode::Home if held => Mode::Cursor,
+            _ => return None,
+        };
+        self.menu_hold_used = true;
+        self.set_mode(next);
+        Some(next)
+    }
+
+    /// Keyboard and home screen: navigation events instead of mouse input.
+    fn navigate(&mut self, pad: &PadState, now: Instant, out: &mut Vec<Event>) {
         let prev = self.prev;
         self.nav.events(pad, &prev, now, &mut self.ui_out);
         let released = !pad.buttons & prev.buttons;
         if released & btn::BACK != 0 && !self.chord_used {
             ui::tap("view", &mut self.ui_out);
         }
-        if released & btn::START != 0 && !self.chord_used {
+        if released & btn::START != 0 && !self.chord_used && !self.menu_hold_used {
             ui::tap("menu", &mut self.ui_out);
         }
         out.extend(self.ui_out.drain(..).map(Event::Ui));
@@ -315,19 +399,24 @@ impl Engine {
 
         for (b, vk) in TAP_MAP {
             if pressed & b != 0 {
-                inject::key_tap(vk);
+                if b == btn::B && self.blocked {
+                    self.rescue = true;
+                } else {
+                    inject::key_tap(vk);
+                }
             }
         }
 
+        let keys = if pad.rt >= MEDIA_TRIGGER { DPAD_MEDIA_KEYS } else { DPAD_KEYS };
         for i in 0..4 {
             let b = btn::DPAD[i];
             if pressed & b != 0 {
-                inject::key_tap(DPAD_KEYS[i]);
+                inject::key_tap(keys[i]);
                 self.dpad_next[i] = Some(now + self.cfg.repeat_delay);
             } else if !pad.held(b) {
                 self.dpad_next[i] = None;
             } else if let Some(t) = self.dpad_next[i].filter(|t| now >= *t) {
-                inject::key_tap(DPAD_KEYS[i]);
+                inject::key_tap(keys[i]);
                 self.dpad_next[i] = Some(t + self.cfg.repeat_every);
             }
         }
@@ -337,9 +426,6 @@ impl Engine {
         if pressed & btn::BACK != 0 {
             self.view_down = Some(now);
         }
-        if pressed & btn::START != 0 {
-            self.menu_down = Some(now);
-        }
         let tap = |down: Option<Instant>| down.is_some_and(|t| now - t < self.cfg.tap_max);
         if released & btn::BACK != 0 {
             if !self.chord_used && tap(self.view_down) {
@@ -348,10 +434,9 @@ impl Engine {
             self.view_down = None;
         }
         if released & btn::START != 0 {
-            if !self.chord_used && tap(self.menu_down) {
+            if !self.chord_used && !self.menu_hold_used && tap(self.menu_down) {
                 inject::key_tap(VK_LWIN);
             }
-            self.menu_down = None;
         }
     }
 

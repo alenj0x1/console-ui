@@ -2,3 +2,4 @@
 /app/gen/
 /.claude/
 *.tmp
+/labs/hidhide-lab/installer/

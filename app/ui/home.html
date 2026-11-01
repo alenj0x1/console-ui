@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Inicio</title>
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="home.css">
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true">
+    <img class="hero" alt="">
+    <img class="hero" alt="">
+    <div class="scrim"></div>
+    <img id="stage-cover" class="stage-cover" alt="">
+  </div>
+  <header class="topbar">
+    <nav class="tabs">
+      <span class="glyph">LB</span>
+      <span class="tab" data-tab="games">Juegos</span>
+      <span class="tab" data-tab="apps">Apps</span>
+      <span class="tab" data-tab="music">Música</span>
+      <span class="glyph">RB</span>
+    </nav>
+    <div class="topbar-end">
+      <div id="volume-toast" class="volume volume-toast" hidden></div>
+      <time id="clock"></time>
+    </div>
+  </header>
+  <main id="view" class="view"></main>
+  <footer id="player" class="mini-player"></footer>
+  <script src="icons.js"></script>
+  <script src="home.js"></script>
+</body>
+</html>

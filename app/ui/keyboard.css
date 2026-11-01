@@ -43,7 +43,7 @@ body { display: flex; align-items: flex-end; justify-content: center; padding-bo
 }
 
 .key.on { background: var(--accent); color: var(--on-accent); box-shadow: none; }
-.key.on .glyph { color: var(--on-accent); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5); }
+.key.on .glyph { color: var(--on-accent); background: rgba(255, 255, 255, 0.22); }
 .key.hit { background: var(--surface-hover); }
 .key.on.hit { background: #3d78e0; }
 .key.active { box-shadow: inset 0 0 0 1px var(--muted); }
@@ -94,7 +94,7 @@ body { display: flex; align-items: flex-end; justify-content: center; padding-bo
 .menu-item .glyph { margin-left: auto; }
 .menu-item.danger { color: var(--danger); }
 .menu-item.on { background: var(--accent); color: var(--on-accent); box-shadow: none; }
-.menu-item.on .glyph { color: var(--on-accent); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5); }
+.menu-item.on .glyph { color: var(--on-accent); background: rgba(255, 255, 255, 0.22); }
 
 .check {
   width: 20px;

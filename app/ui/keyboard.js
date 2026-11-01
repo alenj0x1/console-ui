@@ -6,7 +6,13 @@
 // small menu to choose suggestion languages and to forget learned words.
 
 const { invoke } = window.__TAURI__.core;
-const { listen, emit } = window.__TAURI__.event;
+const { emit } = window.__TAURI__.event;
+// Only events sent to this window or to every window: the keyboard and the
+// home screen each get their own controller events.
+const here = window.__TAURI__.webviewWindow.getCurrentWebviewWindow();
+const listen = here.listen.bind(here);
+// Controller events count only while the keyboard is the active mode.
+let active = false;
 
 const HOLD_MS = 350;
 const BACK_DELAY_MS = 400;
@@ -326,6 +332,7 @@ function track(kind) {
 }
 
 async function typeChar(ch) {
+  invoke("note_typing");
   const text = state.shift ? ch.toUpperCase() : ch;
   state.shift = false;
   track("type");
@@ -568,6 +575,7 @@ function onRelease(button) {
 }
 
 listen("pad", ({ payload }) => {
+  if (!active) return;
   if (payload.kind === "nav") onNav(payload.source, payload.dir);
   else if (payload.kind === "press") onPress(payload.button);
   else if (payload.kind === "release") onRelease(payload.button);
@@ -596,6 +604,7 @@ listen("suggest", ({ payload }) => {
 });
 
 listen("mode", ({ payload }) => {
+  active = payload === "keyboard";
   if (payload === "keyboard") {
     // Opening the keyboard: we do not know what is already in the field.
     state.prev = "";
@@ -614,3 +623,4 @@ listen("mode", ({ payload }) => {
 
 render();
 init();
+invoke("current_mode").then((m) => (active = m === "keyboard"));
