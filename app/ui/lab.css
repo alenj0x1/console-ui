@@ -1,0 +1,80 @@
+html, body { height: 100%; background: var(--bg); }
+
+body { display: flex; flex-direction: column; }
+
+.progress { height: 3px; background: var(--surface); }
+#progress-fill { height: 100%; width: 0; background: var(--accent); }
+
+/* Content sits in the top part of the screen: the keyboard covers the bottom. */
+.stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10vh 24px 0;
+  gap: 24px;
+}
+
+h1 { margin: 0; font-family: var(--font-display); font-weight: 500; font-size: 40px; }
+
+.lead { margin: 0; max-width: 720px; text-align: center; font-size: 18px; line-height: 1.6; color: var(--muted); }
+
+.layout-name { margin: 0; font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+
+.phrase { margin: 0; font-family: var(--font-display); font-weight: 500; font-size: 34px; text-align: center; }
+
+.typed {
+  width: min(820px, 100%);
+  height: 64px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--ring-strong);
+  color: var(--text);
+  font-family: var(--font-text);
+  font-size: 26px;
+  outline: none;
+}
+.typed:focus { box-shadow: inset 0 0 0 1px var(--accent); }
+
+.button {
+  height: 48px;
+  padding: 0 28px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-family: var(--font-text);
+  font-weight: 600;
+  font-size: 17px;
+  cursor: pointer;
+}
+.button:hover { background: #3d78e0; }
+
+.rating { display: flex; flex-direction: column; gap: 10px; }
+.rating-row { display: flex; gap: 16px; }
+.rating-row button {
+  width: 84px;
+  height: 84px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--ring-strong);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 26px;
+  cursor: pointer;
+}
+.rating-row button:hover { background: var(--surface-hover); }
+.rating-ends { display: flex; justify-content: space-between; font-size: 15px; color: var(--muted); }
+
+table { border-collapse: collapse; font-size: 17px; }
+th, td { padding: 10px 22px; text-align: right; }
+th:first-child, td:first-child { text-align: left; }
+th { font-weight: 400; color: var(--muted); font-size: 14px; }
+td { border-top: 1px solid var(--ring); }
+@media (max-width: 700px) {
+  th, td { padding: 8px 10px; font-size: 14px; }
+}
+.saved { margin: 0; font-family: var(--font-mono); font-size: 13px; color: var(--muted); }

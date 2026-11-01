@@ -1,0 +1,299 @@
+{
+  "experiment": "suggest",
+  "conditions": {
+    "plain": {
+      "label": "Sin sugerencias",
+      "layout": "grid",
+      "suggest": false
+    },
+    "suggest": {
+      "label": "Con sugerencias",
+      "layout": "grid",
+      "suggest": true
+    }
+  },
+  "blocks": [
+    {
+      "cond": "plain",
+      "warmup": true,
+      "n": 2
+    },
+    {
+      "cond": "suggest",
+      "warmup": true,
+      "n": 2
+    },
+    {
+      "cond": "plain",
+      "warmup": false,
+      "n": 3
+    },
+    {
+      "cond": "suggest",
+      "warmup": false,
+      "n": 3
+    },
+    {
+      "cond": "suggest",
+      "warmup": false,
+      "n": 3
+    },
+    {
+      "cond": "plain",
+      "warmup": false,
+      "n": 3
+    }
+  ],
+  "trials": [
+    {
+      "cond": "plain",
+      "warmup": true,
+      "block": 0,
+      "target": "revisa el correo en la tarde",
+      "typed": "revisa el correo en la tarde",
+      "seconds": 31.6855,
+      "wpm": 10.225497467295765,
+      "error_rate": 0,
+      "kspc": 5,
+      "accepts": 0,
+      "backspaces": 0
+    },
+    {
+      "cond": "plain",
+      "warmup": true,
+      "block": 0,
+      "target": "la batería del control está baja",
+      "typed": "la bateria del control está baja",
+      "seconds": 36.80689999999991,
+      "wpm": 10.106800627056366,
+      "error_rate": 0.03125,
+      "kspc": 5.875,
+      "accepts": 0,
+      "backspaces": 2
+    },
+    {
+      "cond": "suggest",
+      "warmup": true,
+      "block": 1,
+      "target": "la lluvia no para desde ayer",
+      "typed": "la lluvia no para desde ayer",
+      "seconds": 39.5475,
+      "wpm": 8.192679688981606,
+      "error_rate": 0,
+      "kspc": 4.035714285714286,
+      "accepts": 6,
+      "backspaces": 15
+    },
+    {
+      "cond": "suggest",
+      "warmup": true,
+      "block": 1,
+      "target": "busca el disco nuevo de la banda",
+      "typed": "busca el disco nuevo de la banda",
+      "seconds": 47.1595,
+      "wpm": 7.888124343981595,
+      "error_rate": 0,
+      "kspc": 4.75,
+      "accepts": 4,
+      "backspaces": 12
+    },
+    {
+      "cond": "plain",
+      "warmup": false,
+      "block": 2,
+      "target": "el café se enfrió otra vez",
+      "typed": "el cafe se enfrió otra vez",
+      "seconds": 35.476700000000186,
+      "wpm": 8.456254386681918,
+      "error_rate": 0.038461538461538464,
+      "kspc": 4.653846153846154,
+      "accepts": 0,
+      "backspaces": 2
+    },
+    {
+      "cond": "plain",
+      "warmup": false,
+      "block": 2,
+      "target": "el gato duerme en la ventana",
+      "typed": "el gato duerme en la ventana",
+      "seconds": 31.176200000000186,
+      "wpm": 10.392543029618686,
+      "error_rate": 0,
+      "kspc": 5.607142857142857,
+      "accepts": 0,
+      "backspaces": 0
+    },
+    {
+      "cond": "plain",
+      "warmup": false,
+      "block": 2,
+      "target": "guarda la partida antes de salir",
+      "typed": "guarda la partida antes de salir",
+      "seconds": 29.24630000000028,
+      "wpm": 12.719557687639,
+      "error_rate": 0,
+      "kspc": 4.65625,
+      "accepts": 0,
+      "backspaces": 2
+    },
+    {
+      "cond": "suggest",
+      "warmup": false,
+      "block": 3,
+      "target": "necesito descargar la actualización",
+      "typed": "necesito descargar la actualización",
+      "seconds": 26.837899999999905,
+      "wpm": 15.202381706467401,
+      "error_rate": 0,
+      "kspc": 3.3142857142857145,
+      "accepts": 4,
+      "backspaces": 20
+    },
+    {
+      "cond": "suggest",
+      "warmup": false,
+      "block": 3,
+      "target": "apaga la luz de la sala",
+      "typed": "apaga la luz de la sala",
+      "seconds": 23.363,
+      "wpm": 11.29991867482772,
+      "error_rate": 0,
+      "kspc": 4.565217391304348,
+      "accepts": 4,
+      "backspaces": 7
+    },
+    {
+      "cond": "suggest",
+      "warmup": false,
+      "block": 3,
+      "target": "cambia de canción cuando quieras",
+      "typed": "cambia de canción cuando quieras",
+      "seconds": 26.978400000000374,
+      "wpm": 13.788808824837458,
+      "error_rate": 0,
+      "kspc": 4.0625,
+      "accepts": 3,
+      "backspaces": 10
+    },
+    {
+      "cond": "suggest",
+      "warmup": false,
+      "block": 4,
+      "target": "la pantalla se ve muy bien",
+      "typed": "la pantalla se ve muy bien",
+      "seconds": 25.060899999999908,
+      "wpm": 11.970839036108085,
+      "error_rate": 0,
+      "kspc": 4.384615384615385,
+      "accepts": 4,
+      "backspaces": 8
+    },
+    {
+      "cond": "suggest",
+      "warmup": false,
+      "block": 4,
+      "target": "hoy quiero ver una película",
+      "typed": "hoy quiero ver una película",
+      "seconds": 25.01930000000028,
+      "wpm": 12.470372872142567,
+      "error_rate": 0,
+      "kspc": 3.8518518518518516,
+      "accepts": 4,
+      "backspaces": 19
+    },
+    {
+      "cond": "suggest",
+      "warmup": false,
+      "block": 4,
+      "target": "el juego tiene un mapa enorme",
+      "typed": "el juego tiene un mapa enorme",
+      "seconds": 28.327499999999535,
+      "wpm": 11.861265554673215,
+      "error_rate": 0,
+      "kspc": 4.068965517241379,
+      "accepts": 5,
+      "backspaces": 14
+    },
+    {
+      "cond": "plain",
+      "warmup": false,
+      "block": 5,
+      "target": "vamos a pedir pizza esta noche",
+      "typed": "vamos a pedir pizza esta noche",
+      "seconds": 41.511599999999625,
+      "wpm": 8.383198913074976,
+      "error_rate": 0,
+      "kspc": 5.8,
+      "accepts": 0,
+      "backspaces": 0
+    },
+    {
+      "cond": "plain",
+      "warmup": false,
+      "block": 5,
+      "target": "sube el volumen un poco más",
+      "typed": "sube el volumen un poco mas",
+      "seconds": 24.3595,
+      "wpm": 12.808144666351936,
+      "error_rate": 0.037037037037037035,
+      "kspc": 4.592592592592593,
+      "accepts": 0,
+      "backspaces": 0
+    },
+    {
+      "cond": "plain",
+      "warmup": false,
+      "block": 5,
+      "target": "el control está cerca del sofá",
+      "typed": "el control esta cerca del sofa",
+      "seconds": 27.3995,
+      "wpm": 12.70096169638132,
+      "error_rate": 0.06666666666666667,
+      "kspc": 4.733333333333333,
+      "accepts": 0,
+      "backspaces": 1
+    }
+  ],
+  "ratings": [
+    {
+      "cond": "plain",
+      "block": 2,
+      "rating": 2
+    },
+    {
+      "cond": "suggest",
+      "block": 3,
+      "rating": 4
+    },
+    {
+      "cond": "suggest",
+      "block": 4,
+      "rating": 4
+    },
+    {
+      "cond": "plain",
+      "block": 5,
+      "rating": 1
+    }
+  ],
+  "summary": [
+    {
+      "cond": "plain",
+      "phrases": 6,
+      "wpm": 10.910110063291306,
+      "error_rate": 0.023694207027540364,
+      "kspc": 5.007194156152489,
+      "accepts": 0,
+      "rating": 1.5
+    },
+    {
+      "cond": "suggest",
+      "phrases": 6,
+      "wpm": 12.765597778176073,
+      "error_rate": 0,
+      "kspc": 4.041239309883113,
+      "accepts": 24,
+      "rating": 4
+    }
+  ]
+}

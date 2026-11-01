@@ -1,0 +1,768 @@
+{
+  "order": [
+    "curva",
+    "lineal",
+    "curva-turbo",
+    "curva",
+    "curva-turbo",
+    "lineal"
+  ],
+  "profiles": [
+    {
+      "deadzone": 0.11999999731779099,
+      "exponent": 1.0,
+      "id": "lineal",
+      "max_speed": 1.100000023841858,
+      "outer": 0.949999988079071,
+      "precision": 0.30000001192092896,
+      "turbo": null
+    },
+    {
+      "deadzone": 0.11999999731779099,
+      "exponent": 2.200000047683716,
+      "id": "curva",
+      "max_speed": 1.600000023841858,
+      "outer": 0.949999988079071,
+      "precision": 0.30000001192092896,
+      "turbo": null
+    },
+    {
+      "deadzone": 0.11999999731779099,
+      "exponent": 2.0,
+      "id": "curva-turbo",
+      "max_speed": 1.2000000476837158,
+      "outer": 0.949999988079071,
+      "precision": 0.30000001192092896,
+      "turbo": {
+        "delay": 0.25,
+        "factor": 2.200000047683716,
+        "ramp": 0.5,
+        "threshold": 0.9200000166893005
+      }
+    }
+  ],
+  "ratings": [
+    [
+      "curva",
+      3
+    ],
+    [
+      "lineal",
+      4
+    ],
+    [
+      "curva-turbo",
+      2
+    ],
+    [
+      "curva",
+      2
+    ],
+    [
+      "curva-turbo",
+      3
+    ],
+    [
+      "lineal",
+      3
+    ]
+  ],
+  "screen_height_px": 1080.0,
+  "summary": [
+    {
+      "mean_ms": 4055.650390625,
+      "miss_rate": 0.7083333134651184,
+      "path_efficiency": 0.4953421354293823,
+      "profile": "lineal",
+      "rating": 3.5,
+      "throughput_bps": 1.324356198310852,
+      "trials": 24
+    },
+    {
+      "mean_ms": 3907.595458984375,
+      "miss_rate": 0.2083333283662796,
+      "path_efficiency": 0.45860421657562256,
+      "profile": "curva",
+      "rating": 2.5,
+      "throughput_bps": 1.3961018323898315,
+      "trials": 24
+    },
+    {
+      "mean_ms": 4542.544921875,
+      "miss_rate": 0.2083333283662796,
+      "path_efficiency": 0.4281597435474396,
+      "profile": "curva-turbo",
+      "rating": 2.5,
+      "throughput_bps": 1.1543618440628052,
+      "trials": 24
+    }
+  ],
+  "timing": {
+    "interval_ms": {
+      "max": 12.067000389099121,
+      "n": 74610,
+      "p50": 4.997700214385986,
+      "p95": 5.024999618530273,
+      "p99": 5.078000068664551
+    },
+    "resyncs": 1,
+    "self_test_misses": 0,
+    "step_us": {
+      "max": 5822.39990234375,
+      "n": 74610,
+      "p50": 7.599999904632568,
+      "p95": 124.60000610351562,
+      "p99": 180.0
+    }
+  },
+  "trials": [
+    {
+      "block": 0,
+      "distance": 393.7425537109375,
+      "misses": 0,
+      "path": 1611.9364013671875,
+      "profile": "curva",
+      "time_ms": 4499.8955078125,
+      "width": 80.0
+    },
+    {
+      "block": 0,
+      "distance": 310.2637023925781,
+      "misses": 0,
+      "path": 1939.692138671875,
+      "profile": "curva",
+      "time_ms": 5683.31201171875,
+      "width": 80.0
+    },
+    {
+      "block": 0,
+      "distance": 753.805908203125,
+      "misses": 1,
+      "path": 1329.988037109375,
+      "profile": "curva",
+      "time_ms": 3766.505859375,
+      "width": 28.0
+    },
+    {
+      "block": 0,
+      "distance": 508.3274841308594,
+      "misses": 0,
+      "path": 1074.841796875,
+      "profile": "curva",
+      "time_ms": 2406.022216796875,
+      "width": 48.0
+    },
+    {
+      "block": 0,
+      "distance": 543.2507934570312,
+      "misses": 0,
+      "path": 2713.694091796875,
+      "profile": "curva",
+      "time_ms": 8811.099609375,
+      "width": 48.0
+    },
+    {
+      "block": 0,
+      "distance": 882.9253540039062,
+      "misses": 0,
+      "path": 1678.9185791015625,
+      "profile": "curva",
+      "time_ms": 5482.646484375,
+      "width": 80.0
+    },
+    {
+      "block": 0,
+      "distance": 368.3882141113281,
+      "misses": 0,
+      "path": 356.6080322265625,
+      "profile": "curva",
+      "time_ms": 916.7530517578125,
+      "width": 80.0
+    },
+    {
+      "block": 0,
+      "distance": 481.2181701660156,
+      "misses": 0,
+      "path": 1135.1002197265625,
+      "profile": "curva",
+      "time_ms": 2949.928955078125,
+      "width": 80.0
+    },
+    {
+      "block": 0,
+      "distance": 628.70458984375,
+      "misses": 0,
+      "path": 3864.06103515625,
+      "profile": "curva",
+      "time_ms": 13188.626953125,
+      "width": 48.0
+    },
+    {
+      "block": 0,
+      "distance": 428.8637390136719,
+      "misses": 0,
+      "path": 3930.421875,
+      "profile": "curva",
+      "time_ms": 11755.4296875,
+      "width": 48.0
+    },
+    {
+      "block": 0,
+      "distance": 702.4271240234375,
+      "misses": 0,
+      "path": 781.4241943359375,
+      "profile": "curva",
+      "time_ms": 2300.0537109375,
+      "width": 48.0
+    },
+    {
+      "block": 0,
+      "distance": 267.6764221191406,
+      "misses": 0,
+      "path": 850.2239379882812,
+      "profile": "curva",
+      "time_ms": 2089.026123046875,
+      "width": 48.0
+    },
+    {
+      "block": 1,
+      "distance": 623.2145385742188,
+      "misses": 0,
+      "path": 1500.868896484375,
+      "profile": "lineal",
+      "time_ms": 4309.5517578125,
+      "width": 28.0
+    },
+    {
+      "block": 1,
+      "distance": 858.349853515625,
+      "misses": 0,
+      "path": 1568.2269287109375,
+      "profile": "lineal",
+      "time_ms": 3988.449951171875,
+      "width": 80.0
+    },
+    {
+      "block": 1,
+      "distance": 705.6412963867188,
+      "misses": 0,
+      "path": 1023.7424926757812,
+      "profile": "lineal",
+      "time_ms": 1444.505615234375,
+      "width": 80.0
+    },
+    {
+      "block": 1,
+      "distance": 703.90869140625,
+      "misses": 1,
+      "path": 2248.320068359375,
+      "profile": "lineal",
+      "time_ms": 8472.5546875,
+      "width": 48.0
+    },
+    {
+      "block": 1,
+      "distance": 802.77099609375,
+      "misses": 0,
+      "path": 895.08935546875,
+      "profile": "lineal",
+      "time_ms": 1260.6737060546875,
+      "width": 80.0
+    },
+    {
+      "block": 1,
+      "distance": 732.340087890625,
+      "misses": 0,
+      "path": 2926.018798828125,
+      "profile": "lineal",
+      "time_ms": 11199.7333984375,
+      "width": 28.0
+    },
+    {
+      "block": 1,
+      "distance": 822.5147094726562,
+      "misses": 0,
+      "path": 824.5753173828125,
+      "profile": "lineal",
+      "time_ms": 1313.4073486328125,
+      "width": 80.0
+    },
+    {
+      "block": 1,
+      "distance": 526.6629638671875,
+      "misses": 0,
+      "path": 1307.6248779296875,
+      "profile": "lineal",
+      "time_ms": 3820.263671875,
+      "width": 48.0
+    },
+    {
+      "block": 1,
+      "distance": 620.3379516601562,
+      "misses": 0,
+      "path": 2043.9796142578125,
+      "profile": "lineal",
+      "time_ms": 5257.01416015625,
+      "width": 48.0
+    },
+    {
+      "block": 1,
+      "distance": 291.5390625,
+      "misses": 0,
+      "path": 1036.490478515625,
+      "profile": "lineal",
+      "time_ms": 3081.359375,
+      "width": 28.0
+    },
+    {
+      "block": 1,
+      "distance": 534.1777954101562,
+      "misses": 2,
+      "path": 1334.974609375,
+      "profile": "lineal",
+      "time_ms": 2855.576416015625,
+      "width": 80.0
+    },
+    {
+      "block": 1,
+      "distance": 662.158203125,
+      "misses": 0,
+      "path": 1117.3729248046875,
+      "profile": "lineal",
+      "time_ms": 4744.302734375,
+      "width": 28.0
+    },
+    {
+      "block": 2,
+      "distance": 387.185302734375,
+      "misses": 0,
+      "path": 1632.6669921875,
+      "profile": "curva-turbo",
+      "time_ms": 4927.70947265625,
+      "width": 28.0
+    },
+    {
+      "block": 2,
+      "distance": 309.1222839355469,
+      "misses": 0,
+      "path": 1158.4315185546875,
+      "profile": "curva-turbo",
+      "time_ms": 2761.157958984375,
+      "width": 80.0
+    },
+    {
+      "block": 2,
+      "distance": 331.26263427734375,
+      "misses": 0,
+      "path": 1155.560302734375,
+      "profile": "curva-turbo",
+      "time_ms": 2055.53857421875,
+      "width": 80.0
+    },
+    {
+      "block": 2,
+      "distance": 562.24365234375,
+      "misses": 0,
+      "path": 4400.6826171875,
+      "profile": "curva-turbo",
+      "time_ms": 13894.673828125,
+      "width": 48.0
+    },
+    {
+      "block": 2,
+      "distance": 642.830810546875,
+      "misses": 0,
+      "path": 1827.7041015625,
+      "profile": "curva-turbo",
+      "time_ms": 6266.90869140625,
+      "width": 80.0
+    },
+    {
+      "block": 2,
+      "distance": 869.1715087890625,
+      "misses": 0,
+      "path": 1605.723876953125,
+      "profile": "curva-turbo",
+      "time_ms": 4704.83203125,
+      "width": 28.0
+    },
+    {
+      "block": 2,
+      "distance": 480.14337158203125,
+      "misses": 0,
+      "path": 1701.5623779296875,
+      "profile": "curva-turbo",
+      "time_ms": 5541.3642578125,
+      "width": 28.0
+    },
+    {
+      "block": 2,
+      "distance": 837.1435546875,
+      "misses": 0,
+      "path": 1290.0,
+      "profile": "curva-turbo",
+      "time_ms": 2408.59521484375,
+      "width": 48.0
+    },
+    {
+      "block": 2,
+      "distance": 497.47320556640625,
+      "misses": 0,
+      "path": 589.8946533203125,
+      "profile": "curva-turbo",
+      "time_ms": 1216.673583984375,
+      "width": 80.0
+    },
+    {
+      "block": 2,
+      "distance": 708.4860229492188,
+      "misses": 0,
+      "path": 936.63818359375,
+      "profile": "curva-turbo",
+      "time_ms": 2399.74951171875,
+      "width": 80.0
+    },
+    {
+      "block": 2,
+      "distance": 892.3395385742188,
+      "misses": 0,
+      "path": 1484.940185546875,
+      "profile": "curva-turbo",
+      "time_ms": 2994.448486328125,
+      "width": 48.0
+    },
+    {
+      "block": 2,
+      "distance": 290.7624206542969,
+      "misses": 0,
+      "path": 543.998046875,
+      "profile": "curva-turbo",
+      "time_ms": 1294.638671875,
+      "width": 80.0
+    },
+    {
+      "block": 3,
+      "distance": 687.6373901367188,
+      "misses": 0,
+      "path": 943.8820190429688,
+      "profile": "curva",
+      "time_ms": 1416.689453125,
+      "width": 80.0
+    },
+    {
+      "block": 3,
+      "distance": 412.5946960449219,
+      "misses": 0,
+      "path": 2172.72900390625,
+      "profile": "curva",
+      "time_ms": 4183.25244140625,
+      "width": 48.0
+    },
+    {
+      "block": 3,
+      "distance": 599.79248046875,
+      "misses": 0,
+      "path": 1101.9093017578125,
+      "profile": "curva",
+      "time_ms": 1766.6754150390625,
+      "width": 48.0
+    },
+    {
+      "block": 3,
+      "distance": 524.4613647460938,
+      "misses": 0,
+      "path": 1544.76806640625,
+      "profile": "curva",
+      "time_ms": 3566.6357421875,
+      "width": 28.0
+    },
+    {
+      "block": 3,
+      "distance": 533.757080078125,
+      "misses": 0,
+      "path": 1538.1346435546875,
+      "profile": "curva",
+      "time_ms": 2994.3837890625,
+      "width": 48.0
+    },
+    {
+      "block": 3,
+      "distance": 636.9739379882812,
+      "misses": 3,
+      "path": 1920.4520263671875,
+      "profile": "curva",
+      "time_ms": 4216.56689453125,
+      "width": 80.0
+    },
+    {
+      "block": 3,
+      "distance": 354.2593994140625,
+      "misses": 0,
+      "path": 1467.4287109375,
+      "profile": "curva",
+      "time_ms": 2561.201171875,
+      "width": 80.0
+    },
+    {
+      "block": 3,
+      "distance": 715.2155151367188,
+      "misses": 1,
+      "path": 961.4275512695312,
+      "profile": "curva",
+      "time_ms": 1161.1033935546875,
+      "width": 80.0
+    },
+    {
+      "block": 3,
+      "distance": 744.7660522460938,
+      "misses": 0,
+      "path": 1969.24658203125,
+      "profile": "curva",
+      "time_ms": 4795.6494140625,
+      "width": 48.0
+    },
+    {
+      "block": 3,
+      "distance": 319.1251220703125,
+      "misses": 0,
+      "path": 579.0,
+      "profile": "curva",
+      "time_ms": 1154.2591552734375,
+      "width": 80.0
+    },
+    {
+      "block": 3,
+      "distance": 406.0088195800781,
+      "misses": 0,
+      "path": 713.5053100585938,
+      "profile": "curva",
+      "time_ms": 1062.4757080078125,
+      "width": 48.0
+    },
+    {
+      "block": 3,
+      "distance": 869.205078125,
+      "misses": 0,
+      "path": 903.23193359375,
+      "profile": "curva",
+      "time_ms": 1054.1044921875,
+      "width": 80.0
+    },
+    {
+      "block": 4,
+      "distance": 356.9053649902344,
+      "misses": 2,
+      "path": 856.1790161132812,
+      "profile": "curva-turbo",
+      "time_ms": 2984.409423828125,
+      "width": 48.0
+    },
+    {
+      "block": 4,
+      "distance": 369.53912353515625,
+      "misses": 0,
+      "path": 775.1563720703125,
+      "profile": "curva-turbo",
+      "time_ms": 1754.4482421875,
+      "width": 48.0
+    },
+    {
+      "block": 4,
+      "distance": 322.11322021484375,
+      "misses": 3,
+      "path": 2956.549072265625,
+      "profile": "curva-turbo",
+      "time_ms": 13140.9384765625,
+      "width": 28.0
+    },
+    {
+      "block": 4,
+      "distance": 345.96826171875,
+      "misses": 0,
+      "path": 1291.974853515625,
+      "profile": "curva-turbo",
+      "time_ms": 5458.75732421875,
+      "width": 28.0
+    },
+    {
+      "block": 4,
+      "distance": 698.7005004882812,
+      "misses": 0,
+      "path": 1073.9637451171875,
+      "profile": "curva-turbo",
+      "time_ms": 2318.0419921875,
+      "width": 80.0
+    },
+    {
+      "block": 4,
+      "distance": 367.9440612792969,
+      "misses": 0,
+      "path": 747.6806640625,
+      "profile": "curva-turbo",
+      "time_ms": 1820.95458984375,
+      "width": 80.0
+    },
+    {
+      "block": 4,
+      "distance": 714.2522583007812,
+      "misses": 0,
+      "path": 1454.196533203125,
+      "profile": "curva-turbo",
+      "time_ms": 2894.357421875,
+      "width": 48.0
+    },
+    {
+      "block": 4,
+      "distance": 640.421875,
+      "misses": 0,
+      "path": 1886.2005615234375,
+      "profile": "curva-turbo",
+      "time_ms": 4033.2646484375,
+      "width": 48.0
+    },
+    {
+      "block": 4,
+      "distance": 298.6016540527344,
+      "misses": 0,
+      "path": 615.84228515625,
+      "profile": "curva-turbo",
+      "time_ms": 1483.335693359375,
+      "width": 80.0
+    },
+    {
+      "block": 4,
+      "distance": 849.8194580078125,
+      "misses": 0,
+      "path": 6730.3291015625,
+      "profile": "curva-turbo",
+      "time_ms": 17894.173828125,
+      "width": 48.0
+    },
+    {
+      "block": 4,
+      "distance": 670.1175537109375,
+      "misses": 0,
+      "path": 1104.18701171875,
+      "profile": "curva-turbo",
+      "time_ms": 1566.624755859375,
+      "width": 80.0
+    },
+    {
+      "block": 4,
+      "distance": 447.4525451660156,
+      "misses": 0,
+      "path": 1330.192138671875,
+      "profile": "curva-turbo",
+      "time_ms": 3205.486328125,
+      "width": 48.0
+    },
+    {
+      "block": 5,
+      "distance": 791.1741943359375,
+      "misses": 1,
+      "path": 3022.080810546875,
+      "profile": "lineal",
+      "time_ms": 8899.8447265625,
+      "width": 28.0
+    },
+    {
+      "block": 5,
+      "distance": 291.35955810546875,
+      "misses": 0,
+      "path": 513.478271484375,
+      "profile": "lineal",
+      "time_ms": 1594.604248046875,
+      "width": 80.0
+    },
+    {
+      "block": 5,
+      "distance": 355.9060974121094,
+      "misses": 0,
+      "path": 467.2979431152344,
+      "profile": "lineal",
+      "time_ms": 1027.8756103515625,
+      "width": 80.0
+    },
+    {
+      "block": 5,
+      "distance": 362.5899658203125,
+      "misses": 10,
+      "path": 1918.740966796875,
+      "profile": "lineal",
+      "time_ms": 7044.28125,
+      "width": 48.0
+    },
+    {
+      "block": 5,
+      "distance": 310.96307373046875,
+      "misses": 0,
+      "path": 712.9290771484375,
+      "profile": "lineal",
+      "time_ms": 2133.0439453125,
+      "width": 48.0
+    },
+    {
+      "block": 5,
+      "distance": 657.3576049804688,
+      "misses": 0,
+      "path": 699.374755859375,
+      "profile": "lineal",
+      "time_ms": 1267.8106689453125,
+      "width": 80.0
+    },
+    {
+      "block": 5,
+      "distance": 728.3172607421875,
+      "misses": 0,
+      "path": 1672.0894775390625,
+      "profile": "lineal",
+      "time_ms": 3215.89501953125,
+      "width": 48.0
+    },
+    {
+      "block": 5,
+      "distance": 697.6495361328125,
+      "misses": 0,
+      "path": 1697.1285400390625,
+      "profile": "lineal",
+      "time_ms": 3705.149658203125,
+      "width": 48.0
+    },
+    {
+      "block": 5,
+      "distance": 716.3268432617188,
+      "misses": 1,
+      "path": 2196.54345703125,
+      "profile": "lineal",
+      "time_ms": 11073.6884765625,
+      "width": 28.0
+    },
+    {
+      "block": 5,
+      "distance": 343.14202880859375,
+      "misses": 2,
+      "path": 760.6902465820312,
+      "profile": "lineal",
+      "time_ms": 1792.91552734375,
+      "width": 80.0
+    },
+    {
+      "block": 5,
+      "distance": 577.0911254882812,
+      "misses": 0,
+      "path": 1071.0692138671875,
+      "profile": "lineal",
+      "time_ms": 2488.685546875,
+      "width": 48.0
+    },
+    {
+      "block": 5,
+      "distance": 337.38726806640625,
+      "misses": 0,
+      "path": 703.2149047851562,
+      "profile": "lineal",
+      "time_ms": 1344.41259765625,
+      "width": 48.0
+    }
+  ]
+}

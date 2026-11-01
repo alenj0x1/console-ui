@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Keyboard overlay and lab windows: events and app commands only.",
+  "windows": ["keyboard", "lab"],
+  "permissions": ["core:event:default"]
+}

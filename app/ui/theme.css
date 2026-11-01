@@ -1,0 +1,40 @@
+@font-face { font-family: "Fredoka"; src: url(fonts/fredoka-latin-500-normal.woff2) format("woff2"); font-weight: 500; }
+@font-face { font-family: "Nunito"; src: url(fonts/nunito-latin-400-normal.woff2) format("woff2"); font-weight: 400; }
+@font-face { font-family: "Nunito"; src: url(fonts/nunito-latin-600-normal.woff2) format("woff2"); font-weight: 600; }
+@font-face { font-family: "DM Mono"; src: url(fonts/dm-mono-latin-400-normal.woff2) format("woff2"); font-weight: 400; }
+
+:root {
+  --bg: #1e1f22;
+  --surface: #2a2b2f;
+  --surface-hover: #35373c;
+  --ring: rgba(255, 255, 255, 0.06);
+  --ring-strong: #3a3c41;
+  --text: #ece8df;
+  --muted: #9a9790;
+  --accent: #4c8dff;
+  --on-accent: #ffffff;
+  --danger: #e06c5f;
+  --radius: 10px;
+  --font-display: "Fredoka", "Segoe UI", sans-serif;
+  --font-text: "Nunito", "Segoe UI", sans-serif;
+  --font-mono: "DM Mono", Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; color: var(--text); font-family: var(--font-text); }
+
+/* Controller button glyph: neutral ring, the letter says which button. */
+.glyph {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px var(--ring-strong);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1;
+  color: var(--muted);
+}

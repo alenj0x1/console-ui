@@ -1,0 +1,118 @@
+html, body { height: 100%; background: transparent; overflow: hidden; user-select: none; cursor: default; }
+
+body { display: flex; align-items: flex-end; justify-content: center; padding-bottom: 4px; }
+
+.panel {
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--bg);
+  box-shadow: inset 0 0 0 1px var(--ring-strong);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.halves { display: flex; gap: 32px; justify-content: center; }
+.half { display: flex; flex-direction: column; gap: 6px; }
+
+.row { display: flex; gap: 6px; justify-content: center; }
+
+.key {
+  position: relative;
+  width: 60px;
+  height: 56px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--ring);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 22px;
+  color: var(--text);
+}
+
+.key.action {
+  font-family: var(--font-text);
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+.key.on { background: var(--accent); color: var(--on-accent); box-shadow: none; }
+.key.on .glyph { color: var(--on-accent); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5); }
+.key.hit { background: var(--surface-hover); }
+.key.on.hit { background: #3d78e0; }
+.key.active { box-shadow: inset 0 0 0 1px var(--muted); }
+
+/* Keys with an accented variant (hold to type it). */
+.key .alt {
+  position: absolute;
+  top: 5px;
+  right: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+.key.on .alt { color: rgba(255, 255, 255, 0.7); }
+
+.row.strip { justify-content: stretch; }
+.key.suggestion {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  font-family: var(--font-text);
+  font-weight: 600;
+  font-size: 17px;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+.actions { display: flex; gap: 6px; justify-content: center; margin-top: 4px; }
+.actions .key { height: 44px; }
+
+/* Language menu (opened with L3). Same panel, list instead of keys. */
+.panel.is-menu { width: 420px; }
+.menu { display: flex; flex-direction: column; gap: 6px; }
+.menu-item {
+  height: 48px;
+  padding: 0 16px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--ring);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+  font-size: 16px;
+}
+.menu-item .glyph { margin-left: auto; }
+.menu-item.danger { color: var(--danger); }
+.menu-item.on { background: var(--accent); color: var(--on-accent); box-shadow: none; }
+.menu-item.on .glyph { color: var(--on-accent); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5); }
+
+.check {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1.5px var(--muted);
+  display: grid;
+  place-items: center;
+}
+.check.checked { background: var(--accent); box-shadow: none; }
+.check.checked::after {
+  content: "";
+  width: 9px;
+  height: 5px;
+  border-left: 2px solid var(--on-accent);
+  border-bottom: 2px solid var(--on-accent);
+  transform: translateY(-1px) rotate(-45deg);
+}
+.menu-item.on .check { box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.7); }
+.menu-item.on .check.checked { background: var(--on-accent); }
+.menu-item.on .check.checked::after { border-color: var(--accent); }

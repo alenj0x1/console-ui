@@ -1,0 +1,66 @@
+[English](README.md) | Español
+
+# Console UI
+
+Usa todo Windows desde el sillón con el control: un cursor asistido, un teclado en pantalla con sugerencias inteligentes y, próximamente, una pantalla de inicio tipo consola.
+
+> En desarrollo. Aún sin versión publicada; se compila desde el código.
+
+## Qué hace
+
+- **Cursor asistido**: el stick izquierdo mueve el mouse con una aceleración predecible, frena sobre botones y enlaces (leídos con UI Automation) y se queda quieto un instante al hacer clic. El stick derecho hace scroll y la cruceta envía flechas.
+- **Teclado en pantalla**: con Y se abre sobre cualquier app sin quitarle el foco. Cuadrícula QWERTY con ñ, tildes manteniendo el botón, símbolos, y un diseño de dos mitades como opción.
+- **Sugerencias**: completan la palabra y ponen la tilde (`esta` → `está`), usan la palabra anterior como contexto y predicen la siguiente. Aprenden de ti, se guardan cifradas con DPAPI y nunca en campos de contraseña. Español por defecto; el inglés se activa desde el teclado.
+- **Modo juego**: mantén View + Menu para dejarle el control a los juegos (dos vibraciones cortas) y otra vez para recuperar el cursor (una vibración).
+- **Laboratorios**: cada decisión de diseño se midió con el usuario antes de adoptarla (ver `labs/`).
+
+## Controles
+
+| Control | Modo cursor | Teclado |
+|---|---|---|
+| Stick izquierdo / cruceta | Mover cursor (LT = precisión) / flechas | Mover la tecla marcada |
+| Stick derecho | Scroll | Mover el punto de escritura |
+| A / X / L3 | Clic izquierdo / derecho / central | Escribir (mantener = tilde) / borrar / idiomas |
+| B | Esc | Cerrar el teclado |
+| Y | Abrir el teclado | Espacio |
+| LB / RB | Atrás / adelante | Mayúscula / símbolos |
+| RT | – | Tomar la primera sugerencia |
+| View / Menu | Vista de tareas / menú Inicio | – / Intro |
+| Mantener View + Menu | Dejar el control a los juegos, y volver | |
+
+## Requisitos
+
+- Windows 10 u 11 (x64) con un control XInput (compatible con Xbox). Los de PlayStation funcionan con Steam Input o DS4Windows.
+- WebView2 (incluido en Windows actual).
+
+## Desarrollo
+
+```bash
+cargo build --release
+```
+
+- `target/release/console-ui.exe`: la app (ícono en la bandeja, teclado). `--lab` abre el laboratorio del teclado (`--exp=suggest` para comparar sugerencias).
+- `target/release/padd.exe`: solo el núcleo de entrada, en consola.
+- `target/release/cursor-lab.exe`: el laboratorio del cursor.
+- `cargo test`: pruebas unitarias (curvas, almacenamiento cifrado).
+- `python -I tools/build_language_data.py`: regenera los datos de sugerencias (descarga fuentes fijadas y verificadas por hash).
+- `node labs/keyboard-lab/suggest_eval.js es`: calidad de las sugerencias sin conexión.
+- `python scripts/release.py X.Y.Z`: publica una versión (sube versiones, cierra la sección del changelog, hace commit y tag).
+
+| Ruta | Qué |
+|---|---|
+| `crates/padcore` | Núcleo de entrada: XInput, curvas, inyección con SendInput, UI Automation, motor de modos |
+| `crates/padd` | Núcleo en consola |
+| `app` | App Tauri 2: bandeja, teclado (`app/ui`), ajustes y palabras aprendidas |
+| `labs` | Experimentos con datos y notas |
+| `tools` | Generadores de datos |
+
+## Créditos
+
+- [Tauri](https://tauri.app) (MIT / Apache-2.0), [egui/eframe](https://github.com/emilk/egui) para el laboratorio del cursor (MIT / Apache-2.0), [windows-rs](https://github.com/microsoft/windows-rs) (MIT / Apache-2.0).
+- Fuentes [Fredoka](https://github.com/hafontia/Fredoka-One), [Nunito](https://github.com/googlefonts/nunito) y [DM Mono](https://github.com/googlefonts/dm-mono), SIL Open Font License 1.1 (`app/ui/fonts`).
+- Listas de palabras derivadas de [FrequencyWords](https://github.com/hermitdave/FrequencyWords) de Hermit Dave (OpenSubtitles 2018), CC BY-SA 4.0. Pares de palabras calculados con frases de [Tatoeba](https://tatoeba.org), CC BY 2.0 FR. Detalle en `app/ui/data/LICENSE-data.txt`.
+
+## Licencia
+
+Código: [MIT](LICENSE). Los datos de sugerencias conservan sus propias licencias (ver Créditos).

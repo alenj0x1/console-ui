@@ -1,0 +1,268 @@
+{
+  "blocks": [
+    {
+      "layout": "grid",
+      "warmup": true,
+      "n": 2
+    },
+    {
+      "layout": "split",
+      "warmup": true,
+      "n": 2
+    },
+    {
+      "layout": "split",
+      "warmup": false,
+      "n": 3
+    },
+    {
+      "layout": "grid",
+      "warmup": false,
+      "n": 3
+    },
+    {
+      "layout": "grid",
+      "warmup": false,
+      "n": 3
+    },
+    {
+      "layout": "split",
+      "warmup": false,
+      "n": 3
+    }
+  ],
+  "trials": [
+    {
+      "layout": "grid",
+      "warmup": true,
+      "block": 0,
+      "target": "la pantalla se ve muy bien",
+      "typed": "la pantalla se ve muy bien",
+      "seconds": 32.025399999999905,
+      "wpm": 9.367564495681581,
+      "error_rate": 0,
+      "kspc": 1,
+      "backspaces": 0
+    },
+    {
+      "layout": "grid",
+      "warmup": true,
+      "block": 0,
+      "target": "busca el disco nuevo de la banda",
+      "typed": "busca el disco nuevo de la banda",
+      "seconds": 43.09729999999981,
+      "wpm": 8.63163121587667,
+      "error_rate": 0,
+      "kspc": 1,
+      "backspaces": 0
+    },
+    {
+      "layout": "split",
+      "warmup": true,
+      "block": 1,
+      "target": "la lluvia no para desde ayer",
+      "typed": "la lluvia no para desde ayer",
+      "seconds": 67.0343999999999,
+      "wpm": 4.8333393004188965,
+      "error_rate": 0,
+      "kspc": 1.2142857142857142,
+      "backspaces": 3
+    },
+    {
+      "layout": "split",
+      "warmup": true,
+      "block": 1,
+      "target": "la partida empieza en diez minutos",
+      "typed": "la partida empieza en diez minutos",
+      "seconds": 56.943600000000096,
+      "wpm": 6.954249467894536,
+      "error_rate": 0,
+      "kspc": 1.0588235294117647,
+      "backspaces": 1
+    },
+    {
+      "layout": "split",
+      "warmup": false,
+      "block": 2,
+      "target": "vamos a pedir pizza esta noche",
+      "typed": "vamos a pedir pizza esta noche",
+      "seconds": 49.324600000000096,
+      "wpm": 7.0553030333748135,
+      "error_rate": 0,
+      "kspc": 1.1333333333333333,
+      "backspaces": 2
+    },
+    {
+      "layout": "split",
+      "warmup": false,
+      "block": 2,
+      "target": "sube el volumen un poco más",
+      "typed": "sube el volumen un poco mas",
+      "seconds": 47.583,
+      "wpm": 6.556963621461447,
+      "error_rate": 0.037037037037037035,
+      "kspc": 1.1481481481481481,
+      "backspaces": 2
+    },
+    {
+      "layout": "split",
+      "warmup": false,
+      "block": 2,
+      "target": "el perro quiere salir a caminar",
+      "typed": "el perro quiere salir a caminar",
+      "seconds": 37.21370000000019,
+      "wpm": 9.67385667106464,
+      "error_rate": 0,
+      "kspc": 1,
+      "backspaces": 0
+    },
+    {
+      "layout": "grid",
+      "warmup": false,
+      "block": 3,
+      "target": "el control está cerca del sofá",
+      "typed": "el control esta cerca del sofa",
+      "seconds": 33.17960000000009,
+      "wpm": 10.488372373386026,
+      "error_rate": 0.06666666666666667,
+      "kspc": 1,
+      "backspaces": 0
+    },
+    {
+      "layout": "grid",
+      "warmup": false,
+      "block": 3,
+      "target": "hoy quiero ver una película",
+      "typed": "hoy quiero ver una película",
+      "seconds": 34.24520000000019,
+      "wpm": 9.110765888358028,
+      "error_rate": 0,
+      "kspc": 1.2222222222222223,
+      "backspaces": 3
+    },
+    {
+      "layout": "grid",
+      "warmup": false,
+      "block": 3,
+      "target": "revisa el correo en la tarde",
+      "typed": "revisa el cprreo en la tarde",
+      "seconds": 25.088,
+      "wpm": 12.91454081632653,
+      "error_rate": 0.03571428571428571,
+      "kspc": 1,
+      "backspaces": 0
+    },
+    {
+      "layout": "grid",
+      "warmup": false,
+      "block": 4,
+      "target": "guarda la partida antes de salir",
+      "typed": "guarda la partida antes de salir",
+      "seconds": 31.982600000000094,
+      "wpm": 11.63132453271463,
+      "error_rate": 0,
+      "kspc": 1.1875,
+      "backspaces": 3
+    },
+    {
+      "layout": "grid",
+      "warmup": false,
+      "block": 4,
+      "target": "apaga la luz de la sala",
+      "typed": "apaga la luz de la sala",
+      "seconds": 21.126899999999907,
+      "wpm": 12.495917526944378,
+      "error_rate": 0,
+      "kspc": 1,
+      "backspaces": 0
+    },
+    {
+      "layout": "grid",
+      "warmup": false,
+      "block": 4,
+      "target": "cambia de canción cuando quieras",
+      "typed": "cambia de cancion cuando quieras",
+      "seconds": 35.84129999999981,
+      "wpm": 10.379087812105084,
+      "error_rate": 0.03125,
+      "kspc": 1.125,
+      "backspaces": 2
+    },
+    {
+      "layout": "split",
+      "warmup": false,
+      "block": 5,
+      "target": "la batería del control está baja",
+      "typed": "la bateria del control esta baja",
+      "seconds": 39.775700000000185,
+      "wpm": 9.352443828769783,
+      "error_rate": 0.0625,
+      "kspc": 1.0625,
+      "backspaces": 1
+    },
+    {
+      "layout": "split",
+      "warmup": false,
+      "block": 5,
+      "target": "necesito descargar la actualización",
+      "typed": "necesito descargar la actualizacion",
+      "seconds": 51.39510000000009,
+      "wpm": 7.938499973732891,
+      "error_rate": 0.02857142857142857,
+      "kspc": 1.1714285714285715,
+      "backspaces": 3
+    },
+    {
+      "layout": "split",
+      "warmup": false,
+      "block": 5,
+      "target": "pon música tranquila por favor",
+      "typed": "pon música tranquila por favor",
+      "seconds": 39.22710000000009,
+      "wpm": 8.871417973798705,
+      "error_rate": 0,
+      "kspc": 1.0666666666666667,
+      "backspaces": 1
+    }
+  ],
+  "ratings": [
+    {
+      "layout": "split",
+      "block": 2,
+      "rating": 3
+    },
+    {
+      "layout": "grid",
+      "block": 3,
+      "rating": 4
+    },
+    {
+      "layout": "grid",
+      "block": 4,
+      "rating": 4
+    },
+    {
+      "layout": "split",
+      "block": 5,
+      "rating": 4
+    }
+  ],
+  "summary": [
+    {
+      "layout": "grid",
+      "phrases": 6,
+      "wpm": 11.170001491639113,
+      "error_rate": 0.022271825396825397,
+      "kspc": 1.0891203703703705,
+      "rating": 4
+    },
+    {
+      "layout": "split",
+      "phrases": 6,
+      "wpm": 8.24141418370038,
+      "error_rate": 0.02135141093474427,
+      "kspc": 1.09701278659612,
+      "rating": 3.5
+    }
+  ]
+}

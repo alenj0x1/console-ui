@@ -1,0 +1,15 @@
+Suggestion data in this folder, built by tools/build_language_data.py:
+
+words-<lang>.txt
+  Derived from FrequencyWords by Hermit Dave
+  (https://github.com/hermitdave/FrequencyWords, commit 525f9b560de45753a5ea01069454e72e9aa541c6),
+  word counts from the OpenSubtitles 2018 corpus (http://opus.nlpl.eu/OpenSubtitles2018.php).
+  License: Creative Commons Attribution-ShareAlike 4.0 International
+  (https://creativecommons.org/licenses/by-sa/4.0/). These derived lists are shared under the same license.
+  Changes: top 50,000 words per language filtered to plain words; unaccented spellings rarer than
+  10 % of their accented twin removed.
+
+pairs-<lang>.tsv
+  Word-pair counts computed from Tatoeba sentences (https://tatoeba.org), export of 2026-10-31.
+  License: Creative Commons Attribution 2.0 France (https://creativecommons.org/licenses/by/2.0/fr/).
+  Changes: lowercased, tokenized into words, pairs seen at least 2 times, top 200 per word kept.
