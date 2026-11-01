@@ -42,6 +42,8 @@ const MAX_TYPED: usize = 32;
 const SAVE_EVERY: Duration = Duration::from_secs(15);
 /// How often cursor mode checks whether an admin window has the focus.
 const ADMIN_CHECK_EVERY: Duration = Duration::from_millis(400);
+/// After a click, the app needs a moment to move the focus to what was clicked.
+const CLICK_SETTLE: Duration = Duration::from_millis(150);
 
 enum EngineCmd {
     SetMode(Mode),
@@ -167,6 +169,23 @@ fn engine_loop(app: AppHandle, rx: Receiver<EngineCmd>, lab: bool, open_home: bo
                         });
                     }
                 }
+                Event::Click if !lab => {
+                    // A click into a text field opens the keyboard there.
+                    let h = app.clone();
+                    std::thread::spawn(move || {
+                        std::thread::sleep(CLICK_SETTLE);
+                        let state = h.state::<AppState>();
+                        if state.mode.load(Ordering::Relaxed) != mode_code(Mode::Cursor) {
+                            return;
+                        }
+                        let at = inject::cursor_pos();
+                        if hover::focused_text_field().is_some_and(|f| f.contains(at)) {
+                            h.state::<events::Events>().log("clic en un campo de texto: teclado");
+                            state.send(Mode::Keyboard);
+                        }
+                    });
+                }
+                Event::Click => {}
                 Event::Ui(u) => {
                     let target = if engine.mode() == Mode::Home { home::LABEL } else { overlay::LABEL };
                     let _ = app.emit_to(target, "pad", u);
@@ -222,11 +241,12 @@ fn note_typing(events: State<events::Events>, last: State<Mutex<String>>) {
 }
 
 #[tauri::command]
-fn type_text(text: String) -> Result<(), String> {
+fn type_text(app: AppHandle, text: String) -> Result<(), String> {
     if !valid_typed(&text) {
         return Err("texto no permitido".into());
     }
     inject::type_text(&text);
+    overlay::follow_caret(&app);
     Ok(())
 }
 
@@ -236,20 +256,25 @@ fn valid_typed(text: &str) -> bool {
 
 /// Swaps the word being typed for a suggestion.
 #[tauri::command]
-fn replace_word(delete: usize, text: String) -> Result<(), String> {
+fn replace_word(app: AppHandle, delete: usize, text: String) -> Result<(), String> {
     if delete > MAX_TYPED || !valid_typed(&text) {
         return Err("reemplazo no permitido".into());
     }
     inject::replace_text(delete, &text);
+    overlay::follow_caret(&app);
     Ok(())
 }
 
 #[tauri::command]
-fn press_key(events: State<events::Events>, key: String) -> Result<(), String> {
+fn press_key(app: AppHandle, events: State<events::Events>, key: String) -> Result<(), String> {
     if key == "enter" {
         events.log("teclado: intro");
     }
-    if inject::key_named(&key) { Ok(()) } else { Err(format!("tecla desconocida: {key}")) }
+    if !inject::key_named(&key) {
+        return Err(format!("tecla desconocida: {key}"));
+    }
+    overlay::follow_caret(&app);
+    Ok(())
 }
 
 #[tauri::command]

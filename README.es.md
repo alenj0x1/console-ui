@@ -9,7 +9,7 @@ Usa todo Windows desde el sillón con el control: un cursor asistido, un teclado
 ## Qué hace
 
 - **Cursor asistido**: el stick izquierdo mueve el mouse con una aceleración predecible, frena sobre botones y enlaces (leídos con UI Automation) y se queda quieto un instante al hacer clic. El stick derecho hace scroll y la cruceta envía flechas.
-- **Teclado en pantalla**: con Y se abre sobre cualquier app sin quitarle el foco. Cuadrícula QWERTY con ñ, tildes manteniendo el botón, símbolos, y un diseño de dos mitades como opción.
+- **Teclado en pantalla**: con Y (o al hacer clic en un campo de texto) se abre sobre cualquier app sin quitarle el foco, en el monitor donde está el cursor y sin tapar lo que se escribe. Cuadrícula QWERTY con ñ, tildes manteniendo el botón, símbolos, y un diseño de dos mitades como opción.
 - **Sugerencias**: completan la palabra y ponen la tilde (`esta` → `está`), usan la palabra anterior como contexto y predicen la siguiente. Aprenden de ti, se guardan cifradas con DPAPI y nunca en campos de contraseña. Español por defecto; el inglés se activa desde el teclado.
 - **Pantalla de Inicio**: mantén Menu para ver a pantalla completa tus juegos de Steam y Epic (con su arte oficial de fondo), tus apps fijadas con sus íconos reales y la música que suena. De fondo, una animación propia, un fondo de video de Wallpaper Engine o tus videos e imágenes. Spotify Web se abre dentro de la app. Al abrir un juego, el control pasa a él.
 - **Modo juego**: mantén View + Menu para dejarle el control a los juegos (dos vibraciones cortas) y otra vez para recuperar el cursor (una vibración).
@@ -23,9 +23,9 @@ Usa todo Windows desde el sillón con el control: un cursor asistido, un teclado
 | Stick derecho | Scroll | Mover el punto de escritura |
 | A / X / L3 | Clic izquierdo / derecho / central | Escribir (mantener = tilde) / borrar / idiomas |
 | B | Esc | Cerrar el teclado |
-| Y | Abrir el teclado | Espacio |
+| Y | Abrir el teclado (también al hacer clic en un campo de texto) | Espacio |
 | LB / RB | Atrás / adelante | Mayúscula / símbolos |
-| RT | Mantener + cruceta: volumen, canción anterior/siguiente | Tomar la primera sugerencia |
+| RT | Toque: Intro. Mantener + cruceta: volumen, canción anterior/siguiente | Tomar la primera sugerencia |
 | View / Menu | Vista de tareas / menú Inicio (mantener: pantalla de Inicio) | – / Intro |
 | Mantener View + Menu | Dejar el control a los juegos, y volver | |
 

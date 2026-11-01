@@ -4,7 +4,7 @@
 //! mouse and a few keys; `Keyboard` hands navigation events to the on-screen
 //! keyboard; `Home` hands them to the home screen. Holding View + Menu toggles
 //! Off ↔ on; Y opens the keyboard and B closes it; holding Menu opens and
-//! closes the home screen.
+//! closes the home screen. A tap on RT presses Enter.
 
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -34,6 +34,9 @@ pub enum Event {
     Ui(UiEvent),
     /// B pressed while the host said input is blocked (admin window in front).
     Rescue,
+    /// A left click ended (cursor mode): the host may open the keyboard if
+    /// it landed in a text field.
+    Click,
 }
 
 #[derive(Clone, Debug)]
@@ -87,6 +90,8 @@ const DPAD_KEYS: [VIRTUAL_KEY; 4] = [VK_UP, VK_DOWN, VK_LEFT, VK_RIGHT];
 /// D-pad while holding RT: volume up / down, previous / next track.
 const DPAD_MEDIA_KEYS: [VIRTUAL_KEY; 4] = [VK_VOLUME_UP, VK_VOLUME_DOWN, VK_MEDIA_PREV_TRACK, VK_MEDIA_NEXT_TRACK];
 const MEDIA_TRIGGER: f32 = 0.5;
+/// RT back below this ends a press (hysteresis against a jittery trigger).
+const TRIGGER_RELEASE: f32 = 0.3;
 
 /// How long after input stops being blocked stuck buttons are released.
 const RESYNC_FOR: Duration = Duration::from_secs(2);
@@ -113,6 +118,10 @@ pub struct Engine {
     /// Menu was held long enough to toggle the home screen: its release is not a tap.
     menu_hold_used: bool,
     dpad_next: [Option<Instant>; 4],
+    /// RT went down then: released soon without the D-pad, it is Enter.
+    rt_down: Option<Instant>,
+    rt_used: bool,
+    clicked: bool,
     mouse_down: [bool; 3],
     rumble: Vec<(Instant, bool)>,
     height_px: f32,
@@ -151,6 +160,9 @@ impl Engine {
             menu_down: None,
             menu_hold_used: false,
             dpad_next: [None; 4],
+            rt_down: None,
+            rt_used: false,
+            clicked: false,
             mouse_down: [false; 3],
             rumble: Vec::new(),
             height_px: inject::primary_height(),
@@ -239,6 +251,7 @@ impl Engine {
             }
         }
         self.dpad_next = [None; 4];
+        self.rt_down = None;
         self.inj.reset_scroll();
     }
 
@@ -286,6 +299,9 @@ impl Engine {
                 self.cursor(&pad, dt, now);
                 if std::mem::take(&mut self.rescue) {
                     out.push(Event::Rescue);
+                }
+                if std::mem::take(&mut self.clicked) {
+                    out.push(Event::Click);
                 }
             }
             Mode::Keyboard if !self.cfg.keyboard_locked && pressed & btn::B != 0 => {
@@ -394,6 +410,7 @@ impl Engine {
             } else if released & b != 0 && self.mouse_down[i] {
                 inject::mouse_button(*mb, false);
                 self.mouse_down[i] = false;
+                self.clicked |= *b == btn::A && !self.blocked;
             }
         }
 
@@ -407,10 +424,23 @@ impl Engine {
             }
         }
 
+        // RT tap → Enter (after typing and closing the keyboard). Held with
+        // the D-pad it is the media modifier instead.
+        if pad.rt >= MEDIA_TRIGGER && self.rt_down.is_none() {
+            self.rt_down = Some(now);
+            self.rt_used = false;
+        } else if pad.rt < TRIGGER_RELEASE {
+            if let Some(t) = self.rt_down.take() {
+                if !self.rt_used && now - t < self.cfg.tap_max {
+                    inject::key_tap(VK_RETURN);
+                }
+            }
+        }
         let keys = if pad.rt >= MEDIA_TRIGGER { DPAD_MEDIA_KEYS } else { DPAD_KEYS };
         for i in 0..4 {
             let b = btn::DPAD[i];
             if pressed & b != 0 {
+                self.rt_used |= self.rt_down.is_some();
                 inject::key_tap(keys[i]);
                 self.dpad_next[i] = Some(now + self.cfg.repeat_delay);
             } else if !pad.held(b) {

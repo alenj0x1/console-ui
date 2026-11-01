@@ -13,7 +13,7 @@ Changes waiting for the next version sit under **Unreleased** at the top (this s
 - Controller input core (XInput, read in the background) with cursor, scroll, clicks, drag, arrow keys, Esc, back/forward, Task view and Start menu.
 - Assisted cursor: predictable acceleration, slowdown over clickable elements (UI Automation, only while aiming) and click stabilization.
 - Game mode: hold View + Menu to hand the controller to games and back, with rumble feedback.
-- Tauri app with tray icon and an on-screen keyboard overlay that never steals focus (Y opens it, B closes it). Opening the app shows the home screen (`--background` starts it quietly); clicking the tray icon opens it too, and its menu opens the keyboard or hands the controller to games.
+- Tauri app with tray icon and an on-screen keyboard overlay that never steals focus (Y or a click on a text field opens it, B closes it). It opens on the monitor under the cursor and moves to the top when it would cover the text being typed. Opening the app shows the home screen (`--background` starts it quietly); clicking the tray icon opens it too, and its menu opens the keyboard or hands the controller to games.
 - Keyboard layouts: QWERTY grid with ñ, accents on hold, symbols; two-halves layout as an option.
 - Word suggestions with accents, previous-word context and next-word prediction; Spanish by default, English from the keyboard's language key (L3).
 - Learned words, encrypted with DPAPI, off in password fields; "forget learned words" in the language menu.
@@ -22,6 +22,7 @@ Changes waiting for the next version sit under **Unreleased** at the top (this s
 - Game trailers: after a few seconds on a Steam game, its trailer plays over the art, silent and looping (the first seconds, downloaded once from the Steam store and kept).
 - Music: the background blends the cover's two main colours, and covers sent as a card with the player's logo are trimmed to the artwork.
 - Spotify's web player inside the app ("Abrir Spotify" in the music tab), for free and Premium accounts: sign-in happens on Spotify's page, and the window has no access to the app and keeps its data apart.
+- A tap on RT presses Enter (to send after closing the keyboard).
 - Volume from anywhere: hold RT and use the d-pad (up/down volume, left/right previous/next track).
 - With HidHide installed, other apps stop seeing the controller while it drives Windows (the Start menu and other Store apps no longer move their own focus and jump), and see it again in game mode; a watchdog shows it again if the app ends unexpectedly.
 - Admin windows: Windows blocks a normal app's input there, so a banner says why the controller doesn't respond and B hands the focus back to the next normal window (Console UI does not raise its own rights).

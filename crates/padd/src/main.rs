@@ -45,7 +45,7 @@ fn main() {
                 Event::Disconnected => println!("Control desconectado"),
                 Event::ModeChanged(Mode::Off) => println!("Cursor desactivado: el control queda libre para juegos"),
                 Event::ModeChanged(_) => println!("Cursor activado"),
-                Event::Ui(_) | Event::Rescue => {}
+                Event::Ui(_) | Event::Rescue | Event::Click => {}
             }
         }
         let tick = if !engine.connected() {

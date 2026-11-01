@@ -9,7 +9,7 @@ Use all of Windows from the couch with a game controller: an assisted cursor, an
 ## What it does
 
 - **Assisted cursor**: the left stick moves the mouse with a predictable acceleration, slows down over buttons and links (read through UI Automation) and holds still for a moment when you click. Right stick scrolls; the d-pad sends arrow keys.
-- **On-screen keyboard**: press Y to open it over any app without stealing focus. QWERTY grid with ñ, accents on hold, symbols, and a two-halves layout as an option.
+- **On-screen keyboard**: press Y (or click a text field) to open it over any app without stealing focus, on the monitor under the cursor and clear of the text being typed. QWERTY grid with ñ, accents on hold, symbols, and a two-halves layout as an option.
 - **Suggestions**: complete the word and restore accents (`esta` → `está`), use the previous word as context and predict the next one. They learn from you, stored encrypted with DPAPI and never in password fields. Spanish by default; English can be turned on from the keyboard.
 - **Home screen**: hold Menu for a full-screen view of your Steam and Epic games (official art as the background), pinned apps with their real icons and the music that is playing, over a built-in animation, a Wallpaper Engine video wallpaper or your own videos and pictures. Spotify's web player opens inside the app. Launching a game hands the controller to it.
 - **Game mode**: hold View + Menu to leave the controller to games (two short rumbles) and again to get the cursor back (one rumble).
@@ -23,9 +23,9 @@ Use all of Windows from the couch with a game controller: an assisted cursor, an
 | Right stick | Scroll | Move the text caret |
 | A / X / L3 | Left / right / middle click | Type (hold for accent) / backspace / languages |
 | B | Esc | Close the keyboard |
-| Y | Open the keyboard | Space |
+| Y | Open the keyboard (also by clicking a text field) | Space |
 | LB / RB | Back / forward | Shift / symbols |
-| RT | Hold + d-pad: volume, previous/next track | Take the first suggestion |
+| RT | Tap: Enter. Hold + d-pad: volume, previous/next track | Take the first suggestion |
 | View / Menu | Task view / Start menu (hold: home screen) | – / Enter |
 | Hold View + Menu | Turn the controller over to games, and back | |
 
