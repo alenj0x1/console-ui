@@ -147,3 +147,21 @@ pub fn control_blocking(action: &str) -> Result<(), String> {
     }
     MEDIA.control(action)
 }
+
+#[cfg(test)]
+mod tests {
+    /// Saves what is playing right now and its cover to the temp folder.
+    #[test]
+    #[ignore = "reads this PC's player"]
+    fn current_cover() {
+        unsafe {
+            let _ = windows::Win32::System::Com::CoInitializeEx(None, windows::Win32::System::Com::COINIT_MULTITHREADED);
+        }
+        let (now, cover) = super::MEDIA.read().unwrap();
+        println!("{} | {} | {}", now.source, now.title, now.artist);
+        let cover = cover.expect("no cover");
+        let file = std::env::temp_dir().join("console-ui-cover.bin");
+        std::fs::write(&file, &cover).unwrap();
+        println!("{} bytes -> {}", cover.len(), file.display());
+    }
+}

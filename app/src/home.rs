@@ -5,9 +5,13 @@
 //!   /art/<game id>/<hero|capsule|header|logo>   Steam's own files
 //!   /icon/<app id>                              PNG, cached in app data
 //!   /cover                                      current track's cover
+//!   /wallpaper/<id>                             background file (byte ranges)
+//!   /wallpaper-preview/<id>                     its preview picture
+//!   /trailer/<game id>                          the game's saved silent trailer
 
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::io::{Read, Seek, SeekFrom};
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -18,10 +22,15 @@ use tauri::{AppHandle, Emitter, Manager, UriSchemeContext, UriSchemeResponder, W
 use crate::library::{self, Library};
 use crate::media::MEDIA;
 use crate::store::Store;
+use crate::sources::trailers::{self, Trailers};
+use crate::sources::{self, Wallpaper, builtin, folders, wallpaper_engine};
 
 pub const LABEL: &str = "home";
 const RESCAN_AFTER: Duration = Duration::from_secs(60);
 const ICON_SIZE: i32 = 128;
+const PREVIEW_SIZE: i32 = 400;
+/// Largest piece of a video sent per request; the player asks for the rest.
+const CHUNK: u64 = 4 * 1024 * 1024;
 /// Apps pinned until the user chooses: matched by id, in this order.
 const DEFAULT_PINNED: [&str; 7] = [
     "Spotify",
@@ -36,6 +45,10 @@ const DEFAULT_PINNED: [&str; 7] = [
 #[derive(Default)]
 pub struct HomeState {
     pub library: Arc<Mutex<Library>>,
+    wallpapers: Mutex<Vec<Wallpaper>>,
+    trailers: Mutex<Option<Arc<Trailers>>>,
+    /// Games whose trailer is being downloaded.
+    fetching: Mutex<std::collections::HashSet<String>>,
     scanned: Mutex<Option<Instant>>,
     icons: Mutex<HashMap<String, Vec<u8>>>,
     icon_dir: Mutex<Option<PathBuf>>,
@@ -43,14 +56,41 @@ pub struct HomeState {
 
 #[derive(Serialize)]
 pub struct HomeData {
-    games: Vec<library::Game>,
+    games: Vec<sources::Game>,
     apps: Vec<library::AppEntry>,
     pinned: Vec<String>,
+    wallpaper: Option<Wallpaper>,
+    game_art: bool,
+}
+
+#[derive(Serialize)]
+pub struct Wallpapers {
+    items: Vec<Wallpaper>,
+    /// A wallpaper id, or "none".
+    current: String,
+    /// Wallpaper Engine is installed (its Workshop can be opened).
+    engine: bool,
+    /// Folders added by the user.
+    folders: Vec<String>,
+}
+
+/// The id "none" is the plain colour.
+const NO_WALLPAPER: &str = "none";
+
+fn rescan_wallpapers(app: &AppHandle) {
+    let settings = app.state::<Store>().settings.lock().unwrap().clone();
+    let walls = sources::wallpapers(&settings);
+    *app.state::<HomeState>().wallpapers.lock().unwrap() = walls;
+}
+
+fn current_wallpaper(store: &Store) -> String {
+    store.settings.lock().unwrap().wallpaper.clone().unwrap_or_else(|| builtin::DEFAULT.into())
 }
 
 pub fn create(app: &AppHandle) -> tauri::Result<()> {
     let state = app.state::<HomeState>();
     *state.icon_dir.lock().unwrap() = Some(app.path().app_data_dir()?.join("icons"));
+    *state.trailers.lock().unwrap() = Some(Arc::new(Trailers::new(trailers::dir(&app.path().app_data_dir()?))));
     WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App("home.html".into()))
         .title("Inicio")
         .decorations(false)
@@ -92,6 +132,7 @@ fn rescan(app: AppHandle, force: bool) {
     std::thread::spawn(move || {
         let lib = Library::scan();
         *app.state::<HomeState>().library.lock().unwrap() = lib;
+        rescan_wallpapers(&app);
         let _ = app.emit_to(LABEL, "library", ());
     });
 }
@@ -109,7 +150,100 @@ fn pinned(store: &Store, lib: &Library) -> Vec<String> {
 #[tauri::command]
 pub fn home_data(state: tauri::State<HomeState>, store: tauri::State<Store>) -> HomeData {
     let lib = state.library.lock().unwrap();
-    HomeData { games: lib.games.clone(), apps: lib.apps.clone(), pinned: pinned(&store, &lib) }
+    let wallpaper = state.wallpaper(&current_wallpaper(&store));
+    let game_art = store.settings.lock().unwrap().game_art;
+    HomeData { games: lib.games.clone(), apps: lib.apps.clone(), pinned: pinned(&store, &lib), wallpaper, game_art }
+}
+
+impl HomeState {
+    fn wallpaper(&self, id: &str) -> Option<Wallpaper> {
+        self.wallpapers.lock().unwrap().iter().find(|w| w.id == id).cloned()
+    }
+}
+
+/// Every background, scanned again (a Workshop subscription or a new file
+/// shows up right away).
+#[tauri::command]
+pub async fn wallpapers(app: AppHandle) -> Wallpapers {
+    let scan = app.clone();
+    let _ = tauri::async_runtime::spawn_blocking(move || rescan_wallpapers(&scan)).await;
+    let store = app.state::<Store>();
+    let folders = store.settings.lock().unwrap().wallpaper_folders.iter().map(|p| p.to_string_lossy().into_owned()).collect();
+    let items = app.state::<HomeState>().wallpapers.lock().unwrap().clone();
+    Wallpapers { items, current: current_wallpaper(&store), engine: wallpaper_engine::installed(), folders }
+}
+
+#[tauri::command]
+pub fn set_wallpaper(state: tauri::State<HomeState>, store: tauri::State<Store>, id: String) -> Result<(), String> {
+    if id != NO_WALLPAPER && state.wallpaper(&id).is_none() {
+        return Err("fondo desconocido".into());
+    }
+    store.set_wallpaper(id)
+}
+
+/// Whether the game's silent trailer is ready to play. If it was never looked
+/// for, it is downloaded in the background and "trailer" (with the game id)
+/// is sent to the page when ready.
+#[tauri::command]
+pub fn game_trailer(app: AppHandle, state: tauri::State<HomeState>, id: String) -> bool {
+    let Some(t) = state.trailers.lock().unwrap().clone() else { return false };
+    if t.cached(&id).is_some() {
+        return true;
+    }
+    let in_library = state.library.lock().unwrap().games.iter().any(|g| g.id == id);
+    if !in_library || t.known(&id) || !state.fetching.lock().unwrap().insert(id.clone()) {
+        return false;
+    }
+    std::thread::spawn(move || {
+        let ready = matches!(t.fetch(&id), Ok(Some(_)));
+        app.state::<HomeState>().fetching.lock().unwrap().remove(&id);
+        if ready {
+            let _ = app.emit_to(LABEL, "trailer", id);
+        }
+    });
+    false
+}
+
+/// Async: creating a window from a sync command blocks on Windows.
+#[tauri::command]
+pub async fn open_spotify(app: AppHandle) -> Result<(), String> {
+    crate::web_player::open(&app)
+}
+
+#[tauri::command]
+pub fn open_workshop() -> Result<(), String> {
+    wallpaper_engine::open_workshop()
+}
+
+#[tauri::command]
+pub async fn browse_folders(path: Option<String>) -> Result<folders::Listing, String> {
+    tauri::async_runtime::spawn_blocking(move || folders::browse(path.as_deref())).await.map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub fn add_wallpaper_folder(store: tauri::State<Store>, path: String) -> Result<(), String> {
+    let dir = PathBuf::from(&path);
+    if !dir.is_absolute() || !dir.is_dir() {
+        return Err("carpeta no encontrada".into());
+    }
+    let mut list = store.settings.lock().unwrap().wallpaper_folders.clone();
+    if !list.iter().any(|d| sources::key(d) == sources::key(&dir)) {
+        list.push(dir);
+        store.set_wallpaper_folders(list)?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn remove_wallpaper_folder(store: tauri::State<Store>, path: String) -> Result<(), String> {
+    let gone = sources::key(Path::new(&path));
+    let list = store.settings.lock().unwrap().wallpaper_folders.clone();
+    store.set_wallpaper_folders(list.into_iter().filter(|d| sources::key(d) != gone).collect())
+}
+
+#[tauri::command]
+pub fn set_game_art(store: tauri::State<Store>, on: bool) -> Result<(), String> {
+    store.set_game_art(on)
 }
 
 #[tauri::command]
@@ -231,9 +365,63 @@ fn icon(app: &AppHandle, id: &str) -> Option<Vec<u8>> {
     Some(png)
 }
 
+/// A file, or the byte range the video player asked for (206).
+fn file_response(path: &Path, range: Option<&str>) -> Response<Vec<u8>> {
+    let Ok(mut f) = std::fs::File::open(path) else { return not_found() };
+    let Ok(len) = f.metadata().map(|m| m.len()) else { return not_found() };
+    let mime = sources::mime(path);
+    // "bytes=start-" or "bytes=start-end"; anything else gets the whole file.
+    let wanted = range.and_then(|r| r.strip_prefix("bytes=")).and_then(|r| {
+        let (a, b) = r.split_once('-')?;
+        let start: u64 = a.trim().parse().ok()?;
+        let end: u64 = if b.trim().is_empty() { len.saturating_sub(1) } else { b.trim().parse().ok()? };
+        Some((start, end.min(len.saturating_sub(1))))
+    });
+    let Some((start, end)) = wanted else {
+        if len > CHUNK * 64 {
+            // Too big to send at once; players always ask by range anyway.
+            return file_response(path, Some("bytes=0-"));
+        }
+        let mut body = Vec::with_capacity(len as usize);
+        return match f.read_to_end(&mut body) {
+            Ok(_) => Response::builder().header("Accept-Ranges", "bytes").header("Content-Type", mime).body(body).unwrap(),
+            Err(_) => not_found(),
+        };
+    };
+    if start > end || start >= len {
+        return Response::builder()
+            .status(StatusCode::RANGE_NOT_SATISFIABLE)
+            .header("Content-Range", format!("bytes */{len}"))
+            .body(Vec::new())
+            .unwrap();
+    }
+    let end = end.min(start + CHUNK - 1);
+    let mut body = vec![0u8; (end - start + 1) as usize];
+    if f.seek(SeekFrom::Start(start)).and_then(|_| f.read_exact(&mut body)).is_err() {
+        return not_found();
+    }
+    Response::builder()
+        .status(StatusCode::PARTIAL_CONTENT)
+        .header("Content-Type", mime)
+        .header("Accept-Ranges", "bytes")
+        .header("Content-Range", format!("bytes {start}-{end}/{len}"))
+        .body(body)
+        .unwrap()
+}
+
+fn wallpaper_preview(w: &Wallpaper) -> Option<Response<Vec<u8>>> {
+    if let Some(p) = &w.preview {
+        let body = std::fs::read(p).ok()?;
+        return Some(respond(StatusCode::OK, sources::mime(p), body));
+    }
+    let png = crate::library::thumbnail_png(&w.file, PREVIEW_SIZE).ok()?;
+    Some(respond(StatusCode::OK, "image/png", png))
+}
+
 pub fn protocol(ctx: UriSchemeContext<'_, Wry>, request: Request<Vec<u8>>, responder: UriSchemeResponder) {
     let app = ctx.app_handle().clone();
     let path = request.uri().path().to_owned();
+    let range = request.headers().get("range").and_then(|v| v.to_str().ok()).map(str::to_owned);
     std::thread::spawn(move || {
         let parts: Vec<String> = path.trim_start_matches('/').split('/').map(decode).collect();
         let response = match parts.iter().map(String::as_str).collect::<Vec<_>>().as_slice() {
@@ -252,6 +440,18 @@ pub fn protocol(ctx: UriSchemeContext<'_, Wry>, request: Request<Vec<u8>>, respo
                 Some(b) => respond(StatusCode::OK, "image/jpeg", b),
                 None => not_found(),
             },
+            ["wallpaper", id] => match app.state::<HomeState>().wallpaper(id) {
+                Some(w) => file_response(&w.file, range.as_deref()),
+                None => not_found(),
+            },
+            ["trailer", id] => {
+                let t = app.state::<HomeState>().trailers.lock().unwrap().clone();
+                match t.and_then(|t| t.cached(id)) {
+                    Some(f) => file_response(&f, range.as_deref()),
+                    None => not_found(),
+                }
+            }
+            ["wallpaper-preview", id] => app.state::<HomeState>().wallpaper(id).and_then(|w| wallpaper_preview(&w)).unwrap_or_else(not_found),
             _ => not_found(),
         };
         responder.respond(response);

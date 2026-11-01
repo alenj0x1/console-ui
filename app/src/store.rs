@@ -1,5 +1,5 @@
 //! Persistent app state in the user's app-data folder:
-//! - `settings.json`: plain preferences (suggestion languages).
+//! - `settings.json`: plain preferences (suggestion languages, home screen).
 //! - `learned.bin`: words the keyboard learned from the user, encrypted with
 //!   DPAPI (current Windows user only), since it can contain private text.
 //!
@@ -23,6 +23,7 @@ const MAX_WORDS: usize = 20_000;
 const MAX_PAIRS: usize = 60_000;
 
 pub const MAX_PINNED: usize = 24;
+const MAX_FOLDERS: usize = 16;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Settings {
@@ -30,11 +31,25 @@ pub struct Settings {
     /// Apps pinned to the home screen; None until the user changes them.
     #[serde(default)]
     pub pinned: Option<Vec<String>>,
+    /// Home screen background (a wallpaper id, or "none" for the plain
+    /// colour); None = the app's default animation.
+    #[serde(default)]
+    pub wallpaper: Option<String>,
+    /// Extra folders whose videos and pictures can be backgrounds.
+    #[serde(default)]
+    pub wallpaper_folders: Vec<std::path::PathBuf>,
+    /// Show the focused game's art over the background.
+    #[serde(default = "yes")]
+    pub game_art: bool,
+}
+
+fn yes() -> bool {
+    true
 }
 
 impl Default for Settings {
     fn default() -> Self {
-        Self { languages: vec!["es".into()], pinned: None }
+        Self { languages: vec!["es".into()], pinned: None, wallpaper: None, wallpaper_folders: Vec::new(), game_art: true }
     }
 }
 
@@ -91,6 +106,22 @@ impl Store {
             return Err("demasiadas apps fijadas".into());
         }
         self.update_settings(|s| s.pinned = Some(ids))
+    }
+
+    /// `id` must already be validated against the wallpaper scan.
+    pub fn set_wallpaper(&self, id: String) -> Result<(), String> {
+        self.update_settings(|s| s.wallpaper = Some(id))
+    }
+
+    pub fn set_wallpaper_folders(&self, folders: Vec<std::path::PathBuf>) -> Result<(), String> {
+        if folders.len() > MAX_FOLDERS {
+            return Err("demasiadas carpetas".into());
+        }
+        self.update_settings(|s| s.wallpaper_folders = folders)
+    }
+
+    pub fn set_game_art(&self, on: bool) -> Result<(), String> {
+        self.update_settings(|s| s.game_art = on)
     }
 
     fn update_settings(&self, f: impl FnOnce(&mut Settings)) -> Result<(), String> {

@@ -1,0 +1,37 @@
+//! Epic Games: installed games from the launcher's manifests.
+
+use std::collections::HashMap;
+use std::path::Path;
+
+use super::{Game, GameSource};
+
+pub struct Epic;
+
+impl GameSource for Epic {
+    fn games(&self) -> Vec<Game> {
+        installed()
+    }
+}
+
+fn installed() -> Vec<Game> {
+    let dir = Path::new(r"C:\ProgramData\Epic\EpicGamesLauncher\Data\Manifests");
+    let Ok(rd) = std::fs::read_dir(dir) else { return Vec::new() };
+    rd.flatten()
+        .filter(|e| e.path().extension().is_some_and(|x| x == "item"))
+        .filter_map(|e| serde_json::from_slice::<serde_json::Value>(&std::fs::read(e.path()).ok()?).ok())
+        .filter(|m| m["AppCategories"].as_array().is_some_and(|c| c.iter().any(|x| x == "games")))
+        .filter_map(|m| {
+            let (name, app, ns, item) =
+                (m["DisplayName"].as_str()?, m["AppName"].as_str()?, m["CatalogNamespace"].as_str()?, m["CatalogItemId"].as_str()?);
+            Some(Game {
+                id: format!("epic:{app}"),
+                name: name.to_owned(),
+                source: "epic",
+                last_played: 0,
+                art: Vec::new(),
+                art_files: HashMap::new(),
+                launch: format!("com.epicgames.launcher://apps/{ns}%3A{item}%3A{app}?action=launch&silent=true"),
+            })
+        })
+        .collect()
+}

@@ -14,7 +14,9 @@ mod home;
 mod library;
 mod media;
 mod overlay;
+mod sources;
 mod store;
+mod web_player;
 
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
@@ -369,6 +371,15 @@ fn main() {
             home::volume_get,
             home::volume_step,
             home::volume_mute,
+            home::wallpapers,
+            home::set_wallpaper,
+            home::set_game_art,
+            home::open_workshop,
+            home::open_spotify,
+            home::game_trailer,
+            home::browse_folders,
+            home::add_wallpaper_folder,
+            home::remove_wallpaper_folder,
             lab_save
         ])
         .setup(move |app| {

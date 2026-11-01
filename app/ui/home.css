@@ -8,9 +8,9 @@ body { position: relative; }
 /* Button hints on the home screen are just the button's letters, no pill. */
 .glyph { min-width: 0; height: auto; padding: 0; background: none; font-family: var(--font-text); font-weight: 700; font-size: 0.9375rem; color: var(--muted); }
 
-/* ---------- background: the focused game's art on every tab ---------- */
+/* ---------- background: the user's video or picture, the focused game's art over it ---------- */
 .backdrop { position: absolute; inset: 0; }
-.hero {
+.wall, .hero, .trailer {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -19,7 +19,7 @@ body { position: relative; }
   opacity: 0;
   transition: opacity 400ms ease;
 }
-.hero.shown { opacity: 1; }
+.wall.shown, .hero.shown, .trailer.shown { opacity: 1; }
 /* Keeps text readable over any art: darker on the left, where the info sits. */
 .scrim {
   position: absolute;
@@ -67,6 +67,7 @@ body { position: relative; }
   display: flex;
   gap: 1.25rem;
   overflow: hidden;
+  scroll-padding: 0 4rem;
 }
 
 .tile {
@@ -105,6 +106,10 @@ body { position: relative; }
   overflow: hidden;
   flex: 1;
   min-height: 0;
+  /* The rows that continue below fade out instead of being cut. */
+  mask-image: linear-gradient(180deg, #000 calc(100% - 4rem), transparent);
+  /* Scrolling to the focus keeps its ring inside and out of the fade. */
+  scroll-padding: 0.5rem 4rem 4rem;
 }
 
 .empty .title { display: block; }
@@ -146,8 +151,9 @@ body { position: relative; }
   opacity: 0;
   transition: opacity 400ms ease;
 }
-body.music-stage .backdrop { background: var(--stage, var(--surface)); }
-body.music-stage .hero { opacity: 0; }
+/* The cover's two main colours, blended across the screen. */
+body.music-stage .backdrop { background: linear-gradient(120deg, var(--stage, var(--surface)) 15%, var(--stage-2, var(--stage, var(--surface))) 85%); }
+body.music-stage .hero, body.music-stage .wall, body.music-stage .trailer { opacity: 0; }
 body.music-stage .stage-cover.loaded { opacity: 1; }
 body.music-stage .scrim {
   background: linear-gradient(90deg, rgba(20, 20, 22, 0.55) 0%, rgba(20, 20, 22, 0) 60%),
@@ -187,7 +193,8 @@ body.music-stage .scrim {
 
 
 /* Tabs centred on the screen; the volume pill and the clock stay on the right. */
-.topbar { display: grid; grid-template-columns: 1fr auto 1fr; }
+/* A fixed row, as tall as the volume pill, so showing it moves nothing. */
+.topbar { display: grid; grid-template-columns: 1fr auto 1fr; grid-template-rows: 2.5rem; }
 .tabs { grid-column: 2; }
 .tabs > * { line-height: 1; }
 .topbar-end { grid-column: 3; justify-self: end; }

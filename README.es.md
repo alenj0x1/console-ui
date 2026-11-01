@@ -11,7 +11,7 @@ Usa todo Windows desde el sillón con el control: un cursor asistido, un teclado
 - **Cursor asistido**: el stick izquierdo mueve el mouse con una aceleración predecible, frena sobre botones y enlaces (leídos con UI Automation) y se queda quieto un instante al hacer clic. El stick derecho hace scroll y la cruceta envía flechas.
 - **Teclado en pantalla**: con Y se abre sobre cualquier app sin quitarle el foco. Cuadrícula QWERTY con ñ, tildes manteniendo el botón, símbolos, y un diseño de dos mitades como opción.
 - **Sugerencias**: completan la palabra y ponen la tilde (`esta` → `está`), usan la palabra anterior como contexto y predicen la siguiente. Aprenden de ti, se guardan cifradas con DPAPI y nunca en campos de contraseña. Español por defecto; el inglés se activa desde el teclado.
-- **Pantalla de Inicio**: mantén Menu para ver a pantalla completa tus juegos de Steam y Epic (con su arte oficial de fondo), tus apps fijadas con sus íconos reales y la música que suena. Al abrir un juego, el control pasa a él.
+- **Pantalla de Inicio**: mantén Menu para ver a pantalla completa tus juegos de Steam y Epic (con su arte oficial de fondo), tus apps fijadas con sus íconos reales y la música que suena. De fondo, una animación propia, un fondo de video de Wallpaper Engine o tus videos e imágenes. Spotify Web se abre dentro de la app. Al abrir un juego, el control pasa a él.
 - **Modo juego**: mantén View + Menu para dejarle el control a los juegos (dos vibraciones cortas) y otra vez para recuperar el cursor (una vibración).
 - **Laboratorios**: cada decisión de diseño se midió con el usuario antes de adoptarla (ver `labs/`).
 
