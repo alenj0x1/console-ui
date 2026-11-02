@@ -157,6 +157,16 @@ pub fn guide_switch(app: AppHandle, id: String) -> Result<(), String> {
     Ok(())
 }
 
+/// Opens Inicio; the game or window in front stays open behind it.
+#[tauri::command]
+pub fn guide_home(webview: tauri::Webview, app: AppHandle) -> Result<(), String> {
+    crate::only_from(&webview, &[LABEL])?;
+    in_guide(&app)?;
+    app.state::<crate::events::Events>().log("centro de control: abrir Inicio");
+    app.state::<crate::AppState>().send(Mode::Home);
+    Ok(())
+}
+
 /// Closes the guide and goes back to where it was opened from.
 #[tauri::command]
 pub fn guide_back(app: AppHandle) -> Result<(), String> {

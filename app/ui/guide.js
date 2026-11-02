@@ -1,5 +1,5 @@
-// The guide: open windows (switch to one, close one) and the music, over a
-// game or the desktop. A switches, B goes back, Y closes the window, X plays
+// The guide: Inicio and the open windows (switch to one, close one) and the
+// music, over a game or the desktop. A opens Inicio or switches, B goes back, Y closes the window, X plays
 // or pauses, LT / RT change the song (as on the home screen). Menu opens the
 // power menu; the controller's battery shows next to the clock.
 
@@ -54,19 +54,30 @@ function hint(key, text, cls = "") {
   return el("span", { className: `hint ${cls}` }, setGlyph(el("span", { className: "glyph" }), key), text);
 }
 
+// The first tile opens Inicio; the open windows follow (the focus starts on
+// the window in front).
+function homeTile() {
+  return el("div", { className: "window home" },
+    el("div", { className: "shot" }, svg("home", "icon big")),
+    el("div", { className: "label" }, svg("home"), el("span", { className: "title", textContent: "Inicio" })));
+}
+
 // Built once per list; moving only changes which tile is marked, so the
 // pictures never reload (and never flash).
 function renderWindows() {
   if (!state.windows.length) {
     windowsEl.replaceChildren(
+      homeTile(),
       el("div", { className: "empty" },
         el("div", { className: "box" }, svg("window-maximize")),
         el("div", {}, el("b", { textContent: "No hay ventanas abiertas" }), el("span", { textContent: "Las ventanas que abras aparecen aquí." })),
       ),
     );
+    markFocus();
     return;
   }
   windowsEl.replaceChildren(
+    homeTile(),
     ...state.windows.map((w) => {
       const id = encodeURIComponent(w.id);
       const shot = el("div", { className: "shot" }, img(`${ASSET}/window-icon/${id}`, "big"));
@@ -157,7 +168,7 @@ function renderBattery() {
 
 let hintsKey = "";
 function renderHints() {
-  const key = `${!!state.power}|${state.windows.length > 0}|${!!state.media.title}|${!!state.media.playing}|${!!Prefs.get()?.swap_ab}|${JSON.stringify(Prefs.get()?.button_map ?? {})}`;
+  const key = `${!!state.power}|${!!focused()}|${!!state.media.title}|${!!state.media.playing}|${!!Prefs.get()?.swap_ab}|${JSON.stringify(Prefs.get()?.button_map ?? {})}`;
   if (key === hintsKey) return;
   hintsKey = key;
   if (state.power) {
@@ -165,7 +176,8 @@ function renderHints() {
     return;
   }
   const parts = [];
-  if (state.windows.length) parts.push(hint("A", "Cambiar"), hint("Y", "Cerrar ventana"));
+  if (focused()) parts.push(hint("A", "Cambiar"), hint("Y", "Cerrar ventana"));
+  else parts.push(hint("A", "Abrir"));
   if (state.media.title) parts.push(hint("X", state.media.playing ? "Pausar" : "Reproducir"), hint("LT RT", "Canción"));
   parts.push(hint("Menu", "Energía"), hint("B", "Volver", "back"));
   hintsEl.replaceChildren(...parts);
@@ -177,13 +189,14 @@ function render() {
   renderHints();
 }
 
+// state.focus: 0 is Inicio, then the windows.
 function move(d) {
-  if (!state.windows.length) return;
-  state.focus = Math.max(0, Math.min(state.windows.length - 1, state.focus + d));
+  state.focus = Math.max(0, Math.min(state.windows.length, state.focus + d));
   markFocus();
+  renderHints();
 }
 
-const focused = () => state.windows[state.focus];
+const focused = () => state.windows[state.focus - 1];
 
 function powerRun(o) {
   state.power = null;
@@ -237,6 +250,7 @@ function onPress(button) {
   switch (button) {
     case "a":
       if (focused()) invoke("guide_switch", { id: focused().id }).catch(console.error);
+      else invoke("guide_home").catch(console.error);
       break;
     case "b":
       invoke("guide_back").catch(console.error);
@@ -244,9 +258,9 @@ function onPress(button) {
     case "y":
       if (!focused()) break;
       invoke("guide_close_window", { id: focused().id }).catch(console.error);
-      state.windows.splice(state.focus, 1);
+      state.windows.splice(state.focus - 1, 1);
       if (state.windows.length) windowsEl.children[state.focus].remove();
-      state.focus = Math.min(state.focus, Math.max(0, state.windows.length - 1));
+      state.focus = Math.min(state.focus, state.windows.length);
       if (state.windows.length) markFocus();
       else renderWindows();
       renderHints();
@@ -289,7 +303,7 @@ listen("windows", async () => {
   const [windows, media] = await Promise.all([invoke("guide_windows"), invoke("media_now")]);
   state.windows = windows;
   state.media = media;
-  state.focus = 0;
+  state.focus = windows.length ? 1 : 0;
   render();
   await imagesReady(400);
   invoke("guide_ready").catch(console.error);

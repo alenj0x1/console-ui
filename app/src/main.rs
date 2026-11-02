@@ -672,6 +672,7 @@ fn main() {
             guide::guide_windows,
             guide::guide_ready,
             guide::guide_switch,
+            guide::guide_home,
             guide::guide_back,
             guide::guide_close_window,
             guide::guide_power,

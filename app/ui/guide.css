@@ -45,6 +45,10 @@ main { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-co
 .window .label { display: flex; align-items: center; gap: 0.75rem; height: 3.5rem; padding: 0 1rem; }
 .window .label img { width: 1.5rem; height: 1.5rem; flex: none; object-fit: contain; }
 .window .label .title { min-width: 0; font-weight: 600; font-size: 1.0625rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Inicio: its symbol where the windows show their picture. */
+.window.home .shot { color: var(--muted); }
+.window.home .shot .icon.big { width: 3.5rem; height: 3.5rem; }
+.window.home .label .icon { color: var(--muted); }
 .window .label .kind { margin-left: auto; flex: none; color: var(--muted); }
 
 /* Empty: same look as the other empty states. */
