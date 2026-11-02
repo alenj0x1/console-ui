@@ -503,7 +503,7 @@ const Previews = (() => {
   SCENES.swap_ab = {
     values: [false, true],
     captions: {
-      false: "Ahora A acepta y B vuelve atrás.",
+      false: "Ahora {A} acepta y {B} vuelve atrás.",
       true: "",
     },
     sim(value) { return { swap: value, ok: 0.6, back: 1.7, done: 1.7 + PRESS + HOLD, key: 0.75 }; },

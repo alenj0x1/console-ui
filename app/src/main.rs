@@ -526,6 +526,7 @@ fn main() {
             home::set_media,
             prefs::preferences,
             prefs::set_preference,
+            prefs::reset_preferences,
             guide::guide_windows,
             guide::guide_ready,
             guide::guide_switch,

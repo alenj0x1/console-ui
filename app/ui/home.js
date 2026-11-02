@@ -662,9 +662,9 @@ const CATEGORIES = [
     name: "Botones",
     icon: "gamepad",
     rows: () => [
-      { kind: "toggle", name: "Aceptar con B", pref: "swap_ab", desc: "B acepta y A vuelve atrás, como en las consolas de Nintendo. Para volver a lo normal, entra aquí y presiona B." },
+      { kind: "toggle", name: "Aceptar con {B}", pref: "swap_ab", desc: "{B} acepta y {A} vuelve atrás, como en las consolas de Nintendo. Para volver a lo normal, entra aquí y presiona {B}." },
       { kind: "toggle", name: "Puntero con la palanca derecha", pref: "swap_sticks", desc: "La palanca derecha mueve el puntero y la izquierda sube o baja la página." },
-      { kind: "choice", name: "Tiempo para mantener presionado", pref: "hold_time", options: [["short", "Corto"], ["normal", "Normal"], ["long", "Largo"]], desc: "Cuánto hay que sostener Menú (tres rayas) para abrir Inicio, o Vista (dos cuadritos) y Menú juntos para la guía. Un toque tiene que ser más corto que esto." },
+      { kind: "choice", name: "Tiempo para mantener presionado", pref: "hold_time", options: [["short", "Corto"], ["normal", "Normal"], ["long", "Largo"]], desc: "Cuánto hay que sostener {Menu} para abrir Inicio, o {View} y {Menu} juntos para la guía. Un toque tiene que ser más corto que esto." },
     ],
   },
   {
@@ -686,14 +686,14 @@ const CATEGORIES = [
       { kind: "toggle", name: "Sugerir palabras", pref: "suggestions", desc: "Muestra palabras sobre el teclado para escribir menos y con tildes." },
       { kind: "toggle", name: "Recordar mis palabras", pref: "learn", desc: "Sugiere primero las palabras que más usas. Nunca guarda lo que escribes en contraseñas." },
       { kind: "link", name: "Idiomas del teclado", value: (state.prefs?.languages ?? []).map(languageName).join(", "), run: () => openSub("languages"), desc: "En qué idiomas sugiere palabras." },
-      { kind: "action", name: "Borrar palabras recordadas", danger: true, run: forgetLearned, desc: "Olvida las palabras que el teclado aprendió de ti. Pide confirmar antes." },
+      { kind: "action", key: "forget", name: "Borrar palabras recordadas", danger: true, run: () => twice("forget", () => invoke("forget_learned")), desc: "Olvida las palabras que el teclado aprendió de ti. Pide confirmar antes." },
     ],
   },
   {
     name: "Juegos",
     icon: "player-play",
     rows: () => [
-      { kind: "toggle", name: "Dejar el control al juego que abras", pref: "auto_game", desc: "Cuando abres un juego, el control es solo del juego. Al cerrarlo, vuelve el puntero. Para usar el puntero sin cerrarlo, mantén Vista y Menú y elige otra ventana." },
+      { kind: "toggle", name: "Dejar el control al juego que abras", pref: "auto_game", desc: "Cuando abres un juego, el control es solo del juego. Al cerrarlo, vuelve el puntero. Para usar el puntero sin cerrarlo, mantén {View} y {Menu} y elige otra ventana." },
     ],
   },
   {
@@ -703,16 +703,20 @@ const CATEGORIES = [
       { kind: "toggle", name: "Iniciar con Windows", pref: "start_with_windows", desc: "Se abre sola y en silencio al encender la computadora." },
       { kind: "toggle", name: "Vibrar al cambiar de modo", pref: "rumble", desc: "El control vibra cuando pasa a un juego y cuando vuelve al puntero." },
       { kind: "choice", name: "Forma de este menú", pref: "settings_view", options: [["list", "Lista"], ["tiles", "Cuadros"]], desc: "Todo en una lista, o una categoría a la vez en cuadros grandes." },
+      { kind: "action", key: "reset", hint: "Restablecer", name: "Dejar todo como venía", run: () => twice("reset", resetAll), desc: "Vuelve todas las opciones de Ajustes a como venían. Tus apps fijadas y tus palabras se quedan. Pide confirmar antes." },
     ],
   },
 ];
 
 async function setPref(name, value) {
+  const before = state.prefs?.[name];
   try {
     state.prefs = await invoke("set_preference", { name, value });
   } catch (e) {
     console.error(e);
+    return render();
   }
+  if (CONFIRMED.includes(name) && value === true && !confirming) askToKeep(name, before);
   render();
 }
 
@@ -729,8 +733,11 @@ function rowControl(r) {
       return el("span", { className: "swatches" }, ...r.options.map((id) => el("span", { className: `swatch${id === p[r.pref] ? " sel" : ""}`, style: `background:${Prefs.ACCENTS[id]}`, title: ACCENT_NAMES[id] })));
     case "link":
       return el("span", { className: "value" }, r.value, svg("chevron"));
-    case "action":
-      return el("span", { className: "value", textContent: state.settings.forget === "ask" ? "Presiona A otra vez" : state.settings.forget === "done" ? "Listo" : "" });
+    case "action": {
+      const f = state.settings.forget;
+      const again = withButtons(`Presiona {${Prefs.get()?.swap_ab ? "B" : "A"}} otra vez`);
+      return el("span", { className: "value" }, ...(f === `${r.key}:ask` ? again : f === `${r.key}:done` ? [document.createTextNode("Listo")] : []));
+    }
   }
 }
 
@@ -762,17 +769,17 @@ let shown = { id: "", value: undefined };
 
 function showPreview(row) {
   const p = state.prefs ?? {};
-  about.querySelector(".desc").textContent = row?.desc ?? "";
+  about.querySelector(".desc").replaceChildren(...withButtons(row?.desc ?? ""));
   const id = row?.pref;
   const has = !!id && Previews.has(id);
   stage.hidden = !has;
   if (!has) {
-    about.querySelector(".now").textContent = "";
+    about.querySelector(".now").replaceChildren();
     shown = { id: "", value: undefined };
     return;
   }
   const value = p[id];
-  about.querySelector(".now").textContent = Previews.caption(id, value);
+  about.querySelector(".now").replaceChildren(...withButtons(Previews.caption(id, value)));
   if (shown.id === id && shown.value === value) return;
   Previews.show(id, value, shown.id === id ? shown.value : undefined);
   shown = { id, value };
@@ -789,13 +796,13 @@ function renderSettings() {
   const panel = el("section", { className: "panel" },
     st.sub ? el("div", { className: "panel-title" }, "Idiomas") : null,
     ...rows.map((r, i) =>
-      el("div", { className: `setting${r.danger ? " danger" : ""}${st.zone === "rows" && i === st.row ? " on" : ""}` }, el("span", { className: "name", textContent: r.name }), rowControl(r)),
+      el("div", { className: `setting${r.danger ? " danger" : ""}${st.zone === "rows" && i === st.row ? " on" : ""}` }, el("span", { className: "name" }, ...withButtons(r.name)), rowControl(r)),
     ),
   );
   const row = rows[st.row];
   const valued = row && (row.kind === "choice" || row.kind === "swatch");
   const hints = el("div", { className: "settings-hints" },
-    st.zone === "cats" ? hintEl("A", "Abrir") : hintEl("A", row?.kind === "link" ? "Abrir" : row?.kind === "action" ? "Borrar" : "Cambiar"),
+    st.zone === "cats" ? hintEl("A", "Abrir") : hintEl("A", row?.kind === "link" ? "Abrir" : row?.kind === "action" ? (row.hint ?? "Borrar") : "Cambiar"),
     st.zone === "rows" && valued ? hintEl("← →", "Elegir") : null,
     el("span", { className: "spacer" }),
     hintEl("B", st.zone === "rows" ? "Atrás" : "Cerrar"),
@@ -872,21 +879,71 @@ function settingsSelect() {
   } else if (r.kind === "link" || r.kind === "action") r.run();
 }
 
-// Asks once more before forgetting the learned words.
-async function forgetLearned() {
+// Actions that can't be undone ask for a second A first.
+async function twice(key, run) {
   const st = state.settings;
-  if (st.forget !== "ask") {
-    st.forget = "ask";
+  if (st.forget !== `${key}:ask`) {
+    st.forget = `${key}:ask`;
     return render();
   }
   try {
-    await invoke("forget_learned");
-    st.forget = "done";
+    await run();
+    st.forget = `${key}:done`;
   } catch (e) {
     console.error(e);
     st.forget = "";
   }
   render();
+}
+
+async function resetAll() {
+  state.prefs = await invoke("reset_preferences");
+  shown = { id: "", value: undefined };
+}
+
+// ---------- confirming swapped buttons ----------
+
+// Swapping the buttons or sticks could leave someone unable to drive the
+// screen: the change asks to be kept and goes back by itself if nobody does.
+const CONFIRM_SECONDS = 10;
+const CONFIRMED = ["swap_ab", "swap_sticks"];
+let confirming = null; // { name, before, left, timer }
+const confirmEl = el("div", { className: "confirm", hidden: true });
+document.body.append(confirmEl);
+
+function askToKeep(name, before) {
+  clearInterval(confirming?.timer);
+  confirming = { name, before, left: CONFIRM_SECONDS };
+  confirming.timer = setInterval(() => {
+    confirming.left -= 1;
+    if (confirming.left <= 0) return keepChange(false);
+    renderConfirm();
+  }, 1000);
+  renderConfirm();
+}
+
+function renderConfirm() {
+  confirmEl.hidden = !confirming;
+  if (!confirming) return;
+  confirmEl.replaceChildren(
+    el("div", { className: "confirm-card" },
+      el("h2", { textContent: "¿Dejas los botones así?" }),
+      el("p", { textContent: `Si no eliges nada, vuelven a como estaban en ${confirming.left} s.` }),
+      el("div", { className: "confirm-actions" },
+        el("span", { className: "action" }, el("span", { textContent: "Dejar así" }), glyph("A")),
+        el("span", { className: "hint" }, glyph("B"), "Volver a como estaba"),
+      ),
+    ),
+  );
+}
+
+async function keepChange(keep) {
+  const c = confirming;
+  if (!c) return;
+  clearInterval(c.timer);
+  confirming = null;
+  renderConfirm();
+  if (!keep) await setPref(c.name, c.before);
 }
 
 function settingsBack() {
@@ -1200,6 +1257,12 @@ async function changeVolume(request) {
 }
 
 function onPress(button) {
+  // While a button swap waits to be kept, only its two answers count.
+  if (confirming) {
+    if (button === "a") keepChange(true);
+    else if (button === "b") keepChange(false);
+    return;
+  }
   switch (button) {
     case "a":
       if (state.tab === "settings" && !state.sheet) settingsSelect();
@@ -1229,8 +1292,9 @@ function onPress(button) {
 
 listen("pad", ({ payload }) => {
   if (!active) return;
-  if (payload.kind === "nav" && payload.source !== "right") onNav(payload.dir);
-  else if (payload.kind === "press") onPress(payload.button);
+  if (payload.kind === "nav" && payload.source !== "right") {
+    if (!confirming) onNav(payload.dir);
+  } else if (payload.kind === "press") onPress(payload.button);
 });
 
 // ---------- data ----------
@@ -1285,4 +1349,6 @@ Prefs.watch((p) => {
   state.prefs = p;
   state.gameArt = p.game_art;
   render();
+  // Its hints show the buttons as they are now.
+  if (confirming) renderConfirm();
 });

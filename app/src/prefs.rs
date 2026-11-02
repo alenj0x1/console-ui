@@ -194,6 +194,32 @@ fn send_tuning(app: &AppHandle) {
     app.state::<crate::AppState>().set_tuning(t);
 }
 
+/// Puts every option of the settings screen back as it came. Pinned apps,
+/// the media tab's picks, background folders and learned words stay.
+#[tauri::command]
+pub fn reset_preferences(app: AppHandle, webview: tauri::Webview) -> Result<Preferences, String> {
+    if webview.label() != crate::home::LABEL {
+        return Err("no permitido".into());
+    }
+    let store = app.state::<Store>();
+    store.update(|s| {
+        let fresh = Settings { pinned: s.pinned.take(), media: s.media.take(), wallpaper_folders: std::mem::take(&mut s.wallpaper_folders), ..Settings::default() };
+        *s = fresh;
+    })?;
+    set_start_with_windows(false)?;
+    let settings = store.settings.lock().unwrap().clone();
+    let state = app.state::<crate::AppState>();
+    state.set_rumble(settings.rumble);
+    state.set_tuning(tuning(&settings));
+    let _ = app.emit_to(crate::overlay::LABEL, "layout", settings.keyboard_layout.clone());
+    let _ = app.emit_to(crate::overlay::LABEL, "suggest", settings.suggestions);
+    // The home screen reloads its background.
+    let _ = app.emit_to(crate::home::LABEL, "library", ());
+    let prefs = Preferences::from(&settings);
+    let _ = app.emit("preferences", prefs.clone());
+    Ok(prefs)
+}
+
 const RUN_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
 const RUN_VALUE: &str = "Console UI";
 

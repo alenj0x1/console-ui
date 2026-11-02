@@ -33,15 +33,32 @@
 
 html, body { margin: 0; color: var(--text); font-family: var(--font-text); }
 
-/* Controller button hint: just the button's letters in the secondary grey,
-   no pill (white on an accent background). */
+/* Controller button hint: the buttons drawn as on the controller, in the
+   secondary grey (white on an accent background). */
 .glyph {
-  display: inline-grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
   font-family: var(--font-text);
   font-weight: 700;
   font-size: 13px;
   line-height: 1;
   color: var(--muted);
 }
-.glyph .glyph-icon { display: block; width: 1.15em; height: 1.15em; }
+/* Each button drawn with a thin outline in the hint's colour, as on the controller. */
+.btn { display: inline-grid; place-items: center; height: 1.7em; min-width: 1.7em; box-shadow: inset 0 0 0 0.12em currentColor; font-size: 0.85em; text-box: trim-both cap alphabetic; }
+/* Capitals look centred a touch lower than their box (measured on screen). */
+.btn:not(:has(.glyph-icon)) { padding-top: 0.1em; }
+/* Two characters in a round button (L3, R3). */
+.btn-face.wide { font-size: 0.7em; height: 2.06em; min-width: 2.06em; letter-spacing: -0.02em; }
+.btn-face { border-radius: 50%; }
+.btn-bumper { padding: 0 0.45em; border-radius: 0.45em; }
+.btn-trigger { padding: 0 0.45em; border-radius: 0.75em 0.75em 0.3em 0.3em; }
+.btn-plain { box-shadow: none; min-width: 0; }
+.btn .glyph-icon { display: block; width: 1.05em; height: 1.05em; }
+/* A button inside a sentence. */
+/* A button inside a sentence: its letter sits on the text's baseline; a
+   symbol is centred on the capitals around it. */
+.glyph.inline { font-size: 1em; color: inherit; vertical-align: baseline; margin: 0 0.1em; }
+.glyph.inline .btn { font-size: 0.8em; }
+.glyph.inline:has(.glyph-icon) { vertical-align: -0.16em; }

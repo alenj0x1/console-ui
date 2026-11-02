@@ -30,19 +30,33 @@ const ICONS = {
   gamepad: '<path d="M2 6m0 2a2 2 0 0 1 2 -2h16a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-16a2 2 0 0 1 -2 -2z"/><path d="M6 12h4m-2 -2v4"/><path d="M15 11l0 .01"/><path d="M18 13l0 .01"/>',
 };
 
-// A controller button hint: letters as text, View and Menu as their symbols
-// (their names mean nothing to most people). With A and B swapped in the
-// settings, each shows the other's letter.
-function setGlyph(span, button) {
-  if (typeof Prefs !== "undefined" && Prefs.get()?.swap_ab) button = { A: "B", B: "A" }[button] ?? button;
-  const symbol = { View: "btn-view", Menu: "btn-menu" }[button];
-  if (symbol) {
-    span.innerHTML = icon(symbol, "glyph-icon");
-    span.setAttribute("aria-label", button);
-  } else {
-    span.textContent = button;
-  }
+// A controller button hint, drawn as the button itself: A, B, X, Y, View and
+// Menu round (View and Menu with their printed symbols), LB / RB as bumpers,
+// LT / RT as triggers. "LT RT" draws both. With A and B swapped in the
+// settings, a hint shows the button that does it now; `literal` keeps the
+// named button (text that talks about the buttons themselves).
+function setGlyph(span, button, literal = false) {
+  const swap = !literal && typeof Prefs !== "undefined" && Prefs.get()?.swap_ab;
+  span.replaceChildren(...button.split(" ").map((b) => buttonShape(swap ? ({ A: "B", B: "A" }[b] ?? b) : b)));
+  span.setAttribute("aria-label", button);
   return span;
+}
+
+function buttonShape(b) {
+  const s = document.createElement("span");
+  const symbol = { View: "btn-view", Menu: "btn-menu" }[b];
+  const kind = symbol || /^([ABXY]|[LR]3)$/.test(b) ? "face" : /^[LR]B$/.test(b) ? "bumper" : /^[LR]T$/.test(b) ? "trigger" : "plain";
+  s.className = `btn btn-${kind}${kind === "face" && !symbol && b.length > 1 ? " wide" : ""}`;
+  if (symbol) s.innerHTML = icon(symbol, "glyph-icon");
+  else s.textContent = b;
+  return s;
+}
+
+// Text that names buttons: "{B}" or "{View}" inside it becomes the button.
+function withButtons(text) {
+  return text.split(/\{([A-Za-z]+)\}/).map((part, i) =>
+    i % 2 ? setGlyph(Object.assign(document.createElement("span"), { className: "glyph inline" }), part, true) : document.createTextNode(part),
+  );
 }
 
 function icon(name, cls = "icon") {
