@@ -70,6 +70,25 @@ pub struct Settings {
     /// The settings screen: "list" or "tiles".
     #[serde(default = "list")]
     pub settings_view: String,
+    /// Cursor and controls (see prefs::tuning): "slow" / "normal" / "fast"…
+    #[serde(default = "normal")]
+    pub cursor_speed: String,
+    #[serde(default = "normal")]
+    pub deadzone: String,
+    /// Slowdown over clickable elements: "off" / "soft" / "normal" / "strong".
+    #[serde(default = "normal")]
+    pub slowdown: String,
+    #[serde(default = "normal")]
+    pub scroll_speed: String,
+    #[serde(default)]
+    pub invert_scroll: bool,
+    #[serde(default)]
+    pub swap_sticks: bool,
+    #[serde(default)]
+    pub swap_ab: bool,
+    /// "short" / "normal" / "long".
+    #[serde(default = "normal")]
+    pub hold_time: String,
 }
 
 fn yes() -> bool {
@@ -86,6 +105,10 @@ fn blue() -> String {
 
 fn grid() -> String {
     "grid".into()
+}
+
+fn normal() -> String {
+    "normal".into()
 }
 
 fn list() -> String {

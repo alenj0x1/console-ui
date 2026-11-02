@@ -42,6 +42,68 @@ pub enum Event {
     Click,
 }
 
+/// The user's adjustments over the cursor profile and the controls, which
+/// can change while the engine runs.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Tuning {
+    /// Multiplies the profile's top speed.
+    pub speed: f32,
+    /// Stick deflection ignored as resting.
+    pub deadzone: f32,
+    /// Speed over a clickable element (1 = no slowdown).
+    pub hover_factor: f32,
+    /// Multiplies the scroll speed.
+    pub scroll: f32,
+    pub invert_scroll: bool,
+    /// The right stick moves the cursor and the left one scrolls.
+    pub swap_sticks: bool,
+    /// A and B trade places everywhere (confirm on B).
+    pub swap_ab: bool,
+    /// How long View + Menu and Menu are held; taps must be shorter.
+    pub hold: Duration,
+}
+
+impl Default for Tuning {
+    fn default() -> Self {
+        Self {
+            speed: 1.0,
+            deadzone: 0.12,
+            hover_factor: 0.45,
+            scroll: 1.0,
+            invert_scroll: false,
+            swap_sticks: false,
+            swap_ab: false,
+            hold: Duration::from_millis(600),
+        }
+    }
+}
+
+impl Tuning {
+    /// The pad as the rest of the engine sees it.
+    fn apply(&self, mut pad: PadState) -> PadState {
+        if self.swap_sticks {
+            std::mem::swap(&mut pad.lx, &mut pad.rx);
+            std::mem::swap(&mut pad.ly, &mut pad.ry);
+        }
+        if self.swap_ab {
+            let (a, b) = (pad.buttons & btn::A, pad.buttons & btn::B);
+            pad.buttons &= !(btn::A | btn::B);
+            pad.buttons |= if a != 0 { btn::B } else { 0 } | if b != 0 { btn::A } else { 0 };
+        }
+        pad
+    }
+
+    fn profile(&self, base: &CursorProfile) -> CursorProfile {
+        let mut p = base.clone();
+        p.max_speed *= self.speed;
+        p.deadzone = self.deadzone;
+        if let Some(a) = &mut p.assist {
+            a.hover_factor = self.hover_factor;
+        }
+        p
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct EngineConfig {
     pub profile: CursorProfile,
@@ -145,6 +207,9 @@ pub struct Engine {
     rescue: bool,
     /// Mode the guide was opened from: closing it goes back there.
     guide_from: Mode,
+    /// The profile before the user's tuning, and the tuning.
+    base: CursorProfile,
+    tuning: Tuning,
     rumble_on: bool,
     /// After input was blocked, Windows may have dropped a button release
     /// (the button stays "pressed" system-wide); until then, release any
@@ -158,6 +223,8 @@ impl Engine {
         Self {
             mode: cfg.start_mode,
             curve: CursorCurve::new(cfg.profile.clone()),
+            base: cfg.profile.clone(),
+            tuning: Tuning::default(),
             cfg,
             pad: XInput::new(),
             inj: Injector::new(),
@@ -237,7 +304,19 @@ impl Engine {
     }
 
     pub fn set_profile(&mut self, p: CursorProfile) {
+        self.base = p.clone();
         self.curve = CursorCurve::new(p);
+    }
+
+    /// Applies the user's adjustments (cursor, scroll, buttons, hold time).
+    pub fn set_tuning(&mut self, t: Tuning) {
+        self.curve = CursorCurve::new(t.profile(&self.base));
+        self.cfg.toggle_hold = t.hold;
+        // Menu alone opens the home screen a little sooner than the chord,
+        // and anything shorter is a tap.
+        self.cfg.home_hold = t.hold.saturating_sub(Duration::from_millis(100)).max(Duration::from_millis(300));
+        self.cfg.tap_max = self.cfg.home_hold;
+        self.tuning = t;
     }
 
     pub fn idle_for(&self) -> Duration {
@@ -284,7 +363,7 @@ impl Engine {
         self.last_tick = now;
         self.run_rumble(now);
 
-        let Some(pad) = self.pad.poll() else {
+        let Some(pad) = self.pad.poll().map(|p| self.tuning.apply(p)) else {
             if std::mem::take(&mut self.connected) {
                 self.release_all();
                 self.prev = PadState::default();
@@ -425,6 +504,8 @@ impl Engine {
         }
 
         let (sx, sy) = scroll_rate(pad.rx, pad.ry);
+        let flip = if self.tuning.invert_scroll { -1.0 } else { 1.0 };
+        let (sx, sy) = (sx * self.tuning.scroll, sy * self.tuning.scroll * flip);
         if sx != 0.0 || sy != 0.0 {
             self.inj.scroll(sx * dt, sy * dt);
         }
@@ -536,5 +617,29 @@ impl Drop for Engine {
     fn drop(&mut self) {
         self.release_all();
         self.pad.rumble(0.0, 0.0);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tuning_swaps_buttons_and_sticks() {
+        let t = Tuning { swap_ab: true, swap_sticks: true, ..Tuning::default() };
+        let pad = PadState { buttons: btn::A | btn::X, lx: 0.5, ry: -1.0, ..PadState::default() };
+        let out = t.apply(pad);
+        assert_eq!(out.buttons, btn::B | btn::X);
+        assert_eq!((out.lx, out.ly, out.rx, out.ry), (0.0, -1.0, 0.5, 0.0));
+        assert_eq!(Tuning::default().apply(pad), pad);
+    }
+
+    #[test]
+    fn tuning_shapes_the_profile() {
+        let base = crate::curve::profile("asistido").unwrap();
+        let p = Tuning { speed: 1.5, deadzone: 0.2, hover_factor: 1.0, ..Tuning::default() }.profile(&base);
+        assert_eq!(p.max_speed, base.max_speed * 1.5);
+        assert_eq!(p.deadzone, 0.2);
+        assert_eq!(p.assist.unwrap().hover_factor, 1.0);
     }
 }

@@ -117,7 +117,7 @@ function renderMusic() {
 
 let hintsKey = "";
 function renderHints() {
-  const key = `${state.windows.length > 0}|${!!state.media.title}|${!!state.media.playing}`;
+  const key = `${state.windows.length > 0}|${!!state.media.title}|${!!state.media.playing}|${!!Prefs.get()?.swap_ab}`;
   if (key === hintsKey) return;
   hintsKey = key;
   const parts = [];

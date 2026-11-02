@@ -50,6 +50,7 @@ const CLICK_SETTLE: Duration = Duration::from_millis(150);
 enum EngineCmd {
     SetMode(Mode),
     SetRumble(bool),
+    SetTuning(padcore::Tuning),
     Stop,
 }
 
@@ -71,6 +72,12 @@ impl AppState {
     fn send(&self, m: Mode) {
         if let Ok(tx) = self.cmd.lock() {
             let _ = tx.send(EngineCmd::SetMode(m));
+        }
+    }
+
+    fn set_tuning(&self, t: padcore::Tuning) {
+        if let Ok(tx) = self.cmd.lock() {
+            let _ = tx.send(EngineCmd::SetTuning(t));
         }
     }
 
@@ -200,7 +207,14 @@ fn engine_loop(app: AppHandle, rx: Receiver<EngineCmd>, lab: bool, open_home: bo
     let hover_state = Hover::new();
     let probe = hover::spawn_probe(hover_state.clone(), stop.clone());
     let mut engine = Engine::new(cfg).with_hover(hover_state);
-    engine.set_rumble(app.state::<Store>().settings.lock().unwrap().rumble);
+    {
+        let settings = app.state::<Store>().settings.lock().unwrap().clone();
+        engine.set_rumble(settings.rumble);
+        // The lab measures the plain profile.
+        if !lab {
+            engine.set_tuning(prefs::tuning(&settings));
+        }
+    }
     let mut events = Vec::new();
     // Admin window in front: its handle (as a number), shown in the notice.
     let mut blocked_by: Option<isize> = None;
@@ -220,6 +234,7 @@ fn engine_loop(app: AppHandle, rx: Receiver<EngineCmd>, lab: bool, open_home: bo
                     apply_mode(&app, m);
                 }
                 EngineCmd::SetRumble(on) => engine.set_rumble(on),
+                EngineCmd::SetTuning(t) => engine.set_tuning(t),
                 EngineCmd::Stop => {
                     stop.store(true, Ordering::Relaxed);
                     let _ = probe.join();

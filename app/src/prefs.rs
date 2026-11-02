@@ -34,6 +34,14 @@ pub struct Preferences {
     pub rumble: bool,
     pub start_with_windows: bool,
     pub settings_view: String,
+    pub cursor_speed: String,
+    pub deadzone: String,
+    pub slowdown: String,
+    pub scroll_speed: String,
+    pub invert_scroll: bool,
+    pub swap_sticks: bool,
+    pub swap_ab: bool,
+    pub hold_time: String,
 }
 
 impl Preferences {
@@ -52,6 +60,14 @@ impl Preferences {
             rumble: s.rumble,
             start_with_windows: starts_with_windows(),
             settings_view: s.settings_view.clone(),
+            cursor_speed: s.cursor_speed.clone(),
+            deadzone: s.deadzone.clone(),
+            slowdown: s.slowdown.clone(),
+            scroll_speed: s.scroll_speed.clone(),
+            invert_scroll: s.invert_scroll,
+            swap_sticks: s.swap_sticks,
+            swap_ab: s.swap_ab,
+            hold_time: s.hold_time.clone(),
         }
     }
 }
@@ -116,11 +132,66 @@ pub fn set_preference(app: AppHandle, webview: tauri::Webview, name: String, val
             let v = pick(&["list", "tiles"])?;
             store.update(|s| s.settings_view = v)?
         }
+        "cursor_speed" | "scroll_speed" => {
+            let v = pick(&["slow", "normal", "fast"])?;
+            store.update(|s| *if name == "cursor_speed" { &mut s.cursor_speed } else { &mut s.scroll_speed } = v)?;
+            send_tuning(&app);
+        }
+        "deadzone" => {
+            let v = pick(&["small", "normal", "large"])?;
+            store.update(|s| s.deadzone = v)?;
+            send_tuning(&app);
+        }
+        "slowdown" => {
+            let v = pick(&["off", "soft", "normal", "strong"])?;
+            store.update(|s| s.slowdown = v)?;
+            send_tuning(&app);
+        }
+        "hold_time" => {
+            let v = pick(&["short", "normal", "long"])?;
+            store.update(|s| s.hold_time = v)?;
+            send_tuning(&app);
+        }
+        "invert_scroll" | "swap_sticks" | "swap_ab" => {
+            let v = flag()?;
+            store.update(|s| {
+                *match name.as_str() {
+                    "invert_scroll" => &mut s.invert_scroll,
+                    "swap_sticks" => &mut s.swap_sticks,
+                    _ => &mut s.swap_ab,
+                } = v
+            })?;
+            send_tuning(&app);
+        }
         _ => return Err(format!("ajuste desconocido: {name}")),
     }
     let prefs = Preferences::from(&store.settings.lock().unwrap());
     let _ = app.emit("preferences", prefs.clone());
     Ok(prefs)
+}
+
+/// The engine's adjustments from the settings.
+pub fn tuning(s: &Settings) -> padcore::Tuning {
+    let pick = |v: &str, slow: f32, normal: f32, fast: f32| match v {
+        "slow" | "small" | "short" | "soft" => slow,
+        "fast" | "large" | "long" | "strong" => fast,
+        _ => normal,
+    };
+    padcore::Tuning {
+        speed: pick(&s.cursor_speed, 0.7, 1.0, 1.4),
+        deadzone: pick(&s.deadzone, 0.08, 0.12, 0.18),
+        hover_factor: if s.slowdown == "off" { 1.0 } else { pick(&s.slowdown, 0.65, 0.45, 0.25) },
+        scroll: pick(&s.scroll_speed, 0.5, 1.0, 1.6),
+        invert_scroll: s.invert_scroll,
+        swap_sticks: s.swap_sticks,
+        swap_ab: s.swap_ab,
+        hold: std::time::Duration::from_millis(pick(&s.hold_time, 400.0, 600.0, 900.0) as u64),
+    }
+}
+
+fn send_tuning(app: &AppHandle) {
+    let t = tuning(&app.state::<Store>().settings.lock().unwrap());
+    app.state::<crate::AppState>().set_tuning(t);
 }
 
 const RUN_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";

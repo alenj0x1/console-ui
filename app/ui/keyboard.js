@@ -608,6 +608,7 @@ Prefs.watch((p) => {
     state.languages = p.languages;
     applyLanguages();
   }
+  refresh(); // button hints follow swapped A and B
 });
 
 listen("suggest", ({ payload }) => {

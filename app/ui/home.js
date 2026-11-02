@@ -131,7 +131,7 @@ function svg(name, cls = "icon") {
 }
 
 function glyph(text) {
-  return el("span", { className: "glyph", textContent: text });
+  return setGlyph(el("span", { className: "glyph" }), text);
 }
 
 // ---------- background ----------
@@ -645,41 +645,64 @@ function folderItems() {
 const LANGUAGE_NAMES = { es: "Español", en: "English", pt: "Português", fr: "Français", de: "Deutsch", it: "Italiano" };
 const languageName = (code) => LANGUAGE_NAMES[code] ?? code;
 const ACCENT_NAMES = { blue: "Azul", violet: "Violeta", green: "Verde", amber: "Ámbar", pink: "Rosa", ivory: "Marfil" };
+// Names in everyday words, each with a line that says what it changes.
 const CATEGORIES = [
   {
     name: "Apariencia",
     icon: "palette",
     rows: () => [
-      { kind: "swatch", name: "Color de acento", pref: "accent", options: Object.keys(Prefs.ACCENTS) },
-      { kind: "choice", name: "Tamaño del texto", pref: "text_size", options: [[100, "100 %"], [110, "110 %"], [120, "120 %"]] },
-      { kind: "toggle", name: "Foco más grueso", pref: "thick_focus" },
-      { kind: "link", name: "Fondo", value: state.wallpaper?.title ?? "Color liso", run: openWalls },
-      { kind: "toggle", name: "Arte de los juegos", pref: "game_art" },
+      { kind: "swatch", name: "Color principal", pref: "accent", options: Object.keys(Prefs.ACCENTS), desc: "El color del marco que muestra dónde estás y de botones como Jugar." },
+      { kind: "choice", name: "Tamaño de letra", pref: "text_size", options: [[100, "Normal"], [110, "Grande"], [120, "Muy grande"]], desc: "Agranda los textos de Inicio y de la guía para leerlos de lejos." },
+      { kind: "toggle", name: "Marco de selección más grueso", pref: "thick_focus", desc: "Un borde más ancho alrededor de lo que tienes elegido, para verlo mejor desde el sillón." },
+      { kind: "link", name: "Fondo", value: state.wallpaper?.title ?? "Color liso", run: openWalls, desc: "Lo que se ve detrás de Inicio, sea una animación, un video o una imagen." },
+      { kind: "toggle", name: "Imágenes de los juegos", pref: "game_art", desc: "Muestra el arte del juego elegido detrás de la pestaña Juegos." },
+    ],
+  },
+  {
+    name: "Botones",
+    icon: "gamepad",
+    rows: () => [
+      { kind: "toggle", name: "Aceptar con B", pref: "swap_ab", desc: "B acepta y A vuelve atrás, como en las consolas de Nintendo. Para volver a lo normal, entra aquí y presiona B." },
+      { kind: "toggle", name: "Puntero con la palanca derecha", pref: "swap_sticks", desc: "La palanca derecha mueve el puntero y la izquierda sube o baja la página." },
+      { kind: "choice", name: "Tiempo para mantener presionado", pref: "hold_time", options: [["short", "Corto"], ["normal", "Normal"], ["long", "Largo"]], desc: "Cuánto hay que sostener Menú (tres rayas) para abrir Inicio, o Vista (dos cuadritos) y Menú juntos para la guía. Un toque tiene que ser más corto que esto." },
+    ],
+  },
+  {
+    name: "Puntero",
+    icon: "pointer",
+    rows: () => [
+      { kind: "choice", name: "Velocidad del puntero", pref: "cursor_speed", options: [["slow", "Lenta"], ["normal", "Normal"], ["fast", "Rápida"]], desc: "Qué tan rápido se mueve el puntero por la pantalla." },
+      { kind: "choice", name: "Ayuda para apuntar", pref: "slowdown", options: [["off", "No"], ["soft", "Suave"], ["normal", "Normal"], ["strong", "Fuerte"]], desc: "El puntero va más lento al pasar sobre algo que se puede pulsar, para que no te pases. No frena cuando cruzas la pantalla rápido." },
+      { kind: "choice", name: "Ignorar movimientos pequeños", pref: "deadzone", options: [["small", "Poco"], ["normal", "Normal"], ["large", "Mucho"]], desc: "Cuánto hay que mover la palanca para que el puntero reaccione. Súbelo si el puntero se mueve solo o si te tiembla la mano." },
+      { kind: "choice", name: "Velocidad al desplazar", pref: "scroll_speed", options: [["slow", "Lenta"], ["normal", "Normal"], ["fast", "Rápida"]], desc: "Qué tan rápido sube o baja la página con la palanca que desplaza." },
+      { kind: "toggle", name: "Desplazar al revés", pref: "invert_scroll", desc: "Al empujar la palanca hacia arriba, la página baja." },
     ],
   },
   {
     name: "Teclado",
     icon: "keyboard",
     rows: () => [
-      { kind: "choice", name: "Diseño", pref: "keyboard_layout", options: [["grid", "Cuadrícula"], ["split", "Dos mitades"]] },
-      { kind: "toggle", name: "Sugerencias", pref: "suggestions" },
-      { kind: "toggle", name: "Aprender mis palabras", pref: "learn" },
-      { kind: "link", name: "Idiomas", value: (state.prefs?.languages ?? []).map(languageName).join(", "), run: () => openSub("languages") },
-      { kind: "action", name: "Olvidar lo aprendido", danger: true, run: forgetLearned },
+      { kind: "choice", name: "Forma del teclado", pref: "keyboard_layout", options: [["grid", "Todo junto"], ["split", "Dos mitades"]], desc: "Todas las teclas juntas, o partidas en dos lados para escribir con las dos manos." },
+      { kind: "toggle", name: "Sugerir palabras", pref: "suggestions", desc: "Muestra palabras sobre el teclado para escribir menos y con tildes." },
+      { kind: "toggle", name: "Recordar mis palabras", pref: "learn", desc: "Sugiere primero las palabras que más usas. Nunca guarda lo que escribes en contraseñas." },
+      { kind: "link", name: "Idiomas del teclado", value: (state.prefs?.languages ?? []).map(languageName).join(", "), run: () => openSub("languages"), desc: "En qué idiomas sugiere palabras." },
+      { kind: "action", name: "Borrar palabras recordadas", danger: true, run: forgetLearned, desc: "Olvida las palabras que el teclado aprendió de ti. Pide confirmar antes." },
     ],
   },
   {
-    name: "Modo juego",
-    icon: "gamepad",
-    rows: () => [{ kind: "toggle", name: "Dar el control al juego que pasa al frente", pref: "auto_game" }],
+    name: "Juegos",
+    icon: "player-play",
+    rows: () => [
+      { kind: "toggle", name: "Dejar el control al juego que abras", pref: "auto_game", desc: "Cuando abres un juego, el control es solo del juego. Al cerrarlo, vuelve el puntero. Para usar el puntero sin cerrarlo, mantén Vista y Menú y elige otra ventana." },
+    ],
   },
   {
     name: "General",
     icon: "settings",
     rows: () => [
-      { kind: "toggle", name: "Abrir con Windows", pref: "start_with_windows" },
-      { kind: "toggle", name: "Vibración", pref: "rumble" },
-      { kind: "choice", name: "Vista de Ajustes", pref: "settings_view", options: [["list", "Lista"], ["tiles", "Tarjetas"]] },
+      { kind: "toggle", name: "Iniciar con Windows", pref: "start_with_windows", desc: "Se abre sola y en silencio al encender la computadora." },
+      { kind: "toggle", name: "Vibrar al cambiar de modo", pref: "rumble", desc: "El control vibra cuando pasa a un juego y cuando vuelve al puntero." },
+      { kind: "choice", name: "Forma de este menú", pref: "settings_view", options: [["list", "Lista"], ["tiles", "Cuadros"]], desc: "Todo en una lista, o una categoría a la vez en cuadros grandes." },
     ],
   },
 ];
@@ -729,6 +752,32 @@ function openSub(name) {
   render();
 }
 
+// The preview stage lives across renders, so its animation never restarts
+// when the screen redraws; it only changes when the option or value does.
+const stage = el("div", { className: "stage" }, el("canvas"));
+const about = el("p", { className: "about" }, el("span", { className: "desc" }), el("span", { className: "now" }));
+const card = el("section", { className: "preview-card" }, stage, about);
+Previews.mount(stage.firstChild);
+let shown = { id: "", value: undefined };
+
+function showPreview(row) {
+  const p = state.prefs ?? {};
+  about.querySelector(".desc").textContent = row?.desc ?? "";
+  const id = row?.pref;
+  const has = !!id && Previews.has(id);
+  stage.hidden = !has;
+  if (!has) {
+    about.querySelector(".now").textContent = "";
+    shown = { id: "", value: undefined };
+    return;
+  }
+  const value = p[id];
+  about.querySelector(".now").textContent = Previews.caption(id, value);
+  if (shown.id === id && shown.value === value) return;
+  Previews.show(id, value, shown.id === id ? shown.value : undefined);
+  shown = { id, value };
+}
+
 function renderSettings() {
   const st = state.settings;
   const tiles = state.prefs?.settings_view === "tiles";
@@ -752,9 +801,11 @@ function renderSettings() {
     hintEl("B", st.zone === "rows" ? "Atrás" : "Cerrar"),
   );
   let body;
-  if (!tiles) body = el("div", { className: "settings list" }, el("nav", { className: "cats" }, ...cats), panel);
+  // The row in focus, or the category's first while choosing a category.
+  showPreview(st.sub ? null : rows[st.zone === "rows" ? st.row : 0]);
+  if (!tiles) body = el("div", { className: "settings list" }, el("nav", { className: "cats" }, ...cats), panel, card);
   else if (st.zone === "cats") body = el("div", { className: "settings tiles" }, ...cats);
-  else body = el("div", { className: "settings open" }, el("h2", { className: "cat-title" }, svg(CATEGORIES[st.cat].icon), CATEGORIES[st.cat].name), panel);
+  else body = el("div", { className: "settings open" }, el("h2", { className: "cat-title" }, svg(CATEGORIES[st.cat].icon), CATEGORIES[st.cat].name), panel, card);
   view.replaceChildren(body, hints);
 }
 
@@ -766,7 +817,7 @@ function settingsNav(dir) {
   const st = state.settings;
   const tiles = state.prefs?.settings_view === "tiles";
   if (st.zone === "cats") {
-    const cols = tiles ? 4 : 1;
+    const cols = tiles ? 3 : 1;
     const step = { up: -cols, down: cols, left: tiles ? -1 : 0, right: tiles ? 1 : 0 }[dir];
     if (!tiles && dir === "right") return enterRows();
     const next = st.cat + step;
@@ -888,8 +939,11 @@ function asInfo(i) {
 function render() {
   document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === state.tab));
 
+  document.body.classList.toggle("settings-open", state.tab === "settings" && !state.sheet);
   if (state.tab === "settings" && !state.sheet) {
     paintBackground();
+    // The music tab's cover would stay over the dimmed background.
+    setStage(false);
     syncMotion();
     renderSettings();
     renderPlayer();

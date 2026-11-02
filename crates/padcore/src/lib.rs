@@ -11,6 +11,6 @@ pub mod xinput;
 
 pub use curve::{CursorProfile, builtin_profiles, profile};
 pub use hover::Hover;
-pub use engine::{Engine, EngineConfig, Event, Mode};
+pub use engine::{Engine, EngineConfig, Event, Mode, Tuning};
 pub use pad::PadState;
 pub use ui::UiEvent;
