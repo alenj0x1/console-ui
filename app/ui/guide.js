@@ -172,14 +172,14 @@ function renderHints() {
   if (key === hintsKey) return;
   hintsKey = key;
   if (state.power) {
-    hintsEl.replaceChildren(hint("A", "Elegir"), hint("B", "Volver", "back"));
+    hintsEl.replaceChildren(hint("A", "Elegir"), hint("B", "Cerrar", "back"));
     return;
   }
   const parts = [];
-  if (focused()) parts.push(hint("A", "Cambiar"), hint("Y", "Cerrar ventana"));
+  if (focused()) parts.push(hint("A", "Ir"), hint("Y", "Cerrar ventana"));
   else parts.push(hint("A", "Abrir"));
-  if (state.media.title) parts.push(hint("X", state.media.playing ? "Pausar" : "Reproducir"), hint("LT RT", "Canción"));
-  parts.push(hint("Menu", "Energía"), hint("B", "Volver", "back"));
+  if (state.media.title) parts.push(hint("X", state.media.playing ? "Pausar" : "Reproducir"), hint("LT RT", "Cambiar canción"));
+  parts.push(hint("Menu", "Apagar o reiniciar"), hint("B", "Cerrar", "back"));
   hintsEl.replaceChildren(...parts);
 }
 

@@ -812,7 +812,7 @@ function playingInfo(app) {
   }
   const hints = el("span", { className: "hints" },
     el("span", { className: "hint" }, glyph("X"), m.playing ? "Pausar" : "Reproducir"),
-    el("span", { className: "hint" }, glyph("LT RT"), "Canción"));
+    el("span", { className: "hint" }, glyph("LT RT"), "Cambiar canción"));
   if (lyrics.lines.length) hints.append(el("span", { className: "hint" }, glyph("R3"), lyricsWanted() ? "Carátula" : "Letra"));
   (head.querySelector(".action") ?? head.querySelector(".progress") ?? head.querySelector(".meta")).after(hints);
   return head;
@@ -1009,7 +1009,7 @@ const LEVELS = {
   slowdown: { min: 0, max: 80, step: 5, stops: [35, 55, 75], show: (v) => (v ? percent(v) : "No") },
   hold_time: { min: 300, max: 1200, step: 50, stops: [400, 600, 900], show: (v) => `${(v / 1000).toLocaleString("es", { maximumFractionDigits: 2 })} s` },
   text_size: { min: 100, max: 150, step: 5, stops: [110, 120, 135], show: percent },
-  wall_dim: { min: 0, max: 60, step: 5, stops: [25, 50], show: (v) => (v ? percent(v) : "No") },
+  wall_dim: { min: 0, max: 100, step: 5, stops: [25, 50, 75], show: (v) => (v ? percent(v) : "No") },
 };
 // Buttons that can be reassigned, as the settings name them, and what each can do.
 // Laid out as on the controller: the left hand's buttons, then the right's.
@@ -1037,7 +1037,7 @@ const CATEGORIES = [
       { kind: "range", name: "Tamaño de letra", pref: "text_size", desc: "Agranda los textos de Inicio y del centro de control para leerlos de lejos." },
       { kind: "toggle", name: "Marco de selección más grueso", pref: "thick_focus", desc: "Un borde más ancho alrededor de lo que tienes elegido, para verlo mejor desde el sillón." },
       { kind: "link", name: "Fondo", value: state.wallpaper?.title ?? "Color liso", run: openWalls, desc: "Lo que se ve detrás de Inicio, sea una animación, un video o una imagen." },
-      { kind: "toggle", name: "Letra en lugar de la carátula", pref: "music_lyrics", desc: "En Multimedia, lo que suena muestra su letra donde va la carátula, que pasa a verse chica junto al título. También se cambia con {R3}." },
+      { kind: "toggle", name: "Mostrar la letra de la canción", pref: "music_lyrics", desc: "En Multimedia, muestra la letra de lo que suena en lugar de la carátula, que pasa a verse chica junto al título. También se cambia con {R3}." },
       { kind: "toggle", name: "Imágenes de los juegos", pref: "game_art", desc: "Muestra el arte del juego elegido detrás de la pestaña Juegos." },
       { kind: "choice", name: "Forma de Inicio", pref: "library_view", options: [["banners", "Anchas"], ["covers", "Portadas"], ["grid", "Cuadrícula"], ["list", "Lista"]], desc: "Cómo se ven Juegos, Apps y Multimedia. En Cuadrícula y Lista, arriba y abajo se mueven por ellas y el volumen queda en {RT} + {↕}." },
     ].filter(Boolean),
@@ -1144,7 +1144,7 @@ function rowControl(r) {
       return el("span", { className: "range" },
         el("span", { className: "track" },
           el("span", { className: "fill", style: `width:${at(v)}` }),
-          ...l.stops.map((s) => el("span", { className: "stop", style: `left:${at(s)}` })),
+          ...l.stops.map((s) => el("span", { className: `stop${s < v ? " past" : ""}`, style: `left:${at(s)}` })),
           el("span", { className: "knob", style: `left:${at(v)}` })),
         el("span", { className: "amount", textContent: l.show(v) }));
     }
@@ -1250,8 +1250,8 @@ function renderSettings() {
   const onPad = st.sub === "buttons" || st.sub.startsWith("button:");
   const hints = el("div", { className: "settings-hints" },
     st.zone === "cats" ? hintEl("A", "Abrir") : sliding ? null : hintEl("A", onPad ? "Elegir" : row?.kind === "link" ? "Abrir" : row?.kind === "action" ? (row.hint ?? "Borrar") : "Cambiar"),
-    st.zone === "rows" && valued ? hintEl("← →", "Elegir") : null,
-    st.zone === "rows" && sliding ? hintEl("← →", "Ajustar") : null,
+    st.zone === "rows" && valued ? hintEl("↔", "Elegir") : null,
+    st.zone === "rows" && sliding ? hintEl("↔", "Ajustar") : null,
     el("span", { className: "spacer" }),
     hintEl("B", st.zone === "rows" ? "Atrás" : "Cerrar"),
   );
@@ -1304,15 +1304,16 @@ const quickEl = document.getElementById("quick");
 
 function quickRows() {
   const p = state.prefs ?? {};
+  // `about` is the plain line under the rows for the focused one.
   return [
-    { kind: "link", name: "Fondo", value: state.wallpaper?.title ?? "Color liso", run: quickWalls },
-    p.high_contrast ? null : { kind: "swatch", name: "Color principal", pref: "accent", options: Object.keys(Prefs.ACCENTS) },
-    { kind: "range", name: "Oscurecer el fondo", pref: "wall_dim" },
-    { kind: "choice", name: "Forma", pref: "library_view", options: [["banners", "Anchas"], ["covers", "Portadas"], ["grid", "Cuadrícula"], ["list", "Lista"]] },
-    { kind: "choice", name: "Orden de los juegos", pref: "game_order", options: [["recent", "Recientes"], ["az", "A–Z"]] },
-    { kind: "toggle", name: "Imágenes de los juegos", pref: "game_art" },
-    { kind: "range", name: "Tamaño de letra", pref: "text_size" },
-    { kind: "toggle", name: "Letra en lugar de la carátula", pref: "music_lyrics" },
+    { kind: "link", name: "Fondo", value: state.wallpaper?.title ?? "Color liso", run: quickWalls, about: "Lo que se ve detrás de Inicio." },
+    p.high_contrast ? null : { kind: "swatch", name: "Color principal", pref: "accent", options: Object.keys(Prefs.ACCENTS), about: "El color del marco de selección y de botones como Jugar." },
+    { kind: "range", name: "Oscurecer el fondo", pref: "wall_dim", about: "Oscurece el fondo para leer mejor sobre imágenes con mucho detalle." },
+    { kind: "choice", name: "Forma de Inicio", pref: "library_view", options: [["banners", "Anchas"], ["covers", "Portadas"], ["grid", "Cuadrícula"], ["list", "Lista"]], about: "Cómo se ven Juegos, Apps y Multimedia." },
+    { kind: "choice", name: "Orden de los juegos", pref: "game_order", options: [["recent", "Recientes"], ["az", "A–Z"]], about: "Los juegos abiertos siempre van primero." },
+    { kind: "toggle", name: "Imágenes de los juegos", pref: "game_art", about: "El arte del juego elegido detrás de la pestaña Juegos." },
+    { kind: "range", name: "Tamaño de letra", pref: "text_size", about: "Agranda los textos para leerlos de lejos." },
+    { kind: "toggle", name: "Mostrar la letra de la canción", pref: "music_lyrics", about: "En Multimedia, la letra de lo que suena en lugar de la carátula." },
   ].filter(Boolean);
 }
 
@@ -1345,15 +1346,47 @@ function renderQuick() {
   quickEl.replaceChildren(
     el("div", { className: "quick-rows" },
       ...rows.map((x, i) => el("div", { className: `setting${i === quick.row ? " on" : ""}` }, el("span", { className: "name", textContent: x.name }), rowControl(x)))),
+    // Every description sits in the same cell, only the focused one shown:
+    // the line is as tall as the longest, so the panel never jumps.
+    el("p", { className: "quick-about" }, ...rows.map((x, i) => el("span", { className: i === quick.row ? "now" : "", textContent: x.about }))),
     el("div", { className: "settings-hints" },
       r.kind === "link" ? hintEl("A", "Abrir") : r.kind === "toggle" ? hintEl("A", "Cambiar") : null,
-      valued ? hintEl("← →", "Elegir") : null,
-      r.kind === "range" ? hintEl("← →", "Ajustar") : null,
+      valued ? hintEl("↔", "Elegir") : null,
+      r.kind === "range" ? hintEl("↔", "Ajustar") : null,
       el("span", { className: "spacer" }),
       hintEl("B", "Cerrar")),
   );
-  quickEl.querySelector(".setting.on")?.scrollIntoView({ block: "nearest" });
+  fitQuick();
+  // After this frame's render the row of tiles is in its final place.
+  requestAnimationFrame(fitQuick);
 }
+
+// The panel never covers the row of tiles, whatever the text size: it ends
+// 1.5rem above it (in a grid or a list, which fill the screen, where the CSS
+// height ends). When it must shrink, its rows box shows only whole rows and
+// scrolls a row at a time to keep the focused one in view.
+function fitQuick() {
+  if (!quick.open) return;
+  const box = quickEl.querySelector(".quick-rows");
+  const rows = [...box.children];
+  const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+  const tiles = view.classList.contains("as-grid") || view.classList.contains("as-list") ? null : view.querySelector(".row");
+  const top = quickEl.getBoundingClientRect().top;
+  const floor = tiles ? tiles.getBoundingClientRect().top : document.body.clientHeight - 4.5 * rem;
+  box.style.maxHeight = "";
+  const other = quickEl.getBoundingClientRect().height - box.getBoundingClientRect().height;
+  const room = floor - 1.5 * rem - top - other;
+  const pad = parseFloat(getComputedStyle(box).paddingTop);
+  const gap = parseFloat(getComputedStyle(box).rowGap) || 0;
+  const step = rows[0].offsetHeight + gap;
+  // How many whole rows fit; all of them when there is room.
+  const fit = Math.max(1, Math.min(rows.length, Math.floor((room - 2 * pad + gap) / step)));
+  if (fit < rows.length) box.style.maxHeight = `${fit * step - gap + 2 * pad}px`;
+  quick.first = Math.max(0, Math.min(rows.length - fit, quick.first ?? 0, quick.row), quick.row - fit + 1);
+  box.scrollTop = fit < rows.length ? rows[quick.first].offsetTop - rows[0].offsetTop : 0;
+  fadeEdges(box);
+}
+addEventListener("resize", () => requestAnimationFrame(fitQuick));
 
 const quickValues = (r) => (r.kind === "swatch" ? r.options : r.options.map(([v]) => v));
 
@@ -2122,6 +2155,20 @@ function volumeHint(head) {
   return head;
 }
 
+// The hints next to the action stay on its line only if they all fit there;
+// otherwise the whole row goes under it, never split.
+function placeHints() {
+  const hints = view.querySelector(".info .action + .hints");
+  if (!hints) return;
+  hints.classList.remove("below");
+  const info = hints.closest(".info");
+  const action = hints.previousElementSibling.getBoundingClientRect();
+  const h = hints.getBoundingClientRect();
+  const edge = info.getBoundingClientRect().right - parseFloat(getComputedStyle(info).paddingRight);
+  hints.classList.toggle("below", h.top >= action.bottom - 1 || h.right > edge + 0.5);
+}
+addEventListener("resize", placeHints);
+
 // An item's info is a description for infoEl, or an element it built itself.
 function asInfo(i) {
   return i instanceof Element ? i : infoEl(i);
@@ -2246,6 +2293,7 @@ function render() {
   if (song && song.textContent !== state.media.title) song.textContent = state.media.title;
   const nowTile = strip.querySelector(".tile.playing");
   if (nowTile) tileCover(nowTile);
+  placeHints();
   fitRow(strip);
   strip.children[at]?.scrollIntoView({ inline: "nearest", block: "nearest" });
   edges(strip);

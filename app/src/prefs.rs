@@ -94,7 +94,7 @@ pub const LEVELS: [(&str, u32, u32, u32); 7] = [
     ("slowdown", 0, 80, 5),
     ("hold_time", 300, 1200, 50),
     ("text_size", 100, 150, 5),
-    ("wall_dim", 0, 60, 5),
+    ("wall_dim", 0, 100, 5),
 ];
 
 fn level(name: &str, value: &Value) -> Option<u32> {

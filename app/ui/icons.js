@@ -47,7 +47,7 @@ const ICONS = {
 
 // A controller button hint, drawn as the button itself: A, B, X, Y, View and
 // Menu round (View and Menu with their printed symbols), LB / RB as bumpers,
-// LT / RT as triggers, the d-pad directions (↑ ↓ ← →) as a cross. "LT RT"
+// LT / RT as triggers, the d-pad directions (↑ ↓ ← →, ↕ ↔) as a cross. "LT RT"
 // draws both. With buttons reassigned in the settings (A and B swapped, one
 // hand, the user's own), a hint shows the button that does it now; `literal`
 // keeps the named button (text that talks about the buttons themselves).
@@ -71,14 +71,16 @@ function doneBy(b) {
 }
 
 // The d-pad directions: a cross as big as the LT / LB badges, the arm of
-// that direction filled and the others in outline. ↕ (up or down) keeps the
-// cross in outline with a small arrow in each of those two tips.
+// that direction filled and the others in outline. ↕ (up or down) and ↔
+// (left or right) keep the cross in outline with a small arrow in each of
+// those two tips: one cross, never two.
 const DPAD_GLYPH = {
   "↑": '<rect class="arm-on" x="8.5" y="2.5" width="7" height="10"/>',
   "↓": '<rect class="arm-on" x="8.5" y="11.5" width="7" height="10"/>',
   "←": '<rect class="arm-on" x="2.5" y="8.5" width="10" height="7"/>',
   "→": '<rect class="arm-on" x="11.5" y="8.5" width="10" height="7"/>',
   "↕": '<path class="arm-on" d="M12 4.4l2.4 3h-4.8zM12 19.6l2.4-3h-4.8z"/>',
+  "↔": '<path class="arm-on" d="M4.4 12l3-2.4v4.8zM19.6 12l-3-2.4v4.8z"/>',
 };
 function buttonShape(b) {
   const s = document.createElement("span");
@@ -101,7 +103,7 @@ function buttonShape(b) {
 // together). `literal` false shows the button that does it now instead.
 function withButtons(text, literal = true) {
   const out = [];
-  text.split(/\{([A-Za-z0-9↑↓←→↕]+)\}/).forEach((part, i) => {
+  text.split(/\{([A-Za-z0-9↑↓←→↕↔]+)\}/).forEach((part, i) => {
     if (i % 2) {
       const button = setGlyph(Object.assign(document.createElement("span"), { className: "glyph inline" }), part, literal);
       // After a +, the button joins the combination before it.
