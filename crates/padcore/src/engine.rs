@@ -8,7 +8,7 @@
 //! (View alone opens it from the cursor); Y opens the keyboard and B closes
 //! it; holding Menu opens and closes the home screen. A tap on RT presses Enter.
 //! In the cursor, holding View opens a radial menu (with a host that shows
-//! it): the stick aims, letting go of View picks; LT + D-pad jumps between
+//! it): the stick that scrolls (the right one) aims, letting go of View picks; LT + D-pad jumps between
 //! clickable elements.
 
 use std::sync::Arc;
@@ -713,7 +713,7 @@ impl Engine {
         }
     }
 
-    /// Holding View opens the radial menu; while it is open the stick aims
+    /// Holding View opens the radial menu; while it is open the right stick aims
     /// (the cursor stays put) and letting go of View picks. True while it
     /// has the controller.
     fn radial_menu(&mut self, pad: &PadState, now: Instant, out: &mut Vec<Event>) -> bool {
@@ -739,9 +739,10 @@ impl Engine {
             return true;
         }
         // The stick back in the middle aims at nothing: letting go cancels.
-        let push = pad.lx.hypot(pad.ly);
+        // The stick that scrolls aims (the right one): the left thumb is on View.
+        let push = pad.rx.hypot(pad.ry);
         let now_aim = if push > RADIAL_AIM {
-            let turn = pad.lx.atan2(pad.ly).rem_euclid(std::f32::consts::TAU) / std::f32::consts::TAU;
+            let turn = pad.rx.atan2(pad.ry).rem_euclid(std::f32::consts::TAU) / std::f32::consts::TAU;
             Some((turn * slots as f32).round() as u8 % slots)
         } else if push < RADIAL_REST {
             None
@@ -846,10 +847,10 @@ mod tests {
         let later = t0 + Duration::from_millis(600);
         assert!(e.radial_menu(&view, later, &mut out));
         // Stick to the right: the second slot of five (clockwise from the top).
-        let right = PadState { lx: 1.0, ..view };
+        let right = PadState { rx: 1.0, ..view };
         e.radial_menu(&right, later, &mut out);
         // Straight down-left: the fourth.
-        let down_left = PadState { lx: -0.6, ly: -0.8, ..view };
+        let down_left = PadState { rx: -0.6, ry: -0.8, ..view };
         e.radial_menu(&down_left, later, &mut out);
         // Letting go of View picks the last aim.
         e.radial_menu(&PadState::default(), later, &mut out);
@@ -868,21 +869,23 @@ mod tests {
         e.view_down = Some(t0);
         let later = t0 + Duration::from_millis(600);
         e.radial_menu(&view, later, &mut out);
-        e.radial_menu(&PadState { lx: 1.0, ..view }, later, &mut out);
+        e.radial_menu(&PadState { rx: 1.0, ..view }, later, &mut out);
         // Back to the middle: nothing aimed, so letting go picks nothing.
         e.radial_menu(&view, later, &mut out);
         e.radial_menu(&PadState::default(), later, &mut out);
         // Near the top from the left still wraps to the first slot.
         e.view_down = Some(t0);
         e.radial_menu(&view, later, &mut out);
-        e.radial_menu(&PadState { lx: -0.2, ly: 1.0, ..view }, later, &mut out);
+        e.radial_menu(&PadState { rx: -0.2, ry: 1.0, ..view }, later, &mut out);
+        // The left stick (the cursor's) aims at nothing.
+        e.radial_menu(&PadState { lx: 1.0, ..view }, later, &mut out);
         // A mode change closes it without a pick.
         e.set_mode(Mode::Keyboard);
         e.flush_radial_cancel(&mut out);
         let got: Vec<_> = out.iter().map(|ev| match ev { Event::Radial(r) => *r, _ => panic!() }).collect();
         assert_eq!(got, [
             Radial::Open, Radial::Aim(Some(1)), Radial::Aim(None), Radial::Pick(None),
-            Radial::Open, Radial::Aim(Some(0)), Radial::Pick(None),
+            Radial::Open, Radial::Aim(Some(0)), Radial::Aim(None), Radial::Pick(None),
         ]);
     }
 
