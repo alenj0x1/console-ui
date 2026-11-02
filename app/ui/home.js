@@ -66,6 +66,8 @@ const BRANDS = [
 const state = {
   tab: "games",
   games: [],
+  // Games with a window open (see gameItems).
+  running: [],
   apps: [],
   pinned: [],
   focus: { games: 0, apps: 0, media: 0, edit: 0, medit: 0, wall: 0, folder: 0, search: 0 },
@@ -622,12 +624,15 @@ const coversView = () => {
   return (v === "covers" || v === "grid") && state.sheet !== "wall" && state.sheet !== "folder";
 };
 
-// The game played last comes first; while it is still open, A brings it back.
+// Open games come first (the last one played before the rest), then the
+// last one played; A brings an open game back instead of starting it again.
 function gameItems() {
-  const last = state.games.find((g) => g.id === state.lastGame);
-  const games = last ? [last, ...state.games.filter((g) => g !== last)] : state.games;
+  const open = (g) => state.running.includes(g.id);
+  const rank = (g) => (open(g) ? (g.id === state.lastGame ? 0 : 1) : g.id === state.lastGame ? 2 : 3);
+  const games = state.games.map((g, i) => [g, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(([g]) => g);
   return games.map((g) => ({
     key: g.id,
+    rev: open(g) ? "+" : "",
     tile: () => {
       // The name shows in the list, or when there is no picture.
       const kind = coversView() ? "capsule" : "header";
@@ -637,8 +642,8 @@ function gameItems() {
       const head = infoEl({
         lead: g.art.includes("logo") ? el("img", { className: "logo", src: art(g, "logo"), alt: g.name }) : null,
         title: g.name,
-        meta: [g === last && state.running ? "Abierto" : playedAgo(g.last_played), SOURCES[g.source]].filter(Boolean).join(" · "),
-        action: [g === last && state.running ? "Reanudar" : "Jugar", "A"],
+        meta: [open(g) ? "Abierto" : playedAgo(g.last_played), SOURCES[g.source]].filter(Boolean).join(" · "),
+        action: [open(g) ? "Reanudar" : "Jugar", "A"],
       });
       if (state.sheet !== "search") {
         const hints = el("span", { className: "hints" }, el("span", { className: "hint" }, glyph("Y"), "Buscar"));
@@ -2072,7 +2077,7 @@ function render() {
     const m = state.media;
     const sound = trailer.classList.contains("shown") ? `${trailerFor}:${soundWanted()}` : "";
     const words = list[at]?.playing ? `${lyrics.lines.length > 0}:${lyricsWanted()}:${!!coverArt.url}` : "";
-    head.dataset.item = editing ? "edit" : [list[at].key, m.title, m.artist, m.playing, m.duration_ms > 0, sound, words].join("|");
+    head.dataset.item = editing ? "edit" : [list[at].key + (list[at].rev ?? ""), m.title, m.artist, m.playing, m.duration_ms > 0, sound, words].join("|");
     return head;
   };
   if (!strip || strip.dataset.key !== key) {
@@ -2452,6 +2457,20 @@ listen("mode", ({ payload }) => {
   load();
   invoke("volume_get").then((v) => (state.volume = v));
 });
+
+// Games opened or closed while Inicio shows: the list follows, and the
+// focus stays on the same game.
+const OPEN_GAMES_EVERY_MS = 3000;
+setInterval(async () => {
+  if (!active || state.tab !== "games" || state.sheet) return;
+  const ids = await invoke("open_games").catch(() => null);
+  if (!ids || ids.join() === state.running.join()) return;
+  const focused = gameItems()[state.focus.games]?.key;
+  state.running = ids;
+  const at = gameItems().findIndex((g) => g.key === focused);
+  if (at >= 0) state.focus.games = at;
+  render();
+}, OPEN_GAMES_EVERY_MS);
 
 // The progress bar moves on its own between the player's reports.
 setInterval(() => {

@@ -66,9 +66,9 @@ pub struct HomeData {
     game_art: bool,
     /// The media tab's picks; None = not chosen yet.
     media: Option<Vec<String>>,
-    /// The game played last, and whether its window is still open.
+    /// The game played last, and the games with a window open now.
     last_game: Option<String>,
-    running: bool,
+    running: Vec<String>,
 }
 
 #[derive(Serialize)]
@@ -165,11 +165,24 @@ pub fn home_data(state: tauri::State<HomeState>, store: tauri::State<Store>) -> 
     let (games, apps, pinned) = (lib.games.clone(), lib.apps.clone(), pinned(&store, &lib));
     // window_of reads the library too.
     drop(lib);
-    let running = last_game.as_ref().is_some_and(|id| state.window_of(id).is_some());
+    let running = state.open_games();
     HomeData { games, apps, pinned, wallpaper, game_art: settings.game_art, media, last_game, running }
 }
 
 impl HomeState {
+    /// Library games with a window open now, front first.
+    fn open_games(&self) -> Vec<String> {
+        let programs = crate::switcher::open_programs();
+        let lib = self.library.lock().unwrap();
+        let mut ids: Vec<String> = Vec::new();
+        for id in programs.iter().filter_map(|p| lib.game_of(p)).map(|g| g.id.clone()) {
+            if !ids.contains(&id) {
+                ids.push(id);
+            }
+        }
+        ids
+    }
+
     /// An open window of a game: the one game mode handed the controller to,
     /// or any window of a program from the game's folder (however it was
     /// started).
@@ -384,6 +397,13 @@ pub fn launch(webview: tauri::Webview, app: AppHandle, state: tauri::State<HomeS
 #[tauri::command]
 pub async fn media_control(action: String) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || crate::media::control_blocking(&action)).await.map_err(|e| e.to_string())?
+}
+
+/// Games with a window open now (the page checks while it shows).
+#[tauri::command]
+pub async fn open_games(webview: tauri::Webview, app: AppHandle) -> Result<Vec<String>, String> {
+    crate::only_from(&webview, &[LABEL])?;
+    tauri::async_runtime::spawn_blocking(move || app.state::<HomeState>().open_games()).await.map_err(|e| e.to_string())
 }
 
 /// The lyrics of what is playing, from the internet (see songinfo). Ok(None)

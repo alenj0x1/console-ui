@@ -656,6 +656,7 @@ fn main() {
             home::media_control,
             home::media_now,
             home::lyrics,
+            home::open_games,
             home::volume_get,
             home::volume_step,
             home::volume_mute,

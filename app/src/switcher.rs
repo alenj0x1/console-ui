@@ -230,6 +230,11 @@ pub fn find_window(wanted: impl Fn(&Path) -> bool) -> Option<HWND> {
     top_windows().into_iter().find(|&w| program_path(w).is_some_and(|p| wanted(&p)))
 }
 
+/// The programs of the open windows, front first.
+pub fn open_programs() -> Vec<PathBuf> {
+    top_windows().into_iter().filter_map(program_path).collect()
+}
+
 /// The program a window belongs to.
 pub fn program_of(hwnd: HWND) -> Option<PathBuf> {
     program_path(hwnd)
