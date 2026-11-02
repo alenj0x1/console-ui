@@ -207,12 +207,15 @@ fn follow_games(app: &AppHandle, engine: &mut Engine, playing: &mut Option<isize
                 engine.set_mode(Mode::Cursor);
                 apply_mode(app, Mode::Cursor);
             }
-            Some(_) => {}
-            // Game mode from the home screen or the tray: follow the game once it shows up.
-            None => {
-                *playing = switcher::foreground_game(&dirs).map(|(h, _, _)| h as isize);
-                if let Some(path) = playing.and_then(|h| switcher::program_of(h as _)) {
-                    home::game_started(app, playing.unwrap(), &path);
+            // Game mode from the home screen, the tray or the guide: follow
+            // the game in front once it shows up, also when another game
+            // was followed before.
+            _ => {
+                if let Some((h, _, _)) = switcher::foreground_game(&dirs).filter(|(h, _, _)| Some(*h as isize) != *playing) {
+                    *playing = Some(h as isize);
+                    if let Some(path) = switcher::program_of(h) {
+                        home::game_started(app, h as isize, &path);
+                    }
                 }
             }
         },

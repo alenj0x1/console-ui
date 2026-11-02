@@ -189,7 +189,7 @@ fn rect(hwnd: HWND) -> RECT {
 /// Why the window counts as a game, or None.
 pub fn is_game(hwnd: HWND, program: &Path, game_dirs: &[PathBuf]) -> Option<&'static str> {
     let lower = program.to_string_lossy().to_lowercase();
-    if game_dirs.iter().any(|d| program.starts_with(d)) || lower.contains(r"\steamapps\common\") || lower.contains(r"\xboxgames\") {
+    if game_dirs.iter().any(|d| crate::sources::inside(program, d)) || lower.contains(r"\steamapps\common\") || lower.contains(r"\xboxgames\") {
         return Some("biblioteca");
     }
     let name = program.file_name()?.to_string_lossy().to_lowercase();
@@ -222,6 +222,12 @@ pub fn foreground_game(game_dirs: &[PathBuf]) -> Option<(HWND, String, &'static 
     let program = program_path(hwnd)?;
     let why = is_game(hwnd, &program, game_dirs)?;
     Some((hwnd, program.file_name()?.to_string_lossy().into_owned(), why))
+}
+
+/// The first window (front first, as Alt+Tab lists them) whose program
+/// passes `wanted`.
+pub fn find_window(wanted: impl Fn(&Path) -> bool) -> Option<HWND> {
+    top_windows().into_iter().find(|&w| program_path(w).is_some_and(|p| wanted(&p)))
 }
 
 /// The program a window belongs to.

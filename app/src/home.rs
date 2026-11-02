@@ -162,22 +162,30 @@ pub fn home_data(state: tauri::State<HomeState>, store: tauri::State<Store>) -> 
     let settings = store.settings.lock().unwrap().clone();
     let media = settings.media.map(|m| m.into_iter().filter(|id| valid_media(&lib, id)).collect());
     let last_game = settings.last_game.filter(|id| lib.has_game(id));
+    let (games, apps, pinned) = (lib.games.clone(), lib.apps.clone(), pinned(&store, &lib));
+    // window_of reads the library too.
+    drop(lib);
     let running = last_game.as_ref().is_some_and(|id| state.window_of(id).is_some());
-    HomeData { games: lib.games.clone(), apps: lib.apps.clone(), pinned: pinned(&store, &lib), wallpaper, game_art: settings.game_art, media, last_game, running }
+    HomeData { games, apps, pinned, wallpaper, game_art: settings.game_art, media, last_game, running }
 }
 
 impl HomeState {
-    /// The open window of a game being played.
+    /// An open window of a game: the one game mode handed the controller to,
+    /// or any window of a program from the game's folder (however it was
+    /// started).
     fn window_of(&self, id: &str) -> Option<isize> {
-        let mut running = self.running.lock().unwrap();
-        match running.as_ref() {
-            Some((game, hwnd)) if game == id && crate::switcher::alive(*hwnd as _) => Some(*hwnd),
-            Some((_, hwnd)) if !crate::switcher::alive(*hwnd as _) => {
-                *running = None;
-                None
+        {
+            let mut running = self.running.lock().unwrap();
+            match running.as_ref() {
+                Some((game, hwnd)) if game == id && crate::switcher::alive(*hwnd as _) => return Some(*hwnd),
+                Some((_, hwnd)) if !crate::switcher::alive(*hwnd as _) => *running = None,
+                _ => {}
             }
-            _ => None,
         }
+        let lib = self.library.lock().unwrap();
+        let dir = lib.games.iter().find(|g| g.id == id)?.dir.clone()?;
+        drop(lib);
+        crate::switcher::find_window(|p| sources::inside(p, &dir)).map(|h| h as isize)
     }
 }
 

@@ -105,6 +105,17 @@ pub fn key(path: &Path) -> String {
     format!("{h:016x}")
 }
 
+/// Whether `path` is inside `dir`, as Windows compares paths: any case,
+/// either slash (launchers write their folders in their own way).
+pub fn inside(path: &Path, dir: &Path) -> bool {
+    let norm = |p: &Path| p.to_string_lossy().replace('/', "\\").to_lowercase();
+    let (path, mut dir) = (norm(path), norm(dir));
+    if !dir.ends_with('\\') {
+        dir.push('\\');
+    }
+    path.starts_with(&dir)
+}
+
 pub fn mime(path: &Path) -> &'static str {
     match path.extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase).as_deref() {
         Some("webm") => "video/webm",
@@ -120,6 +131,13 @@ pub fn mime(path: &Path) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn inside_any_case_or_slash() {
+        let game = Path::new(r"C:\Program Files (x86)\Steam\steamapps\common\Hollow Knight\hollow_knight.exe");
+        assert!(inside(game, Path::new(r"c:/program files (x86)/steam\steamapps\common\Hollow Knight")));
+        assert!(!inside(game, Path::new(r"C:\Program Files (x86)\Steam\steamapps\common\Hollow")));
+    }
 
     #[test]
     fn keys_ignore_case() {

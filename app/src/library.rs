@@ -52,7 +52,7 @@ impl Library {
 
     /// The game a running program belongs to (it runs from its folder).
     pub fn game_of(&self, program: &Path) -> Option<&Game> {
-        self.games.iter().find(|g| g.dir.as_ref().is_some_and(|d| program.starts_with(d)))
+        self.games.iter().find(|g| g.dir.as_ref().is_some_and(|d| sources::inside(program, d)))
     }
 
     pub fn has_game(&self, id: &str) -> bool {
@@ -220,7 +220,7 @@ mod tests {
     fn scan_this_pc() {
         let lib = Library::scan();
         for g in &lib.games {
-            println!("{} | {} | {} | {:?}", g.id, g.name, g.last_played, g.art);
+            println!("{} | {} | {} | {:?} | {:?}", g.id, g.name, g.last_played, g.art, g.dir);
         }
         println!("{} apps, e.g. {:?}", lib.apps.len(), lib.apps.iter().take(5).map(|a| &a.name).collect::<Vec<_>>());
         let png = app_icon_png("Microsoft.Windows.Explorer", 128).unwrap();
