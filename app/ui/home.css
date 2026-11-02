@@ -80,8 +80,13 @@ body { position: relative; }
 /* Padding leaves room for the focus ring so nothing is clipped. The focused
    tile grows and the rest stay on the bottom line. */
 .row {
+  /* The focused tile's height (.row .tile.on uses it too). */
+  --h-on: calc(11.75 * var(--u));
   flex: none;
   padding: 0.5rem 4rem;
+  /* Always as tall as the focused tile: while one tile shrinks and the next
+     grows, the row would dip for a moment and the info above it jump. */
+  min-height: calc(var(--h-on) * var(--fit, 1) + 2.5rem - 2.5 * var(--u) + 1rem);
   display: flex;
   align-items: flex-end;
   gap: 1.25rem;
@@ -111,7 +116,7 @@ body { position: relative; }
 }
 .tile.on { box-shadow: 0 0 0 var(--focus) var(--accent); }
 /* The focused tile grows by a quarter, in every row. */
-.row .tile.on { --w: calc(25 * var(--u)); --h: calc(11.75 * var(--u)); }
+.row .tile.on { --w: calc(25 * var(--u)); --h: var(--h-on); }
 .tile > img.art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 200ms ease; }
 .tile > img.art.loaded { opacity: 1; }
 .tile .tile-icon { width: calc(3.5 * var(--u)); height: calc(3.5 * var(--u)); object-fit: contain; border-radius: calc(0.5 * var(--u)); }
@@ -132,7 +137,8 @@ body { position: relative; }
 
 /* Covers: box-art tiles (2:3); names may take two lines. */
 .covers .tile { --w: calc(12 * var(--u)); --h: calc(18 * var(--u)); }
-.row.covers .tile.on { --w: calc(15 * var(--u)); --h: calc(22.5 * var(--u)); }
+.row.covers { --h-on: calc(22.5 * var(--u)); }
+.row.covers .tile.on { --w: calc(15 * var(--u)); }
 .grid.covers { grid-template-columns: repeat(auto-fill, calc(12 * var(--u))); gap: 1.5rem; }
 .covers .tile .name { max-width: 100%; padding: 0 0.75rem; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.3; }
 .covers .tile.playing .song { max-width: 100%; padding: 0 0.75rem; }
