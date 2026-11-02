@@ -70,15 +70,17 @@ function doneBy(b) {
   return moved ? ({ up: "↑", down: "↓", left: "←", right: "→" }[moved] ?? moved.toUpperCase()) : wanted;
 }
 
-// The d-pad directions: a cross as big as the LT / LB badges, the arm of
-// that direction filled and the others in outline.
-const DPAD_GLYPH = { "↑": [8.5, 2.5, 7, 10], "↓": [8.5, 11.5, 7, 10], "←": [2.5, 8.5, 10, 7], "→": [11.5, 8.5, 10, 7] };
+// The d-pad directions: a cross as big as the LT / LB badges, the arms of
+// those directions filled and the others in outline (↕ = up and down).
+const DPAD_ARM = { "↑": [8.5, 2.5, 7, 10], "↓": [8.5, 11.5, 7, 10], "←": [2.5, 8.5, 10, 7], "→": [11.5, 8.5, 10, 7] };
+const DPAD_GLYPH = { ...Object.fromEntries(Object.entries(DPAD_ARM).map(([k, a]) => [k, [a]])), "↕": [DPAD_ARM["↑"], DPAD_ARM["↓"]] };
 function buttonShape(b) {
   const s = document.createElement("span");
-  const arm = DPAD_GLYPH[b] ?? DPAD_GLYPH[{ UP: "↑", DOWN: "↓", LEFT: "←", RIGHT: "→" }[b]];
-  if (arm) {
+  const arms = DPAD_GLYPH[b] ?? DPAD_GLYPH[{ UP: "↑", DOWN: "↓", LEFT: "←", RIGHT: "→" }[b]];
+  if (arms) {
     s.className = "btn btn-dpad";
-    s.innerHTML = `<svg class="glyph-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><rect class="arm-on" x="${arm[0]}" y="${arm[1]}" width="${arm[2]}" height="${arm[3]}"/><path d="M8.5 2.5h7v6h6v7h-6v6h-7v-6h-6v-7h6z"/></svg>`;
+    const on = arms.map((a) => `<rect class="arm-on" x="${a[0]}" y="${a[1]}" width="${a[2]}" height="${a[3]}"/>`).join("");
+    s.innerHTML = `<svg class="glyph-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round">${on}<path d="M8.5 2.5h7v6h6v7h-6v6h-7v-6h-6v-7h6z"/></svg>`;
     return s;
   }
   const symbol = { View: "btn-view", Menu: "btn-menu" }[b];

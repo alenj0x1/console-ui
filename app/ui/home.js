@@ -1879,10 +1879,12 @@ function infoEl(i) {
     action);
 }
 
-// Where the volume is: the d-pad in a row, RT with it in a grid or a list.
+// Where the volume is: up and down on the d-pad in a row, with RT held in a
+// grid or a list (RT + the d-pad, with room between them).
 function volumeHint(head) {
-  const keys = libraryView() === "grid" || libraryView() === "list" ? "RT ↑ ↓" : "↑ ↓";
-  const hint = el("span", { className: "hint" }, glyph(keys), "Volumen");
+  const held = libraryView() === "grid" || libraryView() === "list";
+  const keys = held ? [glyph("RT"), el("span", { className: "plus", textContent: "+" }), glyph("↕")] : [glyph("↕")];
+  const hint = el("span", { className: "hint" }, ...keys, "Volumen");
   const hints = head.querySelector(".hints");
   if (hints) hints.append(hint);
   else (head.querySelector(".action") ?? head.querySelector(".meta"))?.after(el("span", { className: "hints" }, hint));

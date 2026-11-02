@@ -70,6 +70,8 @@ body { position: relative; }
 .info .hints { display: inline-flex; gap: 1.5rem; margin-left: 1.5rem; vertical-align: middle; }
 .info .progress + .hints, .info .meta + .hints { display: flex; margin: 1.75rem 0 0; }
 .info .hint { display: inline-flex; align-items: center; gap: 0.625rem; font-weight: 600; font-size: 1.125rem; }
+/* A held button and the one pressed with it. */
+.info .hint .plus { margin: 0 -0.125rem; color: var(--muted); font-weight: 400; }
 .info .source { margin: 0; font-weight: 600; font-size: 1.125rem; color: var(--muted); }
 .info .progress { margin-top: 1.25rem; max-width: 36rem; }
 
