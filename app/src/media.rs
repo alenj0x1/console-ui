@@ -61,7 +61,10 @@ impl Media {
                 let changed = {
                     let mut now = media.now.lock().unwrap();
                     let track_changed = (now.title.as_str(), now.artist.as_str()) != (next.title.as_str(), next.artist.as_str());
-                    if track_changed {
+                    // Players often send the cover a moment after the title:
+                    // a late cover counts as a new one.
+                    let late_cover = !track_changed && cover.is_some() && media.cover.lock().unwrap().is_none();
+                    if track_changed || late_cover {
                         revision += 1;
                         *media.cover.lock().unwrap() = cover;
                     }
