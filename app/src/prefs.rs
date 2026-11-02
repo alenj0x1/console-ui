@@ -106,6 +106,8 @@ fn level(name: &str, value: &Value) -> Option<u32> {
 /// What the pages need to know; the settings screen shows and changes it.
 #[derive(Clone, Serialize)]
 pub struct Preferences {
+    /// The interface language in use.
+    pub language: &'static str,
     pub accent: String,
     pub text_size: u32,
     pub thick_focus: bool,
@@ -144,6 +146,7 @@ pub struct Preferences {
 impl Preferences {
     pub fn from(s: &Settings) -> Self {
         Self {
+            language: crate::i18n::chosen(s),
             accent: s.accent.clone(),
             text_size: s.text_size,
             thick_focus: s.thick_focus,
@@ -190,12 +193,17 @@ pub fn set_preference(app: AppHandle, webview: tauri::Webview, name: String, val
     // The welcome tunes the pointer while you try it.
     let welcome = webview.label() == crate::welcome::LABEL && matches!(name.as_str(), "cursor_speed" | "deadzone");
     if webview.label() != crate::home::LABEL && !welcome {
-        return Err("no permitido".into());
+        return Err(crate::i18n::t("err.not_allowed").into());
     }
     let store = app.state::<Store>();
     let flag = || value.as_bool().ok_or("se esperaba sí o no");
     let pick = |allowed: &[&str]| value.as_str().filter(|v| allowed.contains(v)).map(str::to_owned).ok_or("valor no válido");
     match name.as_str() {
+        "language" => {
+            let v = pick(&crate::i18n::codes())?;
+            store.update(|s| s.language = Some(v))?;
+            crate::apply_language(&app);
+        }
         "accent" => {
             let v = pick(&ACCENTS)?;
             store.update(|s| s.accent = v)?
@@ -358,7 +366,7 @@ fn send_tuning(app: &AppHandle) {
 #[tauri::command]
 pub fn reset_preferences(app: AppHandle, webview: tauri::Webview) -> Result<Preferences, String> {
     if webview.label() != crate::home::LABEL {
-        return Err("no permitido".into());
+        return Err(crate::i18n::t("err.not_allowed").into());
     }
     let store = app.state::<Store>();
     store.update(|s| {
@@ -372,6 +380,7 @@ pub fn reset_preferences(app: AppHandle, webview: tauri::Webview) -> Result<Pref
     state.set_tuning(tuning(&settings));
     let _ = app.emit_to(crate::overlay::LABEL, "layout", settings.keyboard_layout.clone());
     let _ = app.emit_to(crate::overlay::LABEL, "suggest", settings.suggestions);
+    crate::apply_language(&app);
     // The home screen reloads its background.
     let _ = app.emit_to(crate::home::LABEL, "library", ());
     let prefs = Preferences::from(&settings);

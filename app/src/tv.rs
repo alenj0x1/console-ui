@@ -105,7 +105,7 @@ fn target(adapter: LUID, id: u32) -> Option<(String, String)> {
         let text = |w: &[u16]| String::from_utf16_lossy(&w[..w.iter().position(|&c| c == 0).unwrap_or(w.len())]);
         let path = text(&t.monitorDevicePath);
         let name = text(&t.monitorFriendlyDeviceName);
-        (!path.is_empty()).then(|| (if name.is_empty() { "Pantalla".into() } else { name }, path))
+        (!path.is_empty()).then(|| (if name.is_empty() { crate::i18n::t("tv.screen").into() } else { name }, path))
     }
 }
 
@@ -138,7 +138,7 @@ fn only(id: &str) -> Result<(), String> {
         Some(found) => found,
         None => {
             unsafe { SetDisplayConfig(0, std::ptr::null(), 0, std::ptr::null(), SDC_APPLY | SDC_TOPOLOGY_EXTEND) };
-            active_path(id).ok_or("esa pantalla no está conectada")?
+            active_path(id).ok_or(crate::i18n::t("err.tv_not_connected"))?
         }
     };
     let path = paths[at];
@@ -149,7 +149,7 @@ fn only(id: &str) -> Result<(), String> {
     }
     let flags = SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_ALLOW_CHANGES;
     let r = unsafe { SetDisplayConfig(1, &path, modes.len() as u32, modes.as_ptr(), flags) };
-    if r != 0 { Err(format!("Windows no cambió las pantallas ({r})")) } else { Ok(()) }
+    if r != 0 { Err(crate::i18n::t("err.tv_not_changed").replace("{code}", &r.to_string())) } else { Ok(()) }
 }
 
 /// The screens as they were; failing that, as Windows has them saved.
@@ -273,8 +273,8 @@ pub fn turn_on(app: &AppHandle) -> Result<(), String> {
         return Ok(());
     }
     let s = app.state::<Store>().settings.lock().unwrap().clone();
-    let display = s.tv_display.ok_or("elige primero la pantalla de la TV")?;
-    let (paths, modes) = query(QDC_ONLY_ACTIVE_PATHS).ok_or("no se pudieron leer las pantallas")?;
+    let display = s.tv_display.ok_or(crate::i18n::t("err.tv_choose_first"))?;
+    let (paths, modes) = query(QDC_ONLY_ACTIVE_PATHS).ok_or(crate::i18n::t("err.tv_read"))?;
     // Saved before anything changes: if the app dies halfway, the next start
     // puts the screens back.
     app.state::<Store>().update(|s| {
@@ -361,7 +361,7 @@ pub async fn tv_state(app: AppHandle) -> Result<TvState, String> {
 #[tauri::command]
 pub async fn tv_choose(app: AppHandle, webview: tauri::Webview, what: String, id: String) -> Result<(), String> {
     if webview.label() != crate::home::LABEL {
-        return Err("no permitido".into());
+        return Err(crate::i18n::t("err.not_allowed").into());
     }
     tauri::async_runtime::spawn_blocking(move || {
         let store = app.state::<Store>();
@@ -369,7 +369,7 @@ pub async fn tv_choose(app: AppHandle, webview: tauri::Webview, what: String, id
             "display" if displays().iter().any(|c| c.id == id) => store.update(|s| s.tv_display = Some(id)),
             "audio" if id.is_empty() => store.update(|s| s.tv_audio = None),
             "audio" if outputs().iter().any(|c| c.id == id) => store.update(|s| s.tv_audio = Some(id)),
-            _ => Err("opción no válida".into()),
+            _ => Err(crate::i18n::t("err.invalid_option").into()),
         }
     })
     .await
@@ -380,7 +380,7 @@ pub async fn tv_choose(app: AppHandle, webview: tauri::Webview, what: String, id
 #[tauri::command]
 pub async fn tv_set(app: AppHandle, webview: tauri::Webview, on: bool) -> Result<(), String> {
     if webview.label() != crate::home::LABEL && webview.label() != crate::guide::LABEL {
-        return Err("no permitido".into());
+        return Err(crate::i18n::t("err.not_allowed").into());
     }
     tauri::async_runtime::spawn_blocking(move || {
         if on {
@@ -398,7 +398,7 @@ pub async fn tv_set(app: AppHandle, webview: tauri::Webview, on: bool) -> Result
 #[tauri::command]
 pub fn tv_confirm(app: AppHandle, webview: tauri::Webview) -> Result<(), String> {
     if webview.label() != crate::home::LABEL {
-        return Err("no permitido".into());
+        return Err(crate::i18n::t("err.not_allowed").into());
     }
     app.state::<Tv>().confirmed.store(true, Ordering::Relaxed);
     Ok(())

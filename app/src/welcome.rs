@@ -19,7 +19,7 @@ pub fn open(app: &AppHandle) -> tauri::Result<()> {
         return Ok(());
     }
     WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App("welcome.html".into()))
-        .title("Bienvenida")
+        .title(crate::i18n::t("title.welcome"))
         .decorations(false)
         .fullscreen(true)
         .focused(true)
@@ -36,7 +36,7 @@ pub fn needed(app: &AppHandle) -> bool {
 #[tauri::command]
 pub async fn welcome_open(app: AppHandle, webview: tauri::Webview) -> Result<(), String> {
     if webview.label() != crate::home::LABEL {
-        return Err("no permitido".into());
+        return Err(crate::i18n::t("err.not_allowed").into());
     }
     open(&app).map_err(|e| e.to_string())
 }
@@ -46,7 +46,7 @@ pub async fn welcome_open(app: AppHandle, webview: tauri::Webview) -> Result<(),
 #[tauri::command]
 pub fn welcome_done(app: AppHandle, webview: tauri::Webview) -> Result<(), String> {
     if webview.label() != LABEL {
-        return Err("no permitido".into());
+        return Err(crate::i18n::t("err.not_allowed").into());
     }
     app.state::<Store>().update(|s| s.welcomed = true)?;
     app.state::<crate::events::Events>().log("bienvenida terminada");

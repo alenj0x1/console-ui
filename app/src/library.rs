@@ -73,14 +73,14 @@ impl Library {
             shell_open(&format!("shell:AppsFolder\\{id}"))?;
             return Ok(false);
         }
-        Err("no está en la biblioteca".into())
+        Err(crate::i18n::t("err.not_in_library").into())
     }
 }
 
 pub fn shell_open(target: &str) -> Result<(), String> {
     let r = unsafe { ShellExecuteW(None, w!("open"), &HSTRING::from(target), PCWSTR::null(), PCWSTR::null(), SW_SHOWNORMAL) };
     // ShellExecute returns a value > 32 on success.
-    if r.0 as usize > 32 { Ok(()) } else { Err(format!("no se pudo abrir ({})", r.0 as usize)) }
+    if r.0 as usize > 32 { Ok(()) } else { Err(crate::i18n::t("err.open_failed").replace("{code}", &(r.0 as usize).to_string())) }
 }
 
 // ---------- Start menu apps and icons ----------

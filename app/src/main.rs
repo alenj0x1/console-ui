@@ -11,6 +11,7 @@ mod audio;
 mod events;
 mod guard;
 mod home;
+mod i18n;
 mod library;
 mod media;
 mod overlay;
@@ -410,10 +411,40 @@ fn update_battery(app: &AppHandle, engine: &Engine, warn: bool) -> Option<padcor
     now
 }
 
+/// The tray menu's items, relabelled when the language changes.
+struct Tray([MenuItem<tauri::Wry>; 4]);
+
+/// Puts the interface language from the settings in use: the tray menu and
+/// the window titles follow at once (the pages follow "preferences").
+pub(crate) fn apply_language(app: &AppHandle) {
+    i18n::set(i18n::chosen(&app.state::<Store>().settings.lock().unwrap()));
+    let titles = [
+        (home::LABEL, "title.home"),
+        (guide::LABEL, "title.guide"),
+        (overlay::LABEL, "title.keyboard"),
+        (overlay::NOTICE, "title.notice"),
+        (radial::LABEL, "title.radial"),
+        (welcome::LABEL, "title.welcome"),
+    ];
+    for (label, key) in titles {
+        if let Some(w) = app.get_webview_window(label) {
+            let _ = w.set_title(i18n::t(key));
+        }
+    }
+    if let Some(tray) = app.try_state::<Tray>() {
+        // The games item says what it does now (see the tray's menu events).
+        let off = app.state::<AppState>().mode.load(Ordering::Relaxed) == mode_code(Mode::Off);
+        let keys = ["tray.home", "tray.keyboard", if off { "tray.windows" } else { "tray.games" }, "tray.quit"];
+        for (item, key) in tray.0.iter().zip(keys) {
+            let _ = item.set_text(i18n::t(key));
+        }
+    }
+}
+
 fn battery_words(b: Option<padcore::xinput::Battery>) -> &'static str {
     match b {
-        Some(b) if b.wired => "Con cable",
-        Some(b) => ["Batería vacía", "Batería baja", "Batería media", "Batería llena"][b.level as usize],
+        Some(b) if b.wired => i18n::t("battery.wired"),
+        Some(b) => i18n::t(["battery.0", "battery.1", "battery.2", "battery.3"][b.level as usize]),
         None => "",
     }
 }
@@ -426,7 +457,7 @@ fn pad_battery(state: State<AppState>) -> Option<padcore::xinput::Battery> {
 /// Commands that type, launch, read learned words or power off answer only
 /// the windows that use them: a bug in another page can't reach them.
 pub(crate) fn only_from(webview: &tauri::Webview, labels: &[&str]) -> Result<(), String> {
-    if labels.contains(&webview.label()) { Ok(()) } else { Err("no permitido".into()) }
+    if labels.contains(&webview.label()) { Ok(()) } else { Err(i18n::t("err.not_allowed").into()) }
 }
 
 #[tauri::command]
@@ -691,6 +722,7 @@ fn main() {
         .setup(move |app| {
             let handle = app.handle().clone();
             app.manage(Store::load(app.path().app_data_dir()?));
+            i18n::set(i18n::chosen(&app.state::<Store>().settings.lock().unwrap()));
             let (cloak_tx, cloak_rx) = mpsc::channel();
             app.manage(Cloak(Mutex::new(cloak_tx)));
             let worker = app.handle().clone();
@@ -715,11 +747,12 @@ fn main() {
             }
 
             let items = [
-                MenuItem::with_id(app, "home", "Abrir Inicio", !lab, None::<&str>)?,
-                MenuItem::with_id(app, "keyboard", "Abrir teclado", true, None::<&str>)?,
-                MenuItem::with_id(app, "games", "Dejar el control a los juegos", true, None::<&str>)?,
-                MenuItem::with_id(app, "quit", "Salir", true, None::<&str>)?,
+                MenuItem::with_id(app, "home", i18n::t("tray.home"), !lab, None::<&str>)?,
+                MenuItem::with_id(app, "keyboard", i18n::t("tray.keyboard"), true, None::<&str>)?,
+                MenuItem::with_id(app, "games", i18n::t("tray.games"), true, None::<&str>)?,
+                MenuItem::with_id(app, "quit", i18n::t("tray.quit"), true, None::<&str>)?,
             ];
+            app.manage(Tray(items.clone()));
             let refs: Vec<&dyn tauri::menu::IsMenuItem<tauri::Wry>> = items.iter().map(|i| i as _).collect();
             let games_item = items[2].clone();
             TrayIconBuilder::new()
@@ -740,7 +773,7 @@ fn main() {
                                 state.declined.store(switcher::foreground() as isize, Ordering::Relaxed);
                             }
                             state.send(if off { Mode::Cursor } else { Mode::Off });
-                            let _ = games_item.set_text(if off { "Dejar el control a los juegos" } else { "Volver a usar el control en Windows" });
+                            let _ = games_item.set_text(i18n::t(if off { "tray.games" } else { "tray.windows" }));
                         }
                         "quit" => app.exit(0),
                         _ => {}

@@ -100,7 +100,7 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
     *state.icon_dir.lock().unwrap() = Some(app.path().app_data_dir()?.join("icons"));
     *state.trailers.lock().unwrap() = Some(Arc::new(Trailers::new(trailers::dir(&app.path().app_data_dir()?))));
     WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App("home.html".into()))
-        .title("Inicio")
+        .title(crate::i18n::t("title.home"))
         .decorations(false)
         .fullscreen(true)
         .skip_taskbar(true)
@@ -237,7 +237,7 @@ pub async fn wallpapers(app: AppHandle) -> Wallpapers {
 pub fn set_wallpaper(webview: tauri::Webview, state: tauri::State<HomeState>, store: tauri::State<Store>, id: String) -> Result<(), String> {
     crate::only_from(&webview, &[crate::home::LABEL])?;
     if id != NO_WALLPAPER && state.wallpaper(&id).is_none() {
-        return Err("fondo desconocido".into());
+        return Err(crate::i18n::t("err.unknown_wallpaper").into());
     }
     store.set_wallpaper(id)
 }
@@ -296,9 +296,9 @@ const SERVICES: [(&str, &str); 6] = [
 pub fn open_service(webview: tauri::Webview, app: AppHandle, id: String) -> Result<(), String> {
     crate::only_from(&webview, &[crate::home::LABEL])?;
     if app.state::<crate::AppState>().mode.load(std::sync::atomic::Ordering::Relaxed) != crate::mode_code(padcore::Mode::Home) {
-        return Err("la pantalla de Inicio no está activa".into());
+        return Err(crate::i18n::t("err.home_inactive").into());
     }
-    let url = SERVICES.iter().find(|(s, _)| *s == id).map(|(_, u)| *u).ok_or("servicio desconocido")?;
+    let url = SERVICES.iter().find(|(s, _)| *s == id).map(|(_, u)| *u).ok_or(crate::i18n::t("err.unknown_service"))?;
     library::shell_open(url)
 }
 
@@ -319,7 +319,7 @@ pub fn add_wallpaper_folder(webview: tauri::Webview, store: tauri::State<Store>,
     crate::only_from(&webview, &[crate::home::LABEL])?;
     let dir = PathBuf::from(&path);
     if !folders::local_dir(&dir) {
-        return Err("carpeta no encontrada".into());
+        return Err(crate::i18n::t("err.folder_not_found").into());
     }
     let mut list = store.settings.lock().unwrap().wallpaper_folders.clone();
     if !list.iter().any(|d| sources::key(d) == sources::key(&dir)) {
@@ -348,7 +348,7 @@ pub fn set_pinned(webview: tauri::Webview, state: tauri::State<HomeState>, store
     crate::only_from(&webview, &[crate::home::LABEL])?;
     let lib = state.library.lock().unwrap();
     if ids.iter().any(|id| !lib.has_app(id)) {
-        return Err("app desconocida".into());
+        return Err(crate::i18n::t("err.unknown_app").into());
     }
     store.set_pinned(ids)
 }
@@ -365,7 +365,7 @@ pub fn set_media(webview: tauri::Webview, state: tauri::State<HomeState>, store:
     crate::only_from(&webview, &[crate::home::LABEL])?;
     let lib = state.library.lock().unwrap();
     if ids.iter().any(|id| !valid_media(&lib, id)) {
-        return Err("app o sitio desconocido".into());
+        return Err(crate::i18n::t("err.unknown_app_or_site").into());
     }
     store.set_media(ids)
 }
@@ -378,7 +378,7 @@ pub fn launch(webview: tauri::Webview, app: AppHandle, state: tauri::State<HomeS
     // Only the visible home screen may launch anything.
     if app.state::<crate::AppState>().mode.load(std::sync::atomic::Ordering::Relaxed) != crate::mode_code(padcore::Mode::Home) {
         events.log(&format!("inicio rechaza abrir {id}: no está en modo Inicio"));
-        return Err("la pantalla de Inicio no está activa".into());
+        return Err(crate::i18n::t("err.home_inactive").into());
     }
     // A game still open comes back to the front instead of starting again.
     if let Some(hwnd) = state.window_of(&id) {

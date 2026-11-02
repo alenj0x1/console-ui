@@ -29,6 +29,9 @@ const Previews = (() => {
   let t0 = 0, raf = 0, onScreen = false, frozen = null, snap = null, snapAt = -1e9, loopFn = null;
   let observers = [];
 
+  // Texts in the interface language (i18n.js); `t` is the time in here.
+  const say = (key) => t(key);
+
   // ---------- theme ----------
   const swatch = document.createElement("span");
   const reader = Object.assign(document.createElement("canvas"), { width: 1, height: 1 }).getContext("2d", { willReadFrequently: true });
@@ -210,7 +213,7 @@ const Previews = (() => {
     const L = T.layout, ink = T.fill ? C["on-accent"] : mix(C.muted, C.text, T.hover);
     strokeIcon(GLYPH[T.icon], T.x + T.w / 2, T.y + L.icon.dy, L.icon.size, col(ink), 1.8);
     ctx.font = `600 ${L.label.size}px ${FONT}`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = col(ink);
-    ctx.fillText(T.label, T.x + T.w / 2, T.y + L.label.dy);
+    ctx.fillText(say(T.label), T.x + T.w / 2, T.y + L.label.dy);
   }
   // A page in a window: rows of an icon and a line, scrolled by `offset` rows,
   // with its scroll thumb; ghost = the thumb of the value before.
@@ -244,7 +247,7 @@ const Previews = (() => {
     const dy = (1 - alpha) * 8;
     ctx.beginPath(); ctx.roundRect(x, y + dy, w, h, 14); ctx.fillStyle = col(C["surface-hover"]); ctx.fill();
     ctx.font = `600 24px ${FONT}`; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillStyle = col(C.text);
-    ctx.fillText("Centro de control", x + 20, y + dy + 28);
+    ctx.fillText(say("previews.control_center"), x + 20, y + dy + 28);
     for (let i = 0; i < 3; i++) {
       const ry = y + dy + 56 + i * 26;
       ctx.fillStyle = col(C.muted, 0.8);
@@ -343,7 +346,7 @@ const Previews = (() => {
     return { top, mark: top + 15, content: top + 37, pointer: top + 147, rail: top + 201, base: top + 303 };
   }
   const BOX = { x: 230, w: 180, h: 140 };
-  const TILE = { layout: { icon: { dy: 46, size: 44 }, label: { dy: 92, size: 22 } }, icon: "gamepad", label: "Jugar" };
+  const TILE = { layout: { icon: { dy: 46, size: 44 }, label: { dy: 92, size: 22 } }, icon: "gamepad", label: "previews.play" };
   // Trail: one dot every 1/15 s, at least 10 u apart.
   function trail(frames, t) {
     const dots = [], n = Math.min(frames.length - 1, Math.floor(t / DT));
@@ -362,10 +365,10 @@ const Previews = (() => {
     values: [0, 35, 55, 75],
     level: (v) => (v <= 0 ? "off" : v < 45 ? "soft" : v < 65 ? "normal" : "strong"),
     captions: {
-      off: "Va a la misma velocidad sobre los botones, así que es fácil pasarse.",
-      soft: "Frena un poco.",
-      normal: "Frena lo justo para detenerte encima.",
-      strong: "Va mucho más lento sobre los botones. Ideal si te cuesta atinar o te tiembla la mano.",
+      off: "previews.slowdown.off",
+      soft: "previews.slowdown.soft",
+      normal: "previews.slowdown.normal",
+      strong: "previews.slowdown.strong",
     },
     sim(value) {
       const c = curve({ hover: 1 - value / 100 }), frames = [];
@@ -417,9 +420,9 @@ const Previews = (() => {
     values: [70, 100, 140],
     level: (v) => (v < 85 ? "slow" : v <= 120 ? "normal" : "fast"),
     captions: {
-      slow: "Más preciso, pero cruzar la pantalla toma más tiempo.",
-      normal: "El equilibrio entre precisión y rapidez.",
-      fast: "Cruza la pantalla en un momento, pero cuesta más atinar.",
+      slow: "previews.cursor_speed.slow",
+      normal: "previews.cursor_speed.normal",
+      fast: "previews.cursor_speed.fast",
     },
     sim(value) {
       const c = curve({ speed: value / 100 }), frames = [];
@@ -451,9 +454,9 @@ const Previews = (() => {
     values: [8, 12, 18],
     level: (v) => (v < 10 ? "small" : v <= 15 ? "normal" : "large"),
     captions: {
-      small: "Reacciona al mínimo roce. Si te tiembla la mano, el puntero se mueve solo.",
-      normal: "Ignora los temblores pequeños.",
-      large: "Ignora casi cualquier temblor, pero hay que empujar un poco más para moverlo.",
+      small: "previews.deadzone.small",
+      normal: "previews.deadzone.normal",
+      large: "previews.deadzone.large",
     },
     sim(value) {
       const dz = value / 100, c = curve({ deadzone: dz }), frames = [], zoom = 360 / 0.03;
@@ -514,9 +517,9 @@ const Previews = (() => {
     values: [50, 100, 160],
     level: (v) => (v < 75 ? "slow" : v <= 130 ? "normal" : "fast"),
     captions: {
-      slow: "Recorre la página despacio, sin perder dónde ibas.",
-      normal: "Ni muy lento ni muy rápido.",
-      fast: "Recorre páginas largas en un momento.",
+      slow: "previews.scroll_speed.slow",
+      normal: "previews.scroll_speed.normal",
+      fast: "previews.scroll_speed.fast",
     },
     sim(value) { return scrollRun(value / 100, 1); },
     frame: scrollFrame,
@@ -524,7 +527,7 @@ const Previews = (() => {
   SCENES.invert_scroll = {
     values: [false, true],
     captions: {
-      false: "Ahora la página sube al empujar la palanca hacia arriba, como con la rueda del mouse.",
+      false: "previews.invert_scroll.off",
       true: "",
     },
     sim(value) { return scrollRun(1, value ? -1 : 1); },
@@ -536,7 +539,7 @@ const Previews = (() => {
   SCENES.swap_ab = {
     values: [false, true],
     captions: {
-      false: "Ahora {A} acepta y {B} vuelve atrás.",
+      false: "previews.swap_ab.off",
       true: "",
     },
     sim(value) { return { swap: value, ok: 0.6, back: 1.7, done: 1.7 + PRESS + HOLD, key: 0.75 }; },
@@ -562,7 +565,7 @@ const Previews = (() => {
     names: true,
     values: [false, true],
     captions: {
-      false: "Ahora la palanca izquierda mueve el puntero y la derecha sube o baja la página.",
+      false: "previews.swap_sticks.off",
       true: "",
     },
     sim(value) {
@@ -584,7 +587,7 @@ const Previews = (() => {
       const [left, right] = run.swap ? [scroller, pointer] : [pointer, scroller];
       return {
         list: { x: 330, w: 220, y: L.content - 10, h: 170, offset: f.offset },
-        controls: [{ ...left, name: "Izquierda" }, { ...right, name: "Derecha" }],
+        controls: [{ ...left, name: say("previews.left") }, { ...right, name: say("previews.right") }],
         cursor: { x: f.x, y: L.content + 70, alpha },
       };
     },
@@ -597,9 +600,9 @@ const Previews = (() => {
     values: [400, 600, 900],
     level: (v) => (v < 500 ? "short" : v <= 750 ? "normal" : "long"),
     captions: {
-      short: "Se abren enseguida, pero es más fácil abrirlos sin querer.",
-      normal: "Hay que sostenerlos un momento.",
-      long: "Hay que sostener casi un segundo, así es difícil abrirlos sin querer.",
+      short: "previews.hold_time.short",
+      normal: "previews.hold_time.normal",
+      long: "previews.hold_time.long",
     },
     sim(value) {
       const hold = value / 1000, press = 0.4, open = press + hold, release = open + 0.45;
@@ -613,7 +616,7 @@ const Previews = (() => {
       const button = (icon, name) => ({ kind: "button", icon, name, held, progress, ghost: g });
       return {
         guide: t >= run.open ? { x: 170, y: L.content, w: 300, h: 140, alpha: alpha * easeOut(clamp01(pt / 0.15)) } : null,
-        controls: [button("view", "Vista"), button("menu", "Menú")],
+        controls: [button("view", say("previews.view")), button("menu", say("previews.menu"))],
         join: true,
       };
     },
@@ -651,10 +654,10 @@ const Previews = (() => {
   SCENES.library_view = {
     values: ["banners", "covers", "grid", "list"],
     captions: {
-      banners: "Una fila de arte ancho. La que eliges se agranda.",
-      covers: "Una fila de portadas, como la caja del juego. La que eliges se agranda.",
-      grid: "Varias filas de portadas, para ver toda la biblioteca de una vez.",
-      list: "Solo los nombres, uno debajo del otro, para encontrar algo rápido.",
+      banners: "previews.library_view.banners",
+      covers: "previews.library_view.covers",
+      grid: "previews.library_view.grid",
+      list: "previews.library_view.list",
     },
     sim(value) {
       const steps = { banners: [1, 2], covers: [1, 2], grid: [1, 9], list: [1, 2] }[value];
@@ -724,6 +727,11 @@ const Previews = (() => {
     redraw();
   }
 
+  // A still frame shows its names in the new language; a running one redraws anyway.
+  I18n.watch(() => {
+    if (ctx && current && frozen !== null) frameAt(frozen === "key" ? current.run.key : frozen, 0);
+  });
+
   return {
     mount(el) {
       this.unmount();
@@ -754,7 +762,8 @@ const Previews = (() => {
     // Amounts read as the level they are closest to.
     caption: (id, value) => {
       const s = SCENES[id];
-      return (s && (s.level ? s.captions[s.level(value)] : s.captions[String(value)])) ?? "";
+      const key = s && (s.level ? s.captions[s.level(value)] : s.captions[String(value)]);
+      return key ? say(key) : "";
     },
     show(id, value, prev) {
       const scene = SCENES[id];

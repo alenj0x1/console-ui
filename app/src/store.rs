@@ -46,6 +46,10 @@ pub struct Settings {
     /// the user changes them (then the installed media apps show).
     #[serde(default)]
     pub media: Option<Vec<String>>,
+    /// The interface language (i18n::CATALOGUES); None follows Windows'
+    /// own (see i18n::chosen).
+    #[serde(default)]
+    pub language: Option<String>,
     /// One of prefs::ACCENTS.
     #[serde(default = "blue")]
     pub accent: String,
@@ -305,7 +309,7 @@ impl Store {
     /// `ids` must already be validated against the library.
     pub fn set_pinned(&self, ids: Vec<String>) -> Result<(), String> {
         if ids.len() > MAX_PINNED {
-            return Err("demasiadas apps fijadas".into());
+            return Err(crate::i18n::t("err.too_many_pinned").into());
         }
         self.update_settings(|s| s.pinned = Some(ids))
     }
@@ -317,7 +321,7 @@ impl Store {
 
     pub fn set_wallpaper_folders(&self, folders: Vec<std::path::PathBuf>) -> Result<(), String> {
         if folders.len() > MAX_FOLDERS {
-            return Err("demasiadas carpetas".into());
+            return Err(crate::i18n::t("err.too_many_folders").into());
         }
         self.update_settings(|s| s.wallpaper_folders = folders)
     }
@@ -325,7 +329,7 @@ impl Store {
     /// `ids` must already be validated against the library and the sites.
     pub fn set_media(&self, ids: Vec<String>) -> Result<(), String> {
         if ids.len() > MAX_PINNED {
-            return Err("demasiadas apps en Multimedia".into());
+            return Err(crate::i18n::t("err.too_many_media").into());
         }
         self.update_settings(|s| s.media = Some(ids))
     }

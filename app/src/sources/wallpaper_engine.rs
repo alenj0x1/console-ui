@@ -35,7 +35,7 @@ pub fn installed() -> bool {
 /// on the next scan.
 pub fn open_workshop() -> Result<(), String> {
     if !installed() {
-        return Err("Wallpaper Engine no está instalado".into());
+        return Err(crate::i18n::t("err.no_wallpaper_engine").into());
     }
     crate::library::shell_open(WORKSHOP)
 }

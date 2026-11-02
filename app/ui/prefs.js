@@ -1,5 +1,6 @@
-// Preferences every window applies at once: the accent colour (and a text
-// colour that reads on it), the text size and the focus ring. They come from
+// Preferences every window applies at once: the interface language, the
+// accent colour (and a text colour that reads on it), the text size and the
+// focus ring. They come from
 // the app on load and again whenever the settings change one.
 
 const Prefs = (() => {
@@ -24,6 +25,7 @@ const Prefs = (() => {
 
   function apply(p) {
     current = p;
+    I18n.use(p.language);
     const root = document.documentElement;
     // High contrast: a yellow focus and accent, whatever colour was chosen.
     const accent = p.high_contrast ? HIGH_CONTRAST_ACCENT : ACCENTS[p.accent] ?? ACCENTS.blue;

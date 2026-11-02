@@ -24,7 +24,7 @@ const MARGIN: f64 = 16.0;
 
 pub fn create(app: &AppHandle) -> tauri::Result<()> {
     let w = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App("keyboard.html".into()))
-        .title("Teclado")
+        .title(crate::i18n::t("title.keyboard"))
         .decorations(false)
         .transparent(true)
         .shadow(false)
@@ -51,7 +51,7 @@ const NOTICE_HEIGHT: f64 = 96.0;
 /// the focus when shown; it only does on purpose, to hand the focus back.
 pub fn create_notice(app: &AppHandle) -> tauri::Result<()> {
     let w = WebviewWindowBuilder::new(app, NOTICE, WebviewUrl::App("notice.html".into()))
-        .title("Aviso")
+        .title(crate::i18n::t("title.notice"))
         .decorations(false)
         .transparent(true)
         .shadow(false)

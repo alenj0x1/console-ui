@@ -23,7 +23,7 @@ pub struct Folders;
 impl WallpaperSource for Folders {
     fn wallpapers(&self, settings: &Settings) -> Vec<Wallpaper> {
         let mut dirs: Vec<(PathBuf, String)> = Vec::new();
-        for (id, label) in [(&FOLDERID_Videos, "Videos"), (&FOLDERID_Pictures, "Imágenes")] {
+        for (id, label) in [(&FOLDERID_Videos, crate::i18n::t("folder.videos")), (&FOLDERID_Pictures, crate::i18n::t("folder.pictures"))] {
             if let Some(d) = known_folder(id) {
                 dirs.push((d, label.into()));
             }
@@ -146,7 +146,7 @@ pub fn browse(path: Option<&str>) -> Result<Listing, String> {
     };
     let dir = PathBuf::from(path);
     if !local_dir(&dir) {
-        return Err("carpeta no encontrada".into());
+        return Err(crate::i18n::t("err.folder_not_found").into());
     }
     let mut folders: Vec<Entry> = std::fs::read_dir(&dir)
         .map_err(|e| e.to_string())?

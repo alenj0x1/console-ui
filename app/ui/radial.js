@@ -5,12 +5,13 @@
 
 const here = window.__TAURI__.webviewWindow.getCurrentWebviewWindow();
 
+// Names: radial.<id>.
 const SLOTS = [
-  { icon: "keyboard", name: "Teclado" },
-  { icon: "scissors", name: "Captura" },
-  { icon: "desktop", name: "Escritorio" },
-  { icon: "close-window", name: "Cerrar ventana" },
-  { icon: "home", name: "Inicio" },
+  { id: "keyboard", icon: "keyboard" },
+  { id: "capture", icon: "scissors" },
+  { id: "desktop", icon: "desktop" },
+  { id: "close", icon: "close-window" },
+  { id: "home", icon: "home" },
 ];
 const C = 280, OUTER = 270, INNER = 92, ICON = 34;
 const ring = document.querySelector("svg.ring");
@@ -32,7 +33,7 @@ function draw(aim) {
     const on = i === aim;
     return `<path class="slice${on ? " on" : ""}" d="${slice(i, n)}"/>
       <g class="${on ? "on-mark" : "mark"}" transform="translate(${x - ICON / 2} ${y - ICON / 2 - 12})">${icon(s.icon, "").replace("<svg ", `<svg width="${ICON}" height="${ICON}" `)}</g>
-      <text class="label" x="${x}" y="${y + 34}">${s.name}</text>`;
+      <text class="label" x="${x}" y="${y + 34}">${t(`radial.${s.id}`)}</text>`;
   });
   const cancel = aim == null
     ? `<g class="cancel" transform="translate(${C - ICON / 2} ${C - ICON / 2})">${icon("x", "").replace("<svg ", `<svg width="${ICON}" height="${ICON}" `)}</g>`
@@ -46,3 +47,5 @@ here.listen("radial", ({ payload }) => {
   else draw(null);
 });
 draw(null);
+// Another interface language: the names follow (the menu is closed then).
+I18n.watch(() => draw(null));

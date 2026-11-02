@@ -12,12 +12,11 @@ Usa todo Windows desde el sillón con el control: un cursor asistido, un teclado
 - **Teclado en pantalla**: con Y (o al hacer clic en un campo de texto) se abre sobre cualquier app sin quitarle el foco, en el monitor donde está el cursor y sin tapar lo que se escribe. Cuadrícula QWERTY con ñ, tildes manteniendo el botón, símbolos, y un diseño de dos mitades como opción.
 - **Sugerencias**: completan la palabra y ponen la tilde (`esta` → `está`), usan la palabra anterior como contexto y predicen la siguiente. Aprenden de ti, se guardan cifradas con DPAPI y nunca en campos de contraseña. Español por defecto; el inglés se activa desde el teclado.
 - **Pantalla de Inicio**: mantén Menu para ver a pantalla completa tus juegos de Steam y Epic (con su arte oficial de fondo), tus apps fijadas con sus íconos reales y una pestaña Multimedia (tus apps de música y video y los sitios de streaming que agregues, con lo que suena primero). De fondo, una animación propia, un fondo de video de Wallpaper Engine o tus videos e imágenes. Al abrir un juego, el control pasa a él.
-- **Ajustes**: una pestaña de Inicio para el color de acento, el tamaño del texto, los controles, el cursor, el teclado, el modo juego, abrir con Windows y la vibración.
+- **Ajustes**: una pestaña de Inicio para el idioma de la interfaz (español o inglés, al principio el de Windows), el color de acento, el tamaño del texto, los controles, el cursor, el teclado, el modo juego, abrir con Windows y la vibración.
 - **Modo juego**: cuando un juego pasa al frente (desde Inicio, Steam o cualquier otro lado), el control es suyo (dos vibraciones cortas), y el cursor vuelve cuando se cierra.
 - **Centro de control**: mantén View + Menu (los dos botones pequeños del centro del control: dos cuadritos y tres rayas), incluso en un juego, para ver tus ventanas abiertas y cambiar a una con A (un juego recibe el control; lo demás, el cursor), cerrar una con Y o manejar la música sin salir del juego; B vuelve. En el escritorio también se abre con un toque de View.
 - **Modo TV**: deja encendida solo la pantalla de la TV y manda el sonido a ella; al apagarlo todo vuelve como estaba.
 - **Bienvenida**: una práctica corta con el control la primera vez.
-- **Laboratorios**: cada decisión de diseño se midió con el usuario antes de adoptarla (ver `labs/`).
 
 ## Controles
 

@@ -45,45 +45,46 @@ function pointStep(next) {
   place();
 }
 
+// Names: welcome.<pref> and welcome.<pref>.<value>.
 const TUNE = [
-  { pref: "cursor_speed", name: "Velocidad del puntero", options: [[70, "Lenta"], [100, "Normal"], [140, "Rápida"]] },
-  { pref: "deadzone", name: "Ignorar movimientos pequeños", options: [[8, "Poco"], [12, "Normal"], [18, "Mucho"]] },
+  { pref: "cursor_speed", options: [70, 100, 140] },
+  { pref: "deadzone", options: [8, 12, 18] },
 ];
 function tuneStep(next) {
-  const rows = TUNE.flatMap((t) => {
+  const rows = TUNE.flatMap((o) => {
     const choice = el("div", { className: "choice" });
-    const paint = () => [...choice.children].forEach((b) => b.classList.toggle("sel", Number(b.dataset.v) === Prefs.get()?.[t.pref]));
-    for (const [v, label] of t.options) {
-      const b = el("button", { textContent: label });
+    const paint = () => [...choice.children].forEach((b) => b.classList.toggle("sel", Number(b.dataset.v) === Prefs.get()?.[o.pref]));
+    for (const v of o.options) {
+      const b = el("button", { textContent: t(`welcome.${o.pref}.${v}`) });
       b.dataset.v = v;
-      b.addEventListener("click", () => invoke("set_preference", { name: t.pref, value: v }).catch(console.error));
+      b.addEventListener("click", () => invoke("set_preference", { name: o.pref, value: v }).catch(console.error));
       choice.append(b);
     }
     paint();
     Prefs.watch(paint);
-    return [el("span", { className: "name", textContent: t.name }), choice];
+    return [el("span", { className: "name", textContent: t(`welcome.${o.pref}`) }), choice];
   });
-  const go = el("button", { className: "action", textContent: "Seguir" });
+  const go = el("button", { className: "action", textContent: t("welcome.next") });
   go.addEventListener("click", next);
   area.replaceChildren(el("div", { className: "tune" }, ...rows), go);
 }
 
 const fold = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 function typeStep(next) {
-  const field = el("input", { className: "field", spellcheck: false, autocomplete: "off", placeholder: "hola" });
-  const mark = doneMark("Enviado");
-  // hola, then RT (Enter) to send it, then B closes the keyboard.
+  const field = el("input", { className: "field", spellcheck: false, autocomplete: "off", placeholder: t("welcome.word") });
+  const mark = doneMark(t("welcome.sent"));
+  // The word (hola), then RT (Enter) to send it, then B closes the keyboard.
   let typed = false, sent = false;
   field.addEventListener("input", () => {
-    if (typed || !fold(field.value).includes("hola")) return;
+    if (typed || !fold(field.value).includes(fold(t("welcome.word")))) return;
     typed = true;
-    lineEl.replaceChildren(...say("Presiona {RT} para enviarlo."));
+    setLine("welcome.send");
   });
   field.addEventListener("keydown", (e) => {
     if (e.key !== "Enter" || !typed || sent) return;
     sent = true;
     mark.hidden = false;
-    lineEl.replaceChildren(...say("Presiona {B} para cerrar el teclado."));
+    setLine("welcome.close_keyboard");
   });
   area.replaceChildren(field, el("div", {}, mark));
   field.focus();
@@ -102,22 +103,20 @@ function roundTrip(there, next) {
 
 function endStep() {
   const tips = el("ul", { className: "tips" },
-    el("li", {}, ...say("Con {LT} presionado, la cruceta salta de un botón a otro.")),
-    el("li", {}, ...say("Mantén {View} para el menú rápido. Apunta con la palanca derecha y suelta.")),
-    el("li", {}, ...say("En un juego, mantén {View} + {Menu} para el centro de control.")),
-    el("li", {}, ...say("Todo esto se cambia en Ajustes, dentro de Inicio.")));
-  const go = el("button", { className: "action", textContent: "Empezar" });
+    ...["jump", "radial", "guide", "settings"].map((k) => el("li", {}, ...say(t(`welcome.tip.${k}`)))));
+  const go = el("button", { className: "action", textContent: t("welcome.start") });
   go.addEventListener("click", finish);
   area.replaceChildren(tips, go);
 }
 
+// Texts: welcome.<id>.title and welcome.<id>.line.
 const STEPS = [
-  { title: "Hola", line: "Mueve el puntero con la palanca izquierda y presiona {A} sobre cada círculo.", run: pointStep },
-  { title: "Cómo se siente el puntero", line: "Elige con {A}. Se aplica al instante, así que puedes probar.", run: tuneStep },
-  { title: "El teclado", line: "Presiona {Y} para abrirlo y escribe hola.", run: typeStep },
-  { title: "Inicio", line: "Mantén {Menu} para abrir Inicio, con tus juegos y apps. Presiona {B} para volver aquí.", run: (next) => roundTrip("home", next) },
-  { title: "Centro de control", line: "Presiona {View}. Ahí cambias de ventana, manejas la música y apagas la computadora. {B} vuelve.", run: (next) => roundTrip("guide", next) },
-  { title: "Listo", line: "", run: endStep },
+  { id: "point", run: pointStep },
+  { id: "tune", run: tuneStep },
+  { id: "type", run: typeStep },
+  { id: "home", run: (next) => roundTrip("home", next) },
+  { id: "guide", run: (next) => roundTrip("guide", next) },
+  { id: "done", run: endStep },
 ];
 
 let modeWait = null;
@@ -132,15 +131,33 @@ listen("mode", ({ payload }) => {
   }
 });
 
+// The line under the title (a key), kept to draw it again in another language.
+let lineKey = "";
+function setLine(key) {
+  lineKey = key;
+  lineEl.replaceChildren(...say(key ? t(key, { word: t("welcome.word") }) : ""));
+}
+
 let at = -1;
 function step() {
   at++;
   modeWait = null;
   const s = STEPS[at];
-  titleEl.textContent = s.title;
-  lineEl.replaceChildren(...say(s.line));
+  titleEl.textContent = t(`welcome.${s.id}.title`);
+  setLine(s.id === "done" ? "" : `welcome.${s.id}.line`);
   s.run(step);
 }
+
+// Another interface language: the step's texts follow, keeping its progress.
+I18n.watch(() => {
+  const s = STEPS[at];
+  titleEl.textContent = t(`welcome.${s.id}.title`);
+  setLine(lineKey);
+  if (s.run === tuneStep || s.run === endStep) s.run(step);
+  area.querySelector(".field")?.setAttribute("placeholder", t("welcome.word"));
+  const sent = area.querySelector(".done span");
+  if (sent) sent.textContent = t("welcome.sent");
+});
 
 function finish() {
   invoke("welcome_done").catch(console.error);

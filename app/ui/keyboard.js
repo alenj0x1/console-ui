@@ -34,16 +34,18 @@ const ROWS = {
   rightSym: ["67890", "*-+()", "':;/_"],
 };
 
+// Labels: keyboard.<id> in the interface language (sym and lang draw their own).
 const ACTIONS = {
-  shift: { label: "Mayús", glyph: "LB", width: 96 },
-  sym: { label: "?123", glyph: "RB", width: 96 },
+  shift: { glyph: "LB", width: 96 },
+  sym: { glyph: "RB", width: 96 },
   lang: { glyph: "L3", width: 88 },
-  space: { label: "Espacio", glyph: "Y", width: 196 },
-  back: { label: "Borrar", glyph: "X", width: 124 },
-  enter: { label: "Intro", glyph: "Menu", width: 124 },
+  space: { glyph: "Y", width: 196 },
+  back: { glyph: "X", width: 124 },
+  enter: { glyph: "Menu", width: 124 },
 };
 const SPLIT_ACTIONS = ["shift", "sym", "lang", "space", "back", "enter"];
 
+// Each language written in its own name, whatever the interface language.
 const LANGUAGE_NAMES = { es: "Español", en: "English" };
 
 const state = {
@@ -216,7 +218,7 @@ function keyEl(key, id, focused) {
     if ((key.id === "shift" && state.shift) || (key.id === "sym" && state.sym)) el.classList.add("active");
     const label = document.createElement("span");
     label.textContent =
-      key.id === "lang" ? state.languages.map((l) => l.toUpperCase()).join(" · ") : key.id === "sym" && state.sym ? "abc" : a.label;
+      key.id === "lang" ? state.languages.map((l) => l.toUpperCase()).join(" · ") : key.id === "sym" ? (state.sym ? "abc" : "?123") : t(`keyboard.${key.id}`);
     // RT is Enter in the grid, as with the pointer; the halves type with it.
     el.append(label, glyphEl(key.id === "enter" && state.layout === "grid" ? "RT" : a.glyph));
   }
@@ -245,9 +247,9 @@ function renderMenu() {
       el.append(box, label);
     } else if (item.kind === "forget") {
       el.classList.add("danger");
-      el.textContent = state.menu.confirmForget ? "Confirmar: olvidar palabras aprendidas" : "Olvidar palabras aprendidas";
+      el.textContent = t(state.menu.confirmForget ? "keyboard.forget_confirm" : "keyboard.forget");
     } else {
-      el.append(Object.assign(document.createElement("span"), { textContent: "Listo" }), glyphEl("L3"));
+      el.append(Object.assign(document.createElement("span"), { textContent: t("keyboard.done") }), glyphEl("L3"));
     }
     list.append(el);
   });
@@ -636,6 +638,9 @@ listen("mode", ({ payload }) => {
   }
   backRelease();
 });
+
+// Another interface language: the keys' names follow.
+I18n.watch(() => render());
 
 render();
 init();

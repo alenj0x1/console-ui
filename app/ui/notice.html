@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>Aviso</title>
+  <title data-i18n="title.notice">Aviso</title>
   <link rel="stylesheet" href="theme.css">
   <style>
     html, body { height: 100%; background: transparent; overflow: hidden; user-select: none; cursor: default; }
@@ -17,11 +17,12 @@
       background: var(--bg);
       box-shadow: inset 0 0 0 var(--line) var(--ring-strong);
     }
+    .back .glyph { font-size: 15px; }
     .text { min-width: 0; font-size: 15px; line-height: 1.4; }
     .text b { font-weight: 600; }
     .text span { color: var(--muted); }
+    .text span.lead { color: inherit; }
     .back { flex: none; display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 16px; border-radius: 10px; background: var(--surface); font-weight: 600; font-size: 15px; }
-    .back .key { font-weight: 700; color: var(--muted); }
     /* One message at a time; only the admin one has an action. */
     .notice > .text:not(.k-all), .notice:not([data-kind="admin"]) .back { display: none; }
     .notice[data-kind="admin"] .admin, .notice[data-kind="game"] .game, .notice[data-kind="connected"] .connected,
@@ -31,13 +32,14 @@
 </head>
 <body>
   <div class="notice" data-kind="admin">
-    <div class="text admin"><b id="name">Esta ventana</b> se ejecuta como administrador. <span>Windows no deja que el control la maneje.</span></div>
-    <div class="text game"><b>El control es del juego.</b> <span id="game-hint">Mantén {View} y {Menu} para abrir el centro de control.</span></div>
-    <div class="text connected"><b>Control conectado.</b> <span id="battery"></span></div>
-    <div class="text disconnected"><b>Se desconectó el control.</b> <span>Conéctalo de nuevo para seguir.</span></div>
-    <div class="text battery"><b>Al control le queda poca batería.</b> <span>Cárgalo o cambia las pilas pronto.</span></div>
-    <div class="back">Volver al escritorio <span class="key">B</span></div>
+    <div class="text admin"><b id="name"></b> <span class="lead" data-i18n="notice.admin">se ejecuta como administrador.</span> <span data-i18n="notice.admin_hint">Windows no deja que el control la maneje.</span></div>
+    <div class="text game"><b data-i18n="notice.game">El control es del juego.</b> <span id="game-hint"></span></div>
+    <div class="text connected"><b data-i18n="notice.connected">Control conectado.</b> <span id="battery"></span></div>
+    <div class="text disconnected"><b data-i18n="notice.disconnected">Se desconectó el control.</b> <span data-i18n="notice.disconnected_hint">Conéctalo de nuevo para seguir.</span></div>
+    <div class="text battery"><b data-i18n="notice.battery">Al control le queda poca batería.</b> <span data-i18n="notice.battery_hint">Cárgalo o cambia las pilas pronto.</span></div>
+    <div class="back"><span data-i18n="notice.back">Volver al escritorio</span> <span class="glyph" id="back-key"></span></div>
   </div>
+  <script src="i18n.js"></script>
   <script src="prefs.js"></script>
   <script src="icons.js"></script>
   <script src="notice.js"></script>

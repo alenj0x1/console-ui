@@ -31,7 +31,7 @@ pub struct GuideState {
 pub fn create(app: &AppHandle) -> tauri::Result<()> {
     *app.state::<GuideState>().game_dirs.lock().unwrap() = crate::sources::game_dirs();
     let w = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App("guide.html".into()))
-        .title("Centro de control")
+        .title(crate::i18n::t("title.guide"))
         .decorations(false)
         .transparent(true)
         .shadow(false)

@@ -23,7 +23,7 @@ const CLOCK_EVERY_MS = 15000;
 const EDIT = "__edit";
 // Background id for the plain colour.
 const NO_WALL = "none";
-const KINDS = { animated: "Animado", video: "Video", image: "Imagen" };
+const KINDS = { animated: "home.kind.animated", video: "home.kind.video", image: "home.kind.image" };
 // Wait before loading the focused background, so moving through the grid
 // does not start a video on every step.
 const PREVIEW_DELAY_MS = 350;
@@ -598,14 +598,14 @@ function setStage(on) {
 function playedAgo(secs) {
   if (!secs) return "";
   const m = Math.floor((Date.now() / 1000 - secs) / 60);
-  if (m < 2) return "Jugado hace un momento";
-  if (m < 60) return `Jugado hace ${m} min`;
+  if (m < 2) return t("home.played.now");
+  if (m < 60) return t("home.played.minutes", { n: m });
   const h = Math.floor(m / 60);
-  if (h < 24) return `Jugado hace ${h} h`;
+  if (h < 24) return t("home.played.hours", { n: h });
   const d = Math.floor(h / 24);
-  if (d < 30) return d === 1 ? "Jugado ayer" : `Jugado hace ${d} días`;
+  if (d < 30) return d === 1 ? t("home.played.yesterday") : t("home.played.days", { n: d });
   const mo = Math.floor(d / 30);
-  return mo < 12 ? `Jugado hace ${mo} ${mo === 1 ? "mes" : "meses"}` : "Jugado hace más de un año";
+  return mo < 12 ? t(mo === 1 ? "home.played.month" : "home.played.months", { n: mo }) : t("home.played.year");
 }
 
 // ---------- what each tab shows ----------
@@ -630,7 +630,7 @@ function gameItems() {
   const rank = (g) => (open(g) ? (g.id === state.lastGame ? 0 : 1) : g.id === state.lastGame ? 2 : 3);
   // A–Z: only the open games go before the rest.
   const az = state.prefs?.game_order === "az";
-  const byName = (a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" });
+  const byName = (a, b) => a.name.localeCompare(b.name, I18n.lang(), { sensitivity: "base" });
   const base = az ? [...state.games].sort(byName) : state.games;
   const order = az ? (g) => (open(g) ? 0 : 1) : rank;
   const games = base.map((g, i) => [g, i]).sort((a, b) => order(a[0]) - order(b[0]) || a[1] - b[1]).map(([g]) => g);
@@ -646,12 +646,12 @@ function gameItems() {
       const head = infoEl({
         lead: g.art.includes("logo") ? el("img", { className: "logo", src: art(g, "logo"), alt: g.name }) : null,
         title: g.name,
-        meta: [open(g) ? "Abierto" : playedAgo(g.last_played), SOURCES[g.source]].filter(Boolean).join(" · "),
-        action: [open(g) ? "Reanudar" : "Jugar", "A"],
+        meta: [open(g) ? t("home.running") : playedAgo(g.last_played), SOURCES[g.source]].filter(Boolean).join(" · "),
+        action: [open(g) ? t("home.resume") : t("home.play"), "A"],
       });
       if (state.sheet !== "search") {
-        const hints = el("span", { className: "hints" }, el("span", { className: "hint" }, glyph("Y"), "Buscar"));
-        if (trailerFor === g.id && trailer.classList.contains("shown")) hints.append(el("span", { className: "hint" }, glyph("X"), soundWanted() ? "Silenciar" : "Activar sonido"));
+        const hints = el("span", { className: "hints" }, el("span", { className: "hint" }, glyph("Y"), t("home.search")));
+        if (trailerFor === g.id && trailer.classList.contains("shown")) hints.append(el("span", { className: "hint" }, glyph("X"), soundWanted() ? t("home.mute") : t("home.unmute")));
         head.querySelector(".action").after(hints);
       }
       return head;
@@ -673,7 +673,7 @@ const initial = (name) => fold(name)[0] ?? "";
 
 function searchItems() {
   const q = fold(state.search.q).trim();
-  const byName = (a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" });
+  const byName = (a, b) => a.name.localeCompare(b.name, I18n.lang(), { sensitivity: "base" });
   // Words that start with what was typed ("ho" finds Hollow Knight, not Asphalt).
   const words = (name) => " " + fold(name).replace(/[^a-z0-9]+/g, " ");
   return gameItems().filter((g) => !q || words(g.name).includes(" " + q)).sort(byName);
@@ -684,12 +684,12 @@ function searchHead() {
   const keys = el("div", { className: "search-keys" },
     ...SEARCH_KEYS.map((k, i) => el("span", { className: `search-key${s.zone === "keys" && i === s.key ? " on" : ""}`, textContent: k })));
   const field = el("div", { className: "search-field" }, svg("search"),
-    el("span", { className: s.q ? "query" : "query empty", textContent: s.q || "Buscar un juego" }));
+    el("span", { className: s.q ? "query" : "query empty", textContent: s.q || t("home.search.field") }));
   const hints = el("div", { className: "hints" },
-    el("span", { className: "hint" }, glyph("X"), "Borrar"),
-    el("span", { className: "hint" }, glyph("Y"), "Espacio"),
-    el("span", { className: "hint" }, glyph("LT RT"), "Letra"),
-    el("span", { className: "hint" }, glyph("B"), "Cerrar"));
+    el("span", { className: "hint" }, glyph("X"), t("home.search.erase")),
+    el("span", { className: "hint" }, glyph("Y"), t("home.search.space")),
+    el("span", { className: "hint" }, glyph("LT RT"), t("home.search.letter")),
+    el("span", { className: "hint" }, glyph("B"), t("home.close")));
   const head = el("section", { className: "search" }, field, keys, hints);
   head.dataset.item = "search";
   return head;
@@ -735,13 +735,13 @@ function appItems() {
   const pinned = state.pinned.map(appById).filter(Boolean).map((app) => ({
     key: app.id,
     tile: () => appTile(app),
-    info: () => ({ lead: img(appIcon(app.id), "lead-icon"), title: app.name, meta: "", action: ["Abrir", "A"] }),
+    info: () => ({ lead: img(appIcon(app.id), "lead-icon"), title: app.name, meta: "", action: [t("home.open"), "A"] }),
     select: () => open(app.id),
   }));
   const edit = {
     key: EDIT,
-    tile: () => el("div", { className: "tile" }, svg("edit", "icon symbol"), el("span", { className: "name", textContent: "Editar" })),
-    info: () => ({ lead: el("div", { className: "lead-symbol" }, svg("edit")), title: "Editar apps", meta: "", action: ["Editar", "A"] }),
+    tile: () => el("div", { className: "tile" }, svg("edit", "icon symbol"), el("span", { className: "name", textContent: t("home.edit") })),
+    info: () => ({ lead: el("div", { className: "lead-symbol" }, svg("edit")), title: t("home.edit_apps"), meta: "", action: [t("home.edit"), "A"] }),
     select: () => {
       state.sheet = "edit";
       state.focus.edit = 0;
@@ -803,7 +803,7 @@ function playingInfo(app) {
     lead: small ? el("img", { className: "lead-cover", src: small, alt: "" }) : app ? img(appIcon(app.id), "lead-icon") : el("p", { className: "source", textContent: playerName(m.source) }),
     title: m.title,
     meta: [m.artist, app?.name ?? ""].filter(Boolean).join(" · "),
-    action: app ? ["Abrir", "A"] : null,
+    action: app ? [t("home.open"), "A"] : null,
   });
   if (m.duration_ms) {
     head.querySelector(".meta").after(
@@ -811,9 +811,9 @@ function playingInfo(app) {
     );
   }
   const hints = el("span", { className: "hints" },
-    el("span", { className: "hint" }, glyph("X"), m.playing ? "Pausar" : "Reproducir"),
-    el("span", { className: "hint" }, glyph("LT RT"), "Cambiar canción"));
-  if (lyrics.lines.length) hints.append(el("span", { className: "hint" }, glyph("R3"), lyricsWanted() ? "Carátula" : "Letra"));
+    el("span", { className: "hint" }, glyph("X"), m.playing ? t("home.pause") : t("home.play_music")),
+    el("span", { className: "hint" }, glyph("LT RT"), t("home.change_song")));
+  if (lyrics.lines.length) hints.append(el("span", { className: "hint" }, glyph("R3"), lyricsWanted() ? t("home.cover") : t("home.lyrics")));
   (head.querySelector(".action") ?? head.querySelector(".progress") ?? head.querySelector(".meta")).after(hints);
   return head;
 }
@@ -828,12 +828,12 @@ function mediaItems() {
       return {
         key: id,
         tile: () => siteTile(s),
-        info: () => ({ lead: img(s.icon, "lead-icon"), title: s.name, meta: "Se abre en tu navegador", action: ["Abrir", "A"] }),
+        info: () => ({ lead: img(s.icon, "lead-icon"), title: s.name, meta: t("home.in_browser"), action: [t("home.open"), "A"] }),
         select: () => openService(s.id),
       };
     }
     const app = appById(id);
-    return app && { key: app.id, app, tile: () => appTile(app), info: () => ({ lead: img(appIcon(app.id), "lead-icon"), title: app.name, meta: "", action: ["Abrir", "A"] }), select: () => open(app.id) };
+    return app && { key: app.id, app, tile: () => appTile(app), info: () => ({ lead: img(appIcon(app.id), "lead-icon"), title: app.name, meta: "", action: [t("home.open"), "A"] }), select: () => open(app.id) };
   }).filter(Boolean);
   // The player's card comes first; one that is not in the list (a browser
   // playing a video) joins while it plays.
@@ -856,8 +856,8 @@ function mediaItems() {
   }
   const edit = {
     key: "__medit",
-    tile: () => el("div", { className: "tile" }, svg("edit", "icon symbol"), el("span", { className: "name", textContent: "Editar" })),
-    info: () => ({ lead: el("div", { className: "lead-symbol" }, svg("edit")), title: "Editar Multimedia", meta: "", action: ["Editar", "A"] }),
+    tile: () => el("div", { className: "tile" }, svg("edit", "icon symbol"), el("span", { className: "name", textContent: t("home.edit") })),
+    info: () => ({ lead: el("div", { className: "lead-symbol" }, svg("edit")), title: t("home.edit_media"), meta: "", action: [t("home.edit"), "A"] }),
     select: () => {
       state.sheet = "medit";
       state.focus.medit = 0;
@@ -884,7 +884,7 @@ function mediaEditItems() {
     list.push({
       key: "__all",
       more: true,
-      tile: () => symbolTile("apps", "Todas las apps"),
+      tile: () => symbolTile("apps", t("home.all_apps")),
       select: () => {
         state.allApps = true;
         render();
@@ -898,7 +898,7 @@ async function toggleMedia(id) {
   const picks = mediaPicks();
   state.picks = picks.includes(id) ? picks.filter((p) => p !== id) : [...picks, id];
   render();
-  await invoke("set_media", { ids: state.picks }).catch((e) => failed("No se pudo guardar el cambio.", e));
+  await invoke("set_media", { ids: state.picks }).catch((e) => failed(t("home.fail.save"), e));
 }
 
 // Moves the progress bar without rebuilding.
@@ -934,34 +934,34 @@ function wallItems() {
   const current = state.wallpaper?.id ?? null;
   const addFolder = {
     key: "add-folder",
-    tile: () => symbolTile("folder-plus", "Agregar carpeta"),
-    info: () => ({ lead: el("div", { className: "lead-symbol" }, svg("folder-plus")), title: "Agregar carpeta", meta: "", action: ["Elegir", "A"] }),
+    tile: () => symbolTile("folder-plus", t("home.add_folder")),
+    info: () => ({ lead: el("div", { className: "lead-symbol" }, svg("folder-plus")), title: t("home.add_folder"), meta: "", action: [t("home.choose"), "A"] }),
     select: () => openFolder(null),
   };
   const workshop = state.engine && {
     key: "workshop",
-    tile: () => symbolTile("download", "Conseguir más"),
-    info: () => ({ lead: el("div", { className: "lead-symbol" }, svg("download")), title: "Conseguir más", meta: "Workshop de Wallpaper Engine", action: ["Abrir", "A"] }),
+    tile: () => symbolTile("download", t("home.get_more")),
+    info: () => ({ lead: el("div", { className: "lead-symbol" }, svg("download")), title: t("home.get_more"), meta: t("home.workshop"), action: [t("home.open"), "A"] }),
     select: openWorkshop,
   };
   const gameArt = {
     key: "art" + state.gameArt,
-    tile: () => symbolTile("gamepad", "Arte de los juegos", state.gameArt),
-    info: () => ({ lead: el("div", { className: "lead-symbol" }, svg("gamepad")), title: "Arte de los juegos", meta: "", action: [state.gameArt ? "Ocultar" : "Mostrar", "A"] }),
+    tile: () => symbolTile("gamepad", t("home.game_art"), state.gameArt),
+    info: () => ({ lead: el("div", { className: "lead-symbol" }, svg("gamepad")), title: t("home.game_art"), meta: "", action: [state.gameArt ? t("home.hide") : t("home.show"), "A"] }),
     select: toggleGameArt,
   };
   const none = {
     key: "none" + (current === null),
     wall: null,
-    tile: () => symbolTile("photo-off", "Sin fondo", current === null),
-    info: () => ({ lead: el("div", { className: "lead-symbol" }, svg("photo-off")), title: "Sin fondo", meta: "", action: ["Usar", "A", current === null] }),
+    tile: () => symbolTile("photo-off", t("home.no_wall"), current === null),
+    info: () => ({ lead: el("div", { className: "lead-symbol" }, svg("photo-off")), title: t("home.no_wall"), meta: "", action: [t("home.use"), "A", current === null] }),
     select: () => chooseWall(null),
   };
   const walls = state.walls.map((w) => ({
     key: w.id + (w.id === current ? "+" : ""),
     wall: w,
     tile: () => el("div", { className: "tile" }, img(wallPreview(w), "art"), w.id === current ? badge() : null),
-    info: () => ({ lead: null, title: w.title, meta: [w.origin, KINDS[w.kind]].join(" · "), action: ["Usar", "A", w.id === current] }),
+    info: () => ({ lead: null, title: w.title, meta: [w.origin, t(KINDS[w.kind])].join(" · "), action: [t("home.use"), "A", w.id === current] }),
     select: () => chooseWall(w),
   }));
   return [gameArt, addFolder, workshop, none, ...walls].filter(Boolean);
@@ -974,17 +974,17 @@ function folderItems() {
   if (!f) return [];
   const name = (p) => p.replace(/[\\/]+$/, "").split(/[\\/]/).pop() || p;
   const added = f.path && state.folders.some((p) => p.toLowerCase() === f.path.toLowerCase());
-  const media = (n) => (n ? `${n} ${n === 1 ? "video o imagen" : "videos e imágenes"}` : "");
+  const media = (n) => (n ? t(n === 1 ? "home.folder.one" : "home.folder.many", { n }) : "");
   const here = f.path && {
     key: "here" + added,
-    tile: () => symbolTile(added ? "folder-minus" : "folder-plus", added ? "Quitar esta carpeta" : "Agregar esta carpeta"),
-    info: () => ({ lead: el("div", { className: "lead-symbol" }, svg("folder")), title: name(f.path), meta: media(f.media), action: [added ? "Quitar" : "Agregar", "A"] }),
+    tile: () => symbolTile(added ? "folder-minus" : "folder-plus", added ? t("home.folder.remove_this") : t("home.folder.add_this")),
+    info: () => ({ lead: el("div", { className: "lead-symbol" }, svg("folder")), title: name(f.path), meta: media(f.media), action: [added ? t("home.remove") : t("home.add"), "A"] }),
     select: () => (added ? removeFolder(f.path) : addFolder(f.path)),
   };
   const subs = f.folders.map((d) => ({
     key: d.path,
     tile: () => symbolTile("folder", d.name),
-    info: () => ({ lead: el("div", { className: "lead-symbol" }, svg("folder")), title: d.name, meta: media(d.media), action: ["Abrir", "A"] }),
+    info: () => ({ lead: el("div", { className: "lead-symbol" }, svg("folder")), title: d.name, meta: media(d.media), action: [t("home.open"), "A"] }),
     select: () => openFolder(d.path),
   }));
   return [here, ...subs].filter(Boolean);
@@ -996,9 +996,11 @@ function folderItems() {
 // Language names, each in its own language.
 const LANGUAGE_NAMES = { es: "Español", en: "English", pt: "Português", fr: "Français", de: "Deutsch", it: "Italiano" };
 const languageName = (code) => LANGUAGE_NAMES[code] ?? code;
+// The interface language (Ajustes > General > Idioma) is another thing.
+const languageOf = (code) => I18n.languages().find((l) => l.code === code)?.name ?? "";
 // Which hand holds the controller; three long names do not fit side by side.
-const HANDS = [["both", "Dos manos"], ["left", "Mano izquierda"], ["right", "Mano derecha"]];
-const handName = (v) => (HANDS.find(([h]) => h === v) ?? HANDS[0])[1];
+const HANDS = ["both", "left", "right"];
+const handName = (v) => t(`settings.hand.${HANDS.includes(v) ? v : HANDS[0]}`);
 // Amounts set with a slider (as prefs.rs LEVELS): their range, the levels
 // the slider rests on for a moment while held, and how the value reads.
 const percent = (v) => `${v} %`;
@@ -1006,10 +1008,10 @@ const LEVELS = {
   cursor_speed: { min: 40, max: 200, step: 5, stops: [70, 100, 140], show: percent },
   scroll_speed: { min: 30, max: 250, step: 10, stops: [50, 100, 160], show: percent },
   deadzone: { min: 4, max: 25, step: 1, stops: [8, 12, 18], show: percent },
-  slowdown: { min: 0, max: 80, step: 5, stops: [35, 55, 75], show: (v) => (v ? percent(v) : "No") },
-  hold_time: { min: 300, max: 1200, step: 50, stops: [400, 600, 900], show: (v) => `${(v / 1000).toLocaleString("es", { maximumFractionDigits: 2 })} s` },
+  slowdown: { min: 0, max: 80, step: 5, stops: [35, 55, 75], show: (v) => (v ? percent(v) : t("settings.off")) },
+  hold_time: { min: 300, max: 1200, step: 50, stops: [400, 600, 900], show: (v) => `${(v / 1000).toLocaleString(I18n.lang(), { maximumFractionDigits: 2 })} s` },
   text_size: { min: 100, max: 150, step: 5, stops: [110, 120, 135], show: percent },
-  wall_dim: { min: 0, max: 100, step: 5, stops: [25, 50, 75], show: (v) => (v ? percent(v) : "No") },
+  wall_dim: { min: 0, max: 100, step: 5, stops: [25, 50, 75], show: (v) => (v ? percent(v) : t("settings.off")) },
 };
 // Buttons that can be reassigned, as the settings name them, and what each can do.
 // Laid out as on the controller: the left hand's buttons, then the right's.
@@ -1017,96 +1019,92 @@ const PAD_LEFT = ["lt", "lb", "l3", "up", "left", "right", "down"];
 const PAD_RIGHT = ["rt", "rb", "y", "x", "b", "a", "r3"];
 const REMAP_BUTTONS = [...PAD_LEFT, ...PAD_RIGHT];
 const ARROWS = { up: "↑", down: "↓", left: "←", right: "→" };
-const buttonText = (b) => (ARROWS[b] ? `Cruceta ${ARROWS[b]}` : `{${b.toUpperCase()}}`);
+const buttonText = (b) => (ARROWS[b] ? t("settings.dpad", { arrow: ARROWS[b] }) : `{${b.toUpperCase()}}`);
 // What each button usually does, in words, and the extra actions.
-const ACTION_WORDS = {
-  a: "Aceptar, clic", b: "Volver", x: "Clic derecho", y: "Teclado", lb: "Atrás", rb: "Adelante", lt: "Puntero lento", rt: "Siguiente canción",
-  l3: "Clic central", r3: "Intro", up: "Flecha arriba", down: "Flecha abajo", left: "Flecha izquierda", right: "Flecha derecha",
-  scroll_up: "Subir la página", scroll_down: "Bajar la página", none: "Nada",
-};
+const actionWords = (a) => t(`settings.action.${a}`);
 const ACTIONS = ["a", "b", "x", "y", "lb", "rb", "lt", "rt", "l3", "r3", "up", "down", "left", "right", "scroll_up", "scroll_down", "none"];
-const ACCENT_NAMES = { blue: "Azul", violet: "Violeta", green: "Verde", amber: "Ámbar", pink: "Rosa", ivory: "Marfil" };
 // Names in everyday words, each with a line that says what it changes.
 const CATEGORIES = [
   {
-    name: "Apariencia",
+    name: "settings.cat.look",
     icon: "palette",
     rows: () => [
-      Prefs.get()?.high_contrast ? null : { kind: "swatch", name: "Color principal", pref: "accent", options: Object.keys(Prefs.ACCENTS), desc: "El color del marco que muestra dónde estás y de botones como Jugar." },
-      { kind: "toggle", name: "Alto contraste", pref: "high_contrast", desc: "Fondo negro liso, letras y bordes blancos y un marco amarillo grueso en lo que tienes elegido. Se enciende sola si Windows usa alto contraste." },
-      { kind: "range", name: "Tamaño de letra", pref: "text_size", desc: "Agranda los textos de Inicio y del centro de control para leerlos de lejos." },
-      { kind: "toggle", name: "Marco de selección más grueso", pref: "thick_focus", desc: "Un borde más ancho alrededor de lo que tienes elegido, para verlo mejor desde el sillón." },
-      { kind: "link", name: "Fondo", value: state.wallpaper?.title ?? "Color liso", run: openWalls, desc: "Lo que se ve detrás de Inicio, sea una animación, un video o una imagen." },
-      { kind: "toggle", name: "Mostrar la letra de la canción", pref: "music_lyrics", desc: "En Multimedia, muestra la letra de lo que suena en lugar de la carátula, que pasa a verse chica junto al título. También se cambia con {R3}." },
-      { kind: "toggle", name: "Imágenes de los juegos", pref: "game_art", desc: "Muestra el arte del juego elegido detrás de la pestaña Juegos." },
-      { kind: "choice", name: "Forma de Inicio", pref: "library_view", options: [["banners", "Anchas"], ["covers", "Portadas"], ["grid", "Cuadrícula"], ["list", "Lista"]], desc: "Cómo se ven Juegos, Apps y Multimedia. En Cuadrícula y Lista, arriba y abajo se mueven por ellas y el volumen queda en {RT} + {↕}." },
+      Prefs.get()?.high_contrast ? null : { kind: "swatch", name: t("settings.accent"), pref: "accent", options: Object.keys(Prefs.ACCENTS), desc: t("settings.accent.desc") },
+      { kind: "toggle", name: t("settings.high_contrast"), pref: "high_contrast", desc: t("settings.high_contrast.desc") },
+      { kind: "range", name: t("settings.text_size"), pref: "text_size", desc: t("settings.text_size.desc") },
+      { kind: "toggle", name: t("settings.thick_focus"), pref: "thick_focus", desc: t("settings.thick_focus.desc") },
+      { kind: "link", name: t("settings.wallpaper"), value: state.wallpaper?.title ?? t("settings.plain"), run: openWalls, desc: t("settings.wallpaper.desc") },
+      { kind: "toggle", name: t("settings.music_lyrics"), pref: "music_lyrics", desc: t("settings.music_lyrics.desc") },
+      { kind: "toggle", name: t("settings.game_art"), pref: "game_art", desc: t("settings.game_art.desc") },
+      { kind: "choice", name: t("settings.library_view"), pref: "library_view", options: [["banners", t("settings.library_view.banners")], ["covers", t("settings.library_view.covers")], ["grid", t("settings.library_view.grid")], ["list", t("settings.library_view.list")]], desc: t("settings.library_view.desc") },
     ].filter(Boolean),
   },
   {
-    name: "Botones",
+    name: "settings.cat.buttons",
     icon: "gamepad",
     rows: () => [
-      { kind: "link", name: "Distribución", pref: "hand", value: handName(state.prefs?.hand), run: () => openSub("hand"), desc: "Con una sola mano, todo queda del lado de esa mano. Clic con el botón de arriba, clic derecho con el gatillo y la cruceta o los botones desplazan. En un juego, mantén {View} con la izquierda o {Menu} con la derecha para abrir el centro de control." },
-      { kind: "link", name: "Personalizar botones", value: "", run: () => openSub("buttons"), desc: "Elige qué hace cada botón del control. Cambia la distribución de arriba para empezar de nuevo." },
-      { kind: "link", name: "Color del control", value: padThemeById(state.prefs?.pad_theme).name, run: () => openSub("pad_theme"), desc: "Los colores del control que se dibuja en Personalizar botones. Como vienen los controles, o una combinación al azar." },
-      { kind: "toggle", name: "Aceptar con {B}", pref: "swap_ab", desc: "{B} acepta y {A} vuelve atrás. Para volver a lo normal, entra aquí y presiona {B}." },
-      { kind: "toggle", name: "Puntero con la palanca derecha", pref: "swap_sticks", desc: "La palanca derecha mueve el puntero y la izquierda sube o baja la página." },
-      { kind: "range", name: "Tiempo para mantener presionado", pref: "hold_time", desc: "Cuánto hay que sostener {Menu} para abrir Inicio, o {View} + {Menu} para el centro de control. Un toque tiene que ser más corto que esto." },
+      { kind: "link", name: t("settings.hand"), pref: "hand", value: handName(state.prefs?.hand), run: () => openSub("hand"), desc: t("settings.hand.desc") },
+      { kind: "link", name: t("settings.buttons"), value: "", run: () => openSub("buttons"), desc: t("settings.buttons.desc") },
+      { kind: "link", name: t("settings.pad_theme"), value: t(padThemeById(state.prefs?.pad_theme).name), run: () => openSub("pad_theme"), desc: t("settings.pad_theme.desc") },
+      { kind: "toggle", name: t("settings.swap_ab"), pref: "swap_ab", desc: t("settings.swap_ab.desc") },
+      { kind: "toggle", name: t("settings.swap_sticks"), pref: "swap_sticks", desc: t("settings.swap_sticks.desc") },
+      { kind: "range", name: t("settings.hold_time"), pref: "hold_time", desc: t("settings.hold_time.desc") },
     ],
   },
   {
-    name: "Puntero",
+    name: "settings.cat.pointer",
     icon: "pointer",
     rows: () => [
-      { kind: "range", name: "Velocidad del puntero", pref: "cursor_speed", desc: "Qué tan rápido se mueve el puntero por la pantalla." },
-      { kind: "range", name: "Ayuda para apuntar", pref: "slowdown", desc: "El puntero va más lento al pasar sobre algo que se puede pulsar, para que no te pases. No frena cuando cruzas la pantalla rápido." },
-      { kind: "range", name: "Ignorar movimientos pequeños", pref: "deadzone", desc: "Cuánto hay que mover la palanca para que el puntero reaccione. Súbelo si el puntero se mueve solo o si te tiembla la mano." },
-      { kind: "range", name: "Velocidad al desplazar", pref: "scroll_speed", desc: "Qué tan rápido sube o baja la página con la palanca que desplaza." },
-      { kind: "toggle", name: "Desplazar al revés", pref: "invert_scroll", desc: "Al empujar la palanca hacia arriba, la página baja." },
+      { kind: "range", name: t("settings.cursor_speed"), pref: "cursor_speed", desc: t("settings.cursor_speed.desc") },
+      { kind: "range", name: t("settings.slowdown"), pref: "slowdown", desc: t("settings.slowdown.desc") },
+      { kind: "range", name: t("settings.deadzone"), pref: "deadzone", desc: t("settings.deadzone.desc") },
+      { kind: "range", name: t("settings.scroll_speed"), pref: "scroll_speed", desc: t("settings.scroll_speed.desc") },
+      { kind: "toggle", name: t("settings.invert_scroll"), pref: "invert_scroll", desc: t("settings.invert_scroll.desc") },
     ],
   },
   {
-    name: "Teclado",
+    name: "settings.cat.keyboard",
     icon: "keyboard",
     rows: () => [
-      { kind: "choice", name: "Forma del teclado", pref: "keyboard_layout", options: [["grid", "Todo junto"], ["split", "Dos mitades"]], desc: "Todas las teclas juntas, o partidas en dos lados para escribir con las dos manos." },
-      { kind: "toggle", name: "Sugerir palabras", pref: "suggestions", desc: "Muestra palabras sobre el teclado para escribir menos y con tildes." },
-      { kind: "toggle", name: "Recordar mis palabras", pref: "learn", desc: "Sugiere primero las palabras que más usas. Nunca guarda lo que escribes en contraseñas." },
-      { kind: "link", name: "Idiomas del teclado", value: (state.prefs?.languages ?? []).map(languageName).join(", "), run: () => openSub("languages"), desc: "En qué idiomas sugiere palabras." },
-      { kind: "action", key: "forget", name: "Borrar palabras recordadas", danger: true, run: () => twice("forget", () => invoke("forget_learned")), desc: "Olvida las palabras que el teclado aprendió de ti. Pide confirmar antes." },
+      { kind: "choice", name: t("settings.keyboard_layout"), pref: "keyboard_layout", options: [["grid", t("settings.keyboard_layout.grid")], ["split", t("settings.keyboard_layout.split")]], desc: t("settings.keyboard_layout.desc") },
+      { kind: "toggle", name: t("settings.suggestions"), pref: "suggestions", desc: t("settings.suggestions.desc") },
+      { kind: "toggle", name: t("settings.learn"), pref: "learn", desc: t("settings.learn.desc") },
+      { kind: "link", name: t("settings.languages"), value: (state.prefs?.languages ?? []).map(languageName).join(", "), run: () => openSub("languages"), desc: t("settings.languages.desc") },
+      { kind: "action", key: "forget", name: t("settings.forget"), danger: true, run: () => twice("forget", () => invoke("forget_learned")), desc: t("settings.forget.desc") },
     ],
   },
   {
-    name: "Juegos",
+    name: "settings.cat.games",
     icon: "player-play",
     rows: () => [
-      { kind: "toggle", name: "Tráileres con sonido", pref: "trailer_sound", desc: "Los tráileres de los juegos suenan. También se cambia con {X} mientras se ve uno." },
-      { kind: "toggle", name: "Dejar el control al juego que abras", pref: "auto_game", desc: "Cuando abres un juego, el control es solo del juego. Al cerrarlo, vuelve el puntero. Para usar el puntero sin cerrarlo, mantén {View} + {Menu} y elige otra ventana." },
+      { kind: "toggle", name: t("settings.trailer_sound"), pref: "trailer_sound", desc: t("settings.trailer_sound.desc") },
+      { kind: "toggle", name: t("settings.auto_game"), pref: "auto_game", desc: t("settings.auto_game.desc") },
     ],
   },
   {
-    name: "Modo TV",
+    name: "settings.cat.tv",
     icon: "tv",
     rows: () => {
       const tv = state.tv;
       const nameOf = (list, id) => list?.find((c) => c.id === id)?.name;
       return [
-        { kind: "toggle", tv: true, name: "Modo TV", desc: "Solo la TV queda encendida, como pantalla principal y con su sonido. Al apagarlo, todo vuelve como estaba. Si la TV no muestra nada, espera 15 s y vuelve sola." },
-        { kind: "link", name: "Pantalla de la TV", value: nameOf(tv?.displays, tv?.display) ?? "Elegir", run: () => openSub("tv_display"), desc: "La pantalla que queda encendida en Modo TV." },
-        { kind: "link", name: "Sonido en Modo TV", value: nameOf(tv?.outputs, tv?.audio) ?? "Sin cambiar", run: () => openSub("tv_audio"), desc: "Por dónde sale el sonido en Modo TV, por ejemplo los parlantes de la TV." },
+        { kind: "toggle", tv: true, name: t("settings.tv"), desc: t("settings.tv.desc") },
+        { kind: "link", name: t("settings.tv_display"), value: nameOf(tv?.displays, tv?.display) ?? t("home.choose"), run: () => openSub("tv_display"), desc: t("settings.tv_display.desc") },
+        { kind: "link", name: t("settings.tv_audio"), value: nameOf(tv?.outputs, tv?.audio) ?? t("settings.unchanged"), run: () => openSub("tv_audio"), desc: t("settings.tv_audio.desc") },
       ];
     },
   },
   {
-    name: "General",
+    name: "settings.cat.general",
     icon: "settings",
     rows: () => [
-      { kind: "toggle", name: "Iniciar con Windows", pref: "start_with_windows", desc: "Se abre sola y en silencio al encender la computadora." },
-      { kind: "toggle", name: "Carátulas y letras de internet", pref: "music_online", desc: "Muestra la carátula en alta calidad y la letra de lo que suena. Para buscarlas, envía el nombre de la canción y del artista a Deezer, Apple y LRCLIB." },
-      { kind: "toggle", name: "Vibrar al cambiar de modo", pref: "rumble", desc: "El control vibra cuando pasa a un juego y cuando vuelve al puntero." },
-      { kind: "choice", name: "Forma de este menú", pref: "settings_view", options: [["list", "Lista"], ["tiles", "Cuadros"]], desc: "Todo en una lista, o una categoría a la vez en cuadros grandes." },
-      { kind: "link", name: "Practicar con el control", value: "", run: () => invoke("welcome_open").catch((e) => failed("No se pudo abrir la práctica.", e)), desc: "La práctica del principio: apuntar, cómo se siente el puntero, el teclado, Inicio y el centro de control." },
-      { kind: "action", key: "reset", hint: "Restablecer", name: "Dejar todo como venía", run: () => twice("reset", resetAll), desc: "Vuelve todas las opciones de Ajustes a como venían. Tus apps fijadas y tus palabras se quedan. Pide confirmar antes." },
+      { kind: "link", name: t("settings.language"), value: languageOf(state.prefs?.language), run: () => openSub("ui_language"), desc: t("settings.language.desc") },
+      { kind: "toggle", name: t("settings.start_with_windows"), pref: "start_with_windows", desc: t("settings.start_with_windows.desc") },
+      { kind: "toggle", name: t("settings.music_online"), pref: "music_online", desc: t("settings.music_online.desc") },
+      { kind: "toggle", name: t("settings.rumble"), pref: "rumble", desc: t("settings.rumble.desc") },
+      { kind: "choice", name: t("settings.settings_view"), pref: "settings_view", options: [["list", t("settings.settings_view.list")], ["tiles", t("settings.settings_view.tiles")]], desc: t("settings.settings_view.desc") },
+      { kind: "link", name: t("settings.practice"), value: "", run: () => invoke("welcome_open").catch((e) => failed(t("settings.fail.practice"), e)), desc: t("settings.practice.desc") },
+      { kind: "action", key: "reset", hint: t("settings.reset.hint"), name: t("settings.reset"), run: () => twice("reset", resetAll), desc: t("settings.reset.desc") },
     ],
   },
 ];
@@ -1137,7 +1135,7 @@ function rowControl(r) {
     case "choice":
       return el("span", { className: "choice" }, ...r.options.map(([v, label]) => el("span", { className: v === p[r.pref] ? "sel" : "", textContent: label })));
     case "swatch":
-      return el("span", { className: "swatches" }, ...r.options.map((id) => el("span", { className: `swatch${id === p[r.pref] ? " sel" : ""}`, style: `background:${Prefs.ACCENTS[id]}`, title: ACCENT_NAMES[id] })));
+      return el("span", { className: "swatches" }, ...r.options.map((id) => el("span", { className: `swatch${id === p[r.pref] ? " sel" : ""}`, style: `background:${Prefs.ACCENTS[id]}`, title: t(`settings.accent.${id}`) })));
     case "range": {
       const l = LEVELS[r.pref], v = p[r.pref] ?? l.min;
       const at = (x) => `${((x - l.min) / (l.max - l.min)) * 100}%`;
@@ -1152,8 +1150,8 @@ function rowControl(r) {
       return el("span", { className: "value" }, r.value, svg("chevron"));
     case "action": {
       const f = state.settings.forget;
-      const again = withButtons("Presiona {A} otra vez", false);
-      return el("span", { className: "value" }, ...(f === `${r.key}:ask` ? again : f === `${r.key}:done` ? [document.createTextNode("Listo")] : []));
+      const again = withButtons(t("settings.press_again"), false);
+      return el("span", { className: "value" }, ...(f === `${r.key}:ask` ? again : f === `${r.key}:done` ? [document.createTextNode(t("settings.done"))] : []));
     }
   }
 }
@@ -1165,18 +1163,19 @@ function subRows() {
   const p = state.prefs ?? {};
   const sub = state.settings.sub;
   const map = p.button_map ?? {};
-  if (sub === "buttons") return REMAP_BUTTONS.map((b) => ({ kind: "pick", name: buttonText(b), value: ACTION_WORDS[map[b] ?? b], button: b }));
+  if (sub === "buttons") return REMAP_BUTTONS.map((b) => ({ kind: "pick", name: buttonText(b), value: actionWords(map[b] ?? b), button: b }));
   if (sub.startsWith("button:")) {
     const b = sub.slice(7);
-    return ACTIONS.map((a) => ({ kind: "check", name: ACTION_WORDS[a], original: a === b, button: b, action: a, on: (map[b] ?? b) === a }));
+    return ACTIONS.map((a) => ({ kind: "check", name: actionWords(a), original: a === b, button: b, action: a, on: (map[b] ?? b) === a }));
   }
   if (sub === "pad_theme") return themeRows();
-  if (sub === "hand") return HANDS.map(([hand, name]) => ({ kind: "check", name, hand, on: (p.hand ?? "both") === hand }));
+  if (sub === "hand") return HANDS.map((hand) => ({ kind: "check", name: handName(hand), hand, on: (p.hand ?? "both") === hand }));
   if (sub === "tv_display") return (state.tv?.displays ?? []).map((c) => ({ kind: "check", single: true, name: c.name, tv: ["display", c.id], on: state.tv.display === c.id }));
   if (sub === "tv_audio") {
-    const outs = [{ id: "", name: "Sin cambiar" }, ...(state.tv?.outputs ?? [])];
+    const outs = [{ id: "", name: t("settings.unchanged") }, ...(state.tv?.outputs ?? [])];
     return outs.map((c) => ({ kind: "check", single: true, name: c.name, tv: ["audio", c.id], on: (state.tv?.audio ?? "") === c.id }));
   }
+  if (sub === "ui_language") return I18n.languages().map((l) => ({ kind: "check", single: true, name: l.name, ui: l.code, on: p.language === l.code }));
   return (p.available_languages ?? []).map((lang) => ({ kind: "check", name: languageName(lang), lang, on: (p.languages ?? []).includes(lang) }));
 }
 
@@ -1185,11 +1184,12 @@ function settingsRows() {
 }
 
 function subTitle(sub) {
-  if (sub === "hand") return "Distribución";
-  if (sub === "tv_display") return "Pantalla de la TV";
-  if (sub === "tv_audio") return "Sonido en Modo TV";
+  if (sub === "hand") return t("settings.hand");
+  if (sub === "ui_language") return t("settings.language");
+  if (sub === "tv_display") return t("settings.tv_display");
+  if (sub === "tv_audio") return t("settings.tv_audio");
   if (sub === "buttons" || sub === "pad_theme" || sub.startsWith("button:")) return "";
-  return "Idiomas";
+  return t("settings.languages.title");
 }
 
 function openSub(name) {
@@ -1197,7 +1197,7 @@ function openSub(name) {
   (st.trail ??= []).push({ sub: st.sub, row: st.row });
   st.sub = name;
   // A list of choices opens on the one in use.
-  const chosen = name === "hand" || name === "pad_theme" || name.startsWith("button:") || name.startsWith("tv_");
+  const chosen = name === "hand" || name === "ui_language" || name === "pad_theme" || name.startsWith("button:") || name.startsWith("tv_");
   st.row = chosen ? Math.max(0, subRows().findIndex((r) => r.on)) : 0;
   render();
 }
@@ -1236,7 +1236,7 @@ function renderSettings() {
   const rows = settingsRows();
   st.row = Math.min(st.row, rows.length - 1);
   const cats = CATEGORIES.map((c, i) =>
-    el("div", { className: `cat${i === st.cat ? " sel" : ""}${i === st.cat && st.zone === "cats" ? " on" : ""}` }, svg(c.icon), el("span", { textContent: c.name })),
+    el("div", { className: `cat${i === st.cat ? " sel" : ""}${i === st.cat && st.zone === "cats" ? " on" : ""}` }, svg(c.icon), el("span", { textContent: t(c.name) })),
   );
   const panel = el("section", { className: "panel" },
     st.sub && subTitle(st.sub) && st.sub !== "buttons" ? el("div", { className: "panel-title" }, ...withButtons(subTitle(st.sub))) : null,
@@ -1249,21 +1249,21 @@ function renderSettings() {
   const sliding = row?.kind === "range";
   const onPad = st.sub === "buttons" || st.sub.startsWith("button:");
   const hints = el("div", { className: "settings-hints" },
-    st.zone === "cats" ? hintEl("A", "Abrir") : sliding ? null : hintEl("A", onPad ? "Elegir" : row?.kind === "link" ? "Abrir" : row?.kind === "action" ? (row.hint ?? "Borrar") : "Cambiar"),
-    st.zone === "rows" && valued ? hintEl("↔", "Elegir") : null,
-    st.zone === "rows" && sliding ? hintEl("↔", "Ajustar") : null,
+    st.zone === "cats" ? hintEl("A", t("home.open")) : sliding ? null : hintEl("A", onPad ? t("home.choose") : row?.kind === "link" ? t("home.open") : row?.kind === "action" ? (row.hint ?? t("home.delete")) : t("home.change")),
+    st.zone === "rows" && valued ? hintEl("↔", t("home.choose")) : null,
+    st.zone === "rows" && sliding ? hintEl("↔", t("home.adjust")) : null,
     el("span", { className: "spacer" }),
-    hintEl("B", st.zone === "rows" ? "Atrás" : "Cerrar"),
+    hintEl("B", st.zone === "rows" ? t("home.back") : t("home.close")),
   );
   if (st.sub === "pad_theme") return renderThemes(rows, cats);
   let body;
   showPreview(st.sub ? null : rows[st.zone === "rows" ? st.row : 0]);
   const pad = onPad ? padMap(rows) : null;
   if (pad && !tiles) body = el("div", { className: "settings list" }, el("nav", { className: "cats" }, ...cats), pad);
-  else if (pad) body = el("div", { className: "settings open" }, el("h2", { className: "cat-title" }, svg(CATEGORIES[st.cat].icon), CATEGORIES[st.cat].name), pad);
+  else if (pad) body = el("div", { className: "settings open" }, el("h2", { className: "cat-title" }, svg(CATEGORIES[st.cat].icon), t(CATEGORIES[st.cat].name)), pad);
   else if (!tiles) body = el("div", { className: "settings list" }, el("nav", { className: "cats" }, ...cats), panel, card);
   else if (st.zone === "cats") body = el("div", { className: "settings tiles" }, ...cats);
-  else body = el("div", { className: "settings open" }, el("h2", { className: "cat-title" }, svg(CATEGORIES[st.cat].icon), CATEGORIES[st.cat].name), panel, card);
+  else body = el("div", { className: "settings open" }, el("h2", { className: "cat-title" }, svg(CATEGORIES[st.cat].icon), t(CATEGORIES[st.cat].name)), panel, card);
   view.replaceChildren(body, hints);
   panel.querySelector(".setting.on")?.scrollIntoView({ block: "nearest" });
   fadeEdges(panel);
@@ -1306,14 +1306,14 @@ function quickRows() {
   const p = state.prefs ?? {};
   // `about` is the plain line under the rows for the focused one.
   return [
-    { kind: "link", name: "Fondo", value: state.wallpaper?.title ?? "Color liso", run: quickWalls, about: "Lo que se ve detrás de Inicio." },
-    p.high_contrast ? null : { kind: "swatch", name: "Color principal", pref: "accent", options: Object.keys(Prefs.ACCENTS), about: "El color del marco de selección y de botones como Jugar." },
-    { kind: "range", name: "Oscurecer el fondo", pref: "wall_dim", about: "Oscurece el fondo para leer mejor sobre imágenes con mucho detalle." },
-    { kind: "choice", name: "Forma de Inicio", pref: "library_view", options: [["banners", "Anchas"], ["covers", "Portadas"], ["grid", "Cuadrícula"], ["list", "Lista"]], about: "Cómo se ven Juegos, Apps y Multimedia." },
-    { kind: "choice", name: "Orden de los juegos", pref: "game_order", options: [["recent", "Recientes"], ["az", "A–Z"]], about: "Los juegos abiertos siempre van primero." },
-    { kind: "toggle", name: "Imágenes de los juegos", pref: "game_art", about: "El arte del juego elegido detrás de la pestaña Juegos." },
-    { kind: "range", name: "Tamaño de letra", pref: "text_size", about: "Agranda los textos para leerlos de lejos." },
-    { kind: "toggle", name: "Mostrar la letra de la canción", pref: "music_lyrics", about: "En Multimedia, la letra de lo que suena en lugar de la carátula." },
+    { kind: "link", name: t("settings.wallpaper"), value: state.wallpaper?.title ?? t("settings.plain"), run: quickWalls, about: t("quick.wallpaper") },
+    p.high_contrast ? null : { kind: "swatch", name: t("settings.accent"), pref: "accent", options: Object.keys(Prefs.ACCENTS), about: t("quick.accent") },
+    { kind: "range", name: t("quick.wall_dim"), pref: "wall_dim", about: t("quick.wall_dim.about") },
+    { kind: "choice", name: t("settings.library_view"), pref: "library_view", options: [["banners", t("settings.library_view.banners")], ["covers", t("settings.library_view.covers")], ["grid", t("settings.library_view.grid")], ["list", t("settings.library_view.list")]], about: t("quick.library_view") },
+    { kind: "choice", name: t("quick.game_order"), pref: "game_order", options: [["recent", t("quick.game_order.recent")], ["az", "A–Z"]], about: t("quick.game_order.about") },
+    { kind: "toggle", name: t("settings.game_art"), pref: "game_art", about: t("quick.game_art") },
+    { kind: "range", name: t("settings.text_size"), pref: "text_size", about: t("quick.text_size") },
+    { kind: "toggle", name: t("settings.music_lyrics"), pref: "music_lyrics", about: t("quick.music_lyrics") },
   ].filter(Boolean);
 }
 
@@ -1350,11 +1350,11 @@ function renderQuick() {
     // the line is as tall as the longest, so the panel never jumps.
     el("p", { className: "quick-about" }, ...rows.map((x, i) => el("span", { className: i === quick.row ? "now" : "", textContent: x.about }))),
     el("div", { className: "settings-hints" },
-      r.kind === "link" ? hintEl("A", "Abrir") : r.kind === "toggle" ? hintEl("A", "Cambiar") : null,
-      valued ? hintEl("↔", "Elegir") : null,
-      r.kind === "range" ? hintEl("↔", "Ajustar") : null,
+      r.kind === "link" ? hintEl("A", t("home.open")) : r.kind === "toggle" ? hintEl("A", t("home.change")) : null,
+      valued ? hintEl("↔", t("home.choose")) : null,
+      r.kind === "range" ? hintEl("↔", t("home.adjust")) : null,
       el("span", { className: "spacer" }),
-      hintEl("B", "Cerrar")),
+      hintEl("B", t("home.close"))),
   );
   fitQuick();
   // After this frame's render the row of tiles is in its final place.
@@ -1563,18 +1563,18 @@ function padTheme({ body, back, bumper = back, stick, dpad = stick, face, colour
 }
 
 const PAD_THEMES = [
-  { id: "grafito", name: "Grafito", ...padTheme({ body: "#35373c", back: "#212226", bumper: "#2b2d31", stick: "#45474c", face: "#2a2b2f" }) },
-  { id: "carbon", name: "Carbón", ...padTheme({ body: "#1b1c1f", back: "#111214", bumper: "#222326", stick: "#2a2b2f", face: "#141517", coloured: false, pattern: "carbon" }) },
-  { id: "puntos", name: "Puntos", ...padTheme({ body: "#2b2d31", back: "#8a8780", stick: "#45474c", face: PAD_BLACK, pattern: "dots" }) },
-  { id: "marino", name: "Marino", ...padTheme({ body: "#1f3550", back: PAD_BONE, stick: PAD_BLACK, face: PAD_BLACK, coloured: false, pattern: "lines" }) },
-  { id: "petroleo", name: "Petróleo", ...padTheme({ body: "#1d4049", back: PAD_BLACK, stick: "#8a8780", face: PAD_BLACK, pattern: "rings" }) },
-  { id: "vino", name: "Vino", ...padTheme({ body: "#4a1f2a", back: PAD_BONE, stick: PAD_BLACK, face: PAD_BLACK, coloured: false, pattern: "grid" }) },
-  { id: "bosque", name: "Bosque", ...padTheme({ body: "#24392c", back: PAD_BLACK, stick: PAD_BLACK, face: PAD_BLACK, coloured: false, pattern: "stripes" }) },
-  { id: "oliva", name: "Oliva", ...padTheme({ body: "#3e4128", back: PAD_BLACK, stick: "#8a8780", face: PAD_BLACK, coloured: false, pattern: "hex" }) },
-  { id: "ciruela", name: "Ciruela", ...padTheme({ body: "#3d2440", back: PAD_BONE, stick: PAD_BLACK, face: PAD_BLACK, pattern: "dots" }) },
-  { id: "pizarra", name: "Pizarra", ...padTheme({ body: "#3a4148", back: PAD_BLACK, stick: "#8a8780", face: PAD_BLACK }) },
-  { id: "hueso", name: "Hueso", ...padTheme({ body: "#c4bdae", back: "#4f4c46", stick: "#4f4c46", face: "#3a3833" }) },
-  { id: "arena", name: "Arena", ...padTheme({ body: "#a3957a", back: "#3a3833", stick: "#3a3833", face: "#2a2926", coloured: false, pattern: "lines" }) },
+  { id: "grafito", name: "pad.grafito", ...padTheme({ body: "#35373c", back: "#212226", bumper: "#2b2d31", stick: "#45474c", face: "#2a2b2f" }) },
+  { id: "carbon", name: "pad.carbon", ...padTheme({ body: "#1b1c1f", back: "#111214", bumper: "#222326", stick: "#2a2b2f", face: "#141517", coloured: false, pattern: "carbon" }) },
+  { id: "puntos", name: "pad.puntos", ...padTheme({ body: "#2b2d31", back: "#8a8780", stick: "#45474c", face: PAD_BLACK, pattern: "dots" }) },
+  { id: "marino", name: "pad.marino", ...padTheme({ body: "#1f3550", back: PAD_BONE, stick: PAD_BLACK, face: PAD_BLACK, coloured: false, pattern: "lines" }) },
+  { id: "petroleo", name: "pad.petroleo", ...padTheme({ body: "#1d4049", back: PAD_BLACK, stick: "#8a8780", face: PAD_BLACK, pattern: "rings" }) },
+  { id: "vino", name: "pad.vino", ...padTheme({ body: "#4a1f2a", back: PAD_BONE, stick: PAD_BLACK, face: PAD_BLACK, coloured: false, pattern: "grid" }) },
+  { id: "bosque", name: "pad.bosque", ...padTheme({ body: "#24392c", back: PAD_BLACK, stick: PAD_BLACK, face: PAD_BLACK, coloured: false, pattern: "stripes" }) },
+  { id: "oliva", name: "pad.oliva", ...padTheme({ body: "#3e4128", back: PAD_BLACK, stick: "#8a8780", face: PAD_BLACK, coloured: false, pattern: "hex" }) },
+  { id: "ciruela", name: "pad.ciruela", ...padTheme({ body: "#3d2440", back: PAD_BONE, stick: PAD_BLACK, face: PAD_BLACK, pattern: "dots" }) },
+  { id: "pizarra", name: "pad.pizarra", ...padTheme({ body: "#3a4148", back: PAD_BLACK, stick: "#8a8780", face: PAD_BLACK }) },
+  { id: "hueso", name: "pad.hueso", ...padTheme({ body: "#c4bdae", back: "#4f4c46", stick: "#4f4c46", face: "#3a3833" }) },
+  { id: "arena", name: "pad.arena", ...padTheme({ body: "#a3957a", back: "#3a3833", stick: "#3a3833", face: "#2a2926", coloured: false, pattern: "lines" }) },
 ];
 const PAD_RANDOM = "random";
 
@@ -1644,9 +1644,9 @@ function randomTheme(seed) {
       // Light bodies take only the finest textures.
       coloured: r() < 0.5, pattern: r() < 0.6 ? pick(light ? ["dots", "lines", "grid"] : PAD_PATTERNS) : null, hue: light ? null : hue,
     });
-    if (!themeProblems(theme).length) return { id: `${PAD_RANDOM}:${seed}`, name: "Al azar", ...theme };
+    if (!themeProblems(theme).length) return { id: `${PAD_RANDOM}:${seed}`, name: "pad.random", ...theme };
   }
-  return { ...PAD_THEMES[0], id: `${PAD_RANDOM}:${seed}`, name: "Al azar" };
+  return { ...PAD_THEMES[0], id: `${PAD_RANDOM}:${seed}`, name: "pad.random" };
 }
 // A new combination, its colour at least 40° away from the one before.
 function newSeed(previous) {
@@ -1728,7 +1728,7 @@ function padMap(rows) {
   const label = (b) =>
     padData(el("div", { className: `pad-label${b === at && !choosing ? " on" : ""}${b === at ? " at" : ""}` },
       padGlyph(b),
-      el("span", { className: "value", textContent: ACTION_WORDS[map[b] ?? b] })), { b });
+      el("span", { className: "value", textContent: actionWords(map[b] ?? b) })), { b });
   const side = (name, buttons) => {
     if (choosing && buttons.includes(at)) return actionList(name, rows);
     return el("div", { className: `pad-side ${name}${idle === name ? " idle" : ""}` }, ...buttons.map(label));
@@ -1748,7 +1748,7 @@ function actionList(name, rows) {
     ...rows.map((r, i) =>
       el("div", { className: `pad-action${i === st.row ? " on" : ""}${r.on ? " current" : ""}` },
         el("span", { className: "name", textContent: r.name }),
-        r.original ? el("span", { className: "original", textContent: "original" }) : null,
+        r.original ? el("span", { className: "original", textContent: t("settings.original") }) : null,
         r.on ? svg("check", "icon tick") : null)));
 }
 
@@ -1847,11 +1847,11 @@ function themeRows() {
   const cur = state.prefs?.pad_theme ?? PAD_THEMES[0].id;
   const random = cur.startsWith(`${PAD_RANDOM}:`) ? cur : `${PAD_RANDOM}:${(state.settings.seed ??= newSeed(cur))}`;
   return [
-    ...PAD_THEMES.map((t) => ({ kind: "theme", name: t.name, theme: t.id, on: cur === t.id })),
-    { kind: "theme", name: "Al azar", theme: random, on: cur === random },
-    { kind: "reroll", name: "Otra combinación", theme: random },
+    ...PAD_THEMES.map((th) => ({ kind: "theme", name: t(th.name), theme: th.id, on: cur === th.id })),
+    { kind: "theme", name: t("pad.random"), theme: random, on: cur === random },
+    { kind: "reroll", name: t("pad.reroll"), theme: random },
     // The one before the last «Otra combinación», to go back to it.
-    ...(state.settings.previous && state.settings.previous !== cur ? [{ kind: "theme", name: "Combinación anterior", theme: state.settings.previous, back: true }] : []),
+    ...(state.settings.previous && state.settings.previous !== cur ? [{ kind: "theme", name: t("pad.previous"), theme: state.settings.previous, back: true }] : []),
   ];
 }
 // Two circles: the body (with its pattern) and its parts (the one that
@@ -1875,9 +1875,9 @@ function renderThemes(rows, cats) {
         r.on ? svg("check", "icon tick") : null)));
   const preview = el("section", { className: "preview-card pad-theme-card", innerHTML: padSvg(row.kind === "reroll" ? state.prefs?.pad_theme : row.theme) });
   const hints = el("div", { className: "settings-hints" },
-    hintEl("A", row.kind === "reroll" ? "Otra combinación" : "Usar"),
+    hintEl("A", row.kind === "reroll" ? t("pad.reroll") : t("home.use")),
     el("span", { className: "spacer" }),
-    hintEl("B", "Atrás"));
+    hintEl("B", t("home.back")));
   view.replaceChildren(el("div", { className: "settings list" }, el("nav", { className: "cats" }, ...cats), panel, preview), hints);
   panel.querySelector(".setting.on")?.scrollIntoView({ block: "nearest" });
   fadeEdges(panel);
@@ -1964,6 +1964,7 @@ function settingsSelect() {
   else if (r.kind === "toggle") setPref(r.pref, !p[r.pref]);
   else if (r.kind === "check" && r.tv) chooseTv(...r.tv);
   else if (r.kind === "check" && r.hand) setPref("hand", r.hand);
+  else if (r.kind === "check" && r.ui) setPref("language", r.ui);
   else if (r.kind === "pick") openSub(`button:${r.button}`);
   else if (r.kind === "check" && r.action) setPref("button_map", { button: r.button, action: r.action }).then(settingsBack);
   else if (r.kind === "check") {
@@ -1995,7 +1996,7 @@ async function toggleTv() {
     await invoke("tv_set", { on });
     if (on) askToKeepTv();
   } catch (e) {
-    failed(on ? "No se pudo encender el Modo TV." : "No se pudo apagar el Modo TV.", e);
+    failed(on ? t("tv.fail.on") : t("tv.fail.off"), e);
   }
   await loadTv();
 }
@@ -2004,7 +2005,7 @@ async function chooseTv(what, id) {
   try {
     await invoke("tv_choose", { what, id });
   } catch (e) {
-    return failed("No se pudo guardar el cambio.", e);
+    return failed(t("home.fail.save"), e);
   }
   await loadTv();
   settingsBack();
@@ -2075,11 +2076,11 @@ function renderConfirm() {
   const tv = confirming.tv;
   confirmEl.replaceChildren(
     el("div", { className: "confirm-card" },
-      el("h2", { textContent: tv ? "¿Se ve bien la TV?" : "¿Dejas los botones así?" }),
-      el("p", { textContent: tv ? `Si no eliges nada, todo vuelve como estaba en ${confirming.left} s.` : `Si no eliges nada, vuelven a como estaban en ${confirming.left} s.` }),
+      el("h2", { textContent: tv ? t("confirm.tv") : t("confirm.buttons") }),
+      el("p", { textContent: t(tv ? "confirm.tv.left" : "confirm.buttons.left", { n: confirming.left }) }),
       el("div", { className: "confirm-actions" },
-        el("span", { className: "action" }, el("span", { textContent: "Dejar así" }), glyph("A")),
-        el("span", { className: "hint" }, glyph("B"), "Volver a como estaba"),
+        el("span", { className: "action" }, el("span", { textContent: t("confirm.keep") }), glyph("A")),
+        el("span", { className: "hint" }, glyph("B"), t("confirm.undo")),
       ),
     ),
   );
@@ -2092,7 +2093,7 @@ async function keepChange(keep) {
   confirming = null;
   renderConfirm();
   if (c.tv) {
-    await invoke(keep ? "tv_confirm" : "tv_set", keep ? {} : { on: false }).catch((e) => failed("No se pudo cambiar el Modo TV.", e));
+    await invoke(keep ? "tv_confirm" : "tv_set", keep ? {} : { on: false }).catch((e) => failed(t("tv.fail.change"), e));
     return loadTv();
   }
   if (!keep) await setPref(c.name, c.before);
@@ -2147,8 +2148,8 @@ function infoEl(i) {
 function volumeHint(head) {
   const held = libraryView() === "grid" || libraryView() === "list";
   const keys = held ? [glyph("RT"), plusSign(), glyph("↕")] : [glyph("↕")];
-  const hint = el("span", { className: "hint" }, ...keys, "Volumen");
-  const custom = state.sheet ? null : el("span", { className: "hint" }, glyph("Menu"), "Personalizar");
+  const hint = el("span", { className: "hint" }, ...keys, t("home.volume"));
+  const custom = state.sheet ? null : el("span", { className: "hint" }, glyph("Menu"), t("home.customize"));
   const hints = head.querySelector(".hints");
   if (hints) hints.append(...[hint, custom].filter(Boolean));
   else (head.querySelector(".action") ?? head.querySelector(".meta"))?.after(el("span", { className: "hints" }, hint, custom ?? ""));
@@ -2234,34 +2235,34 @@ function render() {
   if (state.sheet === "search" && !list.length) {
     view.replaceChildren(searchHead(), el("div", { className: "search-empty" },
       el("div", { className: "lead-symbol" }, svg("search")),
-      el("div", {}, el("b", { textContent: "Ningún juego coincide" }), el("span", {}, ...withButtons("Borra una letra con {X} para ver más.", false)))));
+      el("div", {}, el("b", { textContent: t("home.search.none") }), el("span", {}, ...withButtons(t("home.search.none.hint"), false)))));
     renderPlayer();
     return;
   }
   if (!list.length && state.tab === "games") {
-    view.replaceChildren(infoEl({ lead: el("div", { className: "lead-symbol" }, svg("gamepad")), title: "Tus juegos aparecen aquí", meta: "Los juegos instalados con Steam o Epic Games se agregan solos." }));
+    view.replaceChildren(infoEl({ lead: el("div", { className: "lead-symbol" }, svg("gamepad")), title: t("home.no_games"), meta: t("home.no_games.meta") }));
     renderPlayer();
     return;
   }
 
   // Only what changed is rebuilt, so tiles never reload while moving.
   const covers = coversView();
-  const key = `${state.tab}|${state.sheet}|${covers}|${shape}|` + list.map((x) => x.key + (x.rev ?? "")).join("|");
+  const key = `${I18n.lang()}|${state.tab}|${state.sheet}|${covers}|${shape}|` + list.map((x) => x.key + (x.rev ?? "")).join("|");
   let strip = view.querySelector(".row, .grid, .list");
   const editing = state.sheet === "edit" || state.sheet === "medit";
   const editLabel = () => {
-    if (state.sheet !== "medit") return state.pinned.includes(state.apps[at]?.id) ? "Quitar" : "Fijar";
-    return list[at]?.more ? "Mostrar" : list[at]?.on ? "Quitar" : "Agregar";
+    if (state.sheet !== "medit") return state.pinned.includes(state.apps[at]?.id) ? t("home.unpin") : t("home.pin");
+    return list[at]?.more ? t("home.show") : list[at]?.on ? t("home.remove") : t("home.add");
   };
   const headFor = () => {
     if (state.sheet === "search") return searchHead();
     const head = editing
-      ? infoEl({ lead: el("div", { className: "lead-symbol" }, svg("edit")), title: state.sheet === "medit" ? "Editar Multimedia" : "Editar apps", meta: "", action: [editLabel(), "A"] })
+      ? infoEl({ lead: el("div", { className: "lead-symbol" }, svg("edit")), title: state.sheet === "medit" ? t("home.edit_media") : t("home.edit_apps"), meta: "", action: [editLabel(), "A"] })
       : volumeHint(asInfo(list[at].info()));
     const m = state.media;
     const sound = trailer.classList.contains("shown") ? `${trailerFor}:${soundWanted()}` : "";
     const words = list[at]?.playing ? `${lyrics.lines.length > 0}:${lyricsWanted()}:${!!coverArt.url}` : "";
-    head.dataset.item = editing ? "edit" : [list[at].key + (list[at].rev ?? ""), m.title, m.artist, m.playing, m.duration_ms > 0, sound, words].join("|");
+    head.dataset.item = editing ? "edit" : [I18n.lang(), list[at].key + (list[at].rev ?? ""), m.title, m.artist, m.playing, m.duration_ms > 0, sound, words].join("|");
     return head;
   };
   if (!strip || strip.dataset.key !== key) {
@@ -2415,14 +2416,14 @@ async function open(id) {
     await invoke("set_mode", { mode: isGame ? "off" : "cursor" });
   } catch (e) {
     const name = state.games.find((g) => g.id === id)?.name ?? appById(id)?.name;
-    failed(name ? `No se pudo abrir ${name}.` : "No se pudo abrir.", e);
+    failed(name ? t("home.fail.open_name", { name }) : t("home.fail.open"), e);
   }
 }
 
 async function togglePin(id) {
   state.pinned = state.pinned.includes(id) ? state.pinned.filter((p) => p !== id) : [...state.pinned, id];
   render();
-  await invoke("set_pinned", { ids: state.pinned }).catch((e) => failed("No se pudieron guardar tus apps.", e));
+  await invoke("set_pinned", { ids: state.pinned }).catch((e) => failed(t("home.fail.pinned"), e));
 }
 
 async function openWalls() {
@@ -2433,7 +2434,7 @@ async function openWalls() {
     state.engine = data.engine;
     state.folders = data.folders;
   } catch (e) {
-    return failed("No se pudieron cargar los fondos.", e);
+    return failed(t("home.fail.walls"), e);
   }
   state.sheet = "wall";
   // Start on the background in use.
@@ -2449,7 +2450,7 @@ async function chooseWall(w) {
   try {
     await invoke("set_wallpaper", { id: w?.id ?? NO_WALL });
   } catch (e) {
-    failed("No se pudo cambiar el fondo.", e);
+    failed(t("home.fail.wall"), e);
     state.wallpaper = before;
     render();
   }
@@ -2458,7 +2459,7 @@ async function chooseWall(w) {
 async function toggleGameArt() {
   state.gameArt = !state.gameArt;
   render();
-  await invoke("set_game_art", { on: state.gameArt }).catch((e) => failed("No se pudo guardar el cambio.", e));
+  await invoke("set_game_art", { on: state.gameArt }).catch((e) => failed(t("home.fail.save"), e));
 }
 
 // A streaming site in the default browser, driven with the cursor.
@@ -2467,7 +2468,7 @@ async function openService(id) {
     await invoke("open_service", { id });
     await invoke("set_mode", { mode: "cursor" });
   } catch (e) {
-    failed("No se pudo abrir el sitio.", e);
+    failed(t("home.fail.site"), e);
   }
 }
 
@@ -2476,7 +2477,7 @@ async function openWorkshop() {
     await invoke("open_workshop");
     await invoke("set_mode", { mode: "cursor" });
   } catch (e) {
-    failed("No se pudo abrir Wallpaper Engine.", e);
+    failed(t("home.fail.workshop"), e);
   }
 }
 
@@ -2485,7 +2486,7 @@ async function openFolder(path) {
   try {
     state.folder = await invoke("browse_folders", { path });
   } catch (e) {
-    return failed("No se pudo abrir la carpeta.", e);
+    return failed(t("home.fail.folder"), e);
   }
   state.sheet = "folder";
   state.focus.folder = 0;
@@ -2496,7 +2497,7 @@ async function addFolder(path) {
   try {
     await invoke("add_wallpaper_folder", { path });
   } catch (e) {
-    return failed("No se pudo agregar la carpeta.", e);
+    return failed(t("home.fail.add_folder"), e);
   }
   await openWalls();
 }
@@ -2672,10 +2673,11 @@ setInterval(() => {
 }, 500);
 
 function tick() {
-  document.getElementById("clock").textContent = new Date().toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" });
+  document.getElementById("clock").textContent = new Date().toLocaleTimeString(I18n.lang(), { hour: "2-digit", minute: "2-digit" });
 }
 tick();
 setInterval(tick, CLOCK_EVERY_MS);
+I18n.watch(tick);
 
 invoke("current_mode").then((m) => (active = m === "home"));
 invoke("volume_get").then((v) => (state.volume = v));
@@ -2687,6 +2689,7 @@ invoke("media_now").then((m) => {
 load();
 
 // The settings screen shows the preferences; the background follows game_art.
+let namesIn = null;
 Prefs.watch((p) => {
   // Lyrics come and go with Ajustes > General.
   if (p.music_online !== state.prefs?.music_online) {
@@ -2694,6 +2697,9 @@ Prefs.watch((p) => {
     loadLyrics();
   }
   state.prefs = p;
+  // Names that come from the app (the backgrounds) follow the language.
+  if (namesIn && namesIn !== p.language) load();
+  namesIn = p.language;
   state.gameArt = p.game_art;
   document.body.style.setProperty("--dim", String((p.wall_dim ?? 0) / 100));
   renderQuick();

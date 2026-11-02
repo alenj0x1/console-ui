@@ -7,7 +7,8 @@ const { invoke } = window.__TAURI__.core;
 const here = window.__TAURI__.webviewWindow.getCurrentWebviewWindow();
 const listen = here.listen.bind(here);
 
-const ASSET = "http://cui.localhost";
+// Served by the app (see home.rs); overridable for the dev harness.
+const ASSET = window.__ASSET ?? "http://cui.localhost";
 const CLOCK_EVERY_MS = 10_000;
 
 const windowsEl = document.getElementById("windows");
@@ -18,14 +19,14 @@ const state = { windows: [], focus: 0, media: {}, active: false, battery: null, 
 
 // The power menu: sleep at once; the rest need A held for a moment (a
 // shaky double press never shuts the PC down). With TV mode on, its first
-// row turns it off.
+// row turns it off. Names and hold texts: guide.power.<id>(.hold).
 const HOLD_MS = 1000;
 const POWER = [
-  { id: "tv", icon: "tv", name: "Apagar Modo TV", tv: true },
-  { id: "sleep", icon: "moon", name: "Suspender" },
-  { id: "restart", icon: "restart", name: "Reiniciar", hold: "Mantén {A} para reiniciar" },
-  { id: "shutdown", icon: "power", name: "Apagar", hold: "Mantén {A} para apagar" },
-  { id: "signout", icon: "logout", name: "Cerrar sesión", hold: "Mantén {A} para salir" },
+  { id: "tv", icon: "tv", tv: true },
+  { id: "sleep", icon: "moon" },
+  { id: "restart", icon: "restart", hold: true },
+  { id: "shutdown", icon: "power", hold: true },
+  { id: "signout", icon: "logout", hold: true },
 ];
 const powerRows = () => POWER.filter((o) => !o.tv || state.tvOn);
 const powerEl = document.getElementById("power");
@@ -59,7 +60,7 @@ function hint(key, text, cls = "") {
 function homeTile() {
   return el("div", { className: "window home" },
     el("div", { className: "shot" }, svg("home", "icon big")),
-    el("div", { className: "label" }, svg("home"), el("span", { className: "title", textContent: "Inicio" })));
+    el("div", { className: "label" }, svg("home"), el("span", { className: "title", textContent: t("guide.home") })));
 }
 
 // Built once per list; moving only changes which tile is marked, so the
@@ -70,7 +71,7 @@ function renderWindows() {
       homeTile(),
       el("div", { className: "empty" },
         el("div", { className: "box" }, svg("window-maximize")),
-        el("div", {}, el("b", { textContent: "No hay ventanas abiertas" }), el("span", { textContent: "Las ventanas que abras aparecen aquí." })),
+        el("div", {}, el("b", { textContent: t("guide.no_windows") }), el("span", { textContent: t("guide.no_windows_hint") })),
       ),
     );
     markFocus();
@@ -150,7 +151,7 @@ function renderPower() {
   powerEl.replaceChildren(...powerRows().map((o, i) => {
     const on = i === p.focus;
     const label = el("span");
-    label.append(...(on && o.hold ? withButtons(o.hold, false) : [o.name]));
+    label.append(...(on && o.hold ? withButtons(t(`guide.power.${o.id}.hold`), false) : [t(`guide.power.${o.id}`)]));
     return el("div", { className: `row${on ? " on" : ""}${on && p.timer ? " holding" : ""}` }, svg(o.icon), label);
   }));
 }
@@ -163,7 +164,7 @@ function renderBattery() {
   const bars = [7, 10, 13].slice(0, b.wired ? 0 : b.level).map((x) => `<path d="M${x} 10v4"/>`).join("");
   const mark = b.wired ? icon("plug") : icon("battery").replace("</svg>", `${bars}</svg>`);
   batteryEl.classList.toggle("low", !b.wired && b.level <= 1);
-  batteryEl.innerHTML = `${mark}<span>${b.wired ? "Con cable" : ["Batería vacía", "Batería baja", "Batería media", "Batería llena"][b.level]}</span>`;
+  batteryEl.innerHTML = `${mark}<span>${b.wired ? t("guide.battery.wired") : t(`guide.battery.${b.level}`)}</span>`;
 }
 
 let hintsKey = "";
@@ -172,14 +173,14 @@ function renderHints() {
   if (key === hintsKey) return;
   hintsKey = key;
   if (state.power) {
-    hintsEl.replaceChildren(hint("A", "Elegir"), hint("B", "Cerrar", "back"));
+    hintsEl.replaceChildren(hint("A", t("guide.choose")), hint("B", t("guide.close"), "back"));
     return;
   }
   const parts = [];
-  if (focused()) parts.push(hint("A", "Ir"), hint("Y", "Cerrar ventana"));
-  else parts.push(hint("A", "Abrir"));
-  if (state.media.title) parts.push(hint("X", state.media.playing ? "Pausar" : "Reproducir"), hint("LT RT", "Cambiar canción"));
-  parts.push(hint("Menu", "Apagar o reiniciar"), hint("B", "Cerrar", "back"));
+  if (focused()) parts.push(hint("A", t("guide.go")), hint("Y", t("guide.close_window")));
+  else parts.push(hint("A", t("guide.open")));
+  if (state.media.title) parts.push(hint("X", t(state.media.playing ? "guide.pause" : "guide.play")), hint("LT RT", t("guide.change_song")));
+  parts.push(hint("Menu", t("guide.power_menu")), hint("B", t("guide.close"), "back"));
   hintsEl.replaceChildren(...parts);
 }
 
@@ -326,7 +327,7 @@ listen("mode", ({ payload }) => {
 });
 
 function tick() {
-  document.getElementById("clock").textContent = new Date().toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" });
+  document.getElementById("clock").textContent = new Date().toLocaleTimeString(I18n.lang(), { hour: "2-digit", minute: "2-digit" });
 }
 tick();
 setInterval(tick, CLOCK_EVERY_MS);
@@ -340,4 +341,12 @@ listen("battery", ({ payload }) => {
 invoke("pad_battery").then((b) => {
   state.battery = b;
   renderBattery();
+});
+// Another interface language: everything drawn again in it.
+I18n.watch(() => {
+  hintsKey = "";
+  if (state.active) render();
+  renderPower();
+  renderBattery();
+  tick();
 });

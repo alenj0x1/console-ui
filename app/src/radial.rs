@@ -36,7 +36,7 @@ pub const SLOT_COUNT: u8 = SLOTS.len() as u8;
 
 pub fn create(app: &AppHandle) -> tauri::Result<()> {
     let w = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App("radial.html".into()))
-        .title("Menú radial")
+        .title(crate::i18n::t("title.radial"))
         .decorations(false)
         .transparent(true)
         .shadow(false)
