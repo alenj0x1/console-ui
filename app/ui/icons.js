@@ -73,7 +73,8 @@ function doneBy(b) {
 // The d-pad directions: a cross as big as the LT / LB badges, the arms of
 // those directions filled and the others in outline (↕ = up and down).
 const DPAD_ARM = { "↑": [8.5, 2.5, 7, 10], "↓": [8.5, 11.5, 7, 10], "←": [2.5, 8.5, 10, 7], "→": [11.5, 8.5, 10, 7] };
-const DPAD_GLYPH = { ...Object.fromEntries(Object.entries(DPAD_ARM).map(([k, a]) => [k, [a]])), "↕": [DPAD_ARM["↑"], DPAD_ARM["↓"]] };
+// ↕ fills only the two tips, leaving the centre open: either one, not a bar.
+const DPAD_GLYPH = { ...Object.fromEntries(Object.entries(DPAD_ARM).map(([k, a]) => [k, [a]])), "↕": [[8.5, 2.5, 7, 4.5], [8.5, 17, 7, 4.5]] };
 function buttonShape(b) {
   const s = document.createElement("span");
   const arms = DPAD_GLYPH[b] ?? DPAD_GLYPH[{ UP: "↑", DOWN: "↓", LEFT: "←", RIGHT: "→" }[b]];
