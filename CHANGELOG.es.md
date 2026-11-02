@@ -6,7 +6,7 @@ Aquí se documentan los cambios importantes del proyecto. El formato sigue [Keep
 
 Los cambios que esperan la próxima versión van en **Sin publicar**, arriba (esa sección solo existe mientras haya alguno y el sitio de documentación no la muestra); `scripts/release.py` la convierte en la versión nueva.
 
-## [Sin publicar]
+## [0.1.0] - 2026-11-02
 
 ### Agregado
 
@@ -57,3 +57,4 @@ Los cambios que esperan la próxima versión van en **Sin publicar**, arriba (es
 - Con «Mostrar animaciones» apagado en Windows, los fondos y las vistas previas quedan quietos y los tráileres no se reproducen.
 - Los comandos que escriben, abren programas, leen las palabras aprendidas o apagan la computadora solo responden a la ventana que los usa; las carpetas de red no se aceptan como fondos, y no se aprenden palabras escritas en consolas ni en escritorios remotos.
 - Instalador para Windows (NSIS, por usuario, en español o inglés): acceso directo en el menú Inicio, WebView2 descargado si falta y un paso opcional de HidHide que descarga la versión oficial, comprueba su SHA-256 y su firma y ejecuta su instalador. Al desinstalar se quita la entrada de «abrir con Windows», el control vuelve a verse en los juegos y los ajustes se borran solo si lo pides. Abrir la app mientras ya corre muestra su pantalla de Inicio en vez de abrir otra copia.
+[0.1.0]: https://github.com/alenj0x1/console-ui/releases/tag/v0.1.0

@@ -6,7 +6,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 Changes waiting for the next version sit under **Unreleased** at the top (this section only exists while there are some, and the docs site doesn't show it); `scripts/release.py` turns it into the new version.
 
-## [Unreleased]
+## [0.1.0] - 2026-11-02
 
 ### Added
 
@@ -57,3 +57,4 @@ Changes waiting for the next version sit under **Unreleased** at the top (this s
 - With Windows' "Show animations" off, backgrounds and previews stay still and trailers don't play.
 - Commands that type, open programs, read learned words or power off answer only the window that uses them; network folders are refused as backgrounds, and words typed in consoles or remote desktops are never learned.
 - Windows installer (NSIS, per user, Spanish or English): Start menu shortcut, WebView2 downloaded if missing, and an optional HidHide step that downloads the official release, checks its SHA-256 and signature and runs its installer. Uninstalling removes the "start with Windows" entry, shows the controller to games again and deletes settings only when asked. Opening the app while it runs brings up its home screen instead of a second copy.
+[0.1.0]: https://github.com/alenj0x1/console-ui/releases/tag/v0.1.0
