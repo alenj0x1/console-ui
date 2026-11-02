@@ -56,5 +56,4 @@ Los cambios que esperan la próxima versión van en **Sin publicar**, arriba (es
 - Avisos de control conectado (con su batería), desconectado y batería baja, y avisos en Inicio cuando algo no se puede abrir o guardar.
 - Con «Mostrar animaciones» apagado en Windows, los fondos y las vistas previas quedan quietos y los tráileres no se reproducen.
 - Los comandos que escriben, abren programas, leen las palabras aprendidas o apagan la computadora solo responden a la ventana que los usa; las carpetas de red no se aceptan como fondos, y no se aprenden palabras escritas en consolas ni en escritorios remotos.
-- Laboratorios del cursor y del teclado con sus datos y notas.
 - Instalador para Windows (NSIS, por usuario, en español o inglés): acceso directo en el menú Inicio, WebView2 descargado si falta y un paso opcional de HidHide que descarga la versión oficial, comprueba su SHA-256 y su firma y ejecuta su instalador. Al desinstalar se quita la entrada de «abrir con Windows», el control vuelve a verse en los juegos y los ajustes se borran solo si lo pides. Abrir la app mientras ya corre muestra su pantalla de Inicio en vez de abrir otra copia.
