@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="es" data-lang="es" data-mode="dark" data-title-es="Console UI · Todo Windows con el control" data-title-en="Console UI · All of Windows with a controller">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Console UI · Todo Windows con el control</title>
+  <meta name="description" content="Usa todo Windows desde el sillón con un control: puntero asistido, teclado en pantalla con sugerencias y una pantalla de Inicio tipo consola para tus juegos, apps y música.">
+  <meta property="og:title" content="Console UI">
+  <meta property="og:description" content="Usa todo Windows desde el sillón con un control.">
+  <meta property="og:image" content="https://alenj0x1.github.io/console-ui/images/og.png">
+  <link rel="icon" href="favicon.svg">
+  <script>
+    // Mode and language before the first paint, so nothing flashes.
+    (() => {
+      const get = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+      const root = document.documentElement;
+      const lang = get("cui-lang") || ((navigator.language || "es").startsWith("en") ? "en" : "es");
+      const mode = get("cui-mode") || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+      root.dataset.lang = lang;
+      root.lang = lang;
+      root.dataset.mode = mode;
+      document.title = root.dataset["title" + (lang === "en" ? "En" : "Es")];
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap top-row">
+      <a class="brand" href="#">
+        <img src="favicon.svg" alt="" width="28" height="28">
+        <span>Console UI</span>
+      </a>
+      <nav class="links">
+        <a href="#funciones"><span data-l="es">Funciones</span><span data-l="en">Features</span></a>
+        <a href="#controles"><span data-l="es">Controles</span><span data-l="en">Controls</span></a>
+        <a href="#para-ti"><span data-l="es">Para ti</span><span data-l="en">For you</span></a>
+        <a href="#instalar"><span data-l="es">Instalar</span><span data-l="en">Install</span></a>
+        <a href="docs/"><span data-l="es">Documentación</span><span data-l="en">Docs</span></a>
+      </nav>
+      <div class="top-end">
+        <div class="seg" role="group" aria-label="Idioma / Language">
+          <button type="button" data-set-lang="es">ES</button>
+          <button type="button" data-set-lang="en">EN</button>
+        </div>
+        <button type="button" class="icon-btn" data-toggle-mode aria-label="Claro / oscuro"><i data-ic="mode"></i></button>
+        <a class="btn ghost gh" href="https://github.com/alenj0x1/console-ui"><i data-ic="github"></i><span>GitHub</span></a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero: the home screen itself, live, inside a TV -->
+    <section class="hero">
+      <div class="wrap hero-text">
+        <h1>
+          <span data-l="es">Todo Windows, <em>desde el sillón</em></span>
+          <span data-l="en">All of Windows, <em>from the couch</em></span>
+        </h1>
+        <p class="lede">
+          <span data-l="es">Mueve el puntero, escribe y abre tus juegos, apps y música con el control. Sin teclado ni mouse en la mesa.</span>
+          <span data-l="en">Move the pointer, type, and open your games, apps and music with a game controller. No keyboard or mouse on the table.</span>
+        </p>
+        <div class="ctas">
+          <a class="btn primary" href="https://github.com/alenj0x1/console-ui/releases/latest"><i data-ic="download"></i><span data-l="es">Descargar para Windows</span><span data-l="en">Download for Windows</span></a>
+          <a class="btn ghost" href="docs/"><i data-ic="book"></i><span data-l="es">Leer la documentación</span><span data-l="en">Read the docs</span></a>
+        </div>
+        <p class="meta"><a href="docs/changelog/" data-version>v0.1.0</a> · <span data-l="es">Windows 10 y 11 · Gratis y de código abierto</span><span data-l="en">Windows 10 and 11 · Free and open source</span></p>
+      </div>
+
+      <div class="wrap">
+        <div class="demo" data-demo="hero" tabindex="0" aria-label="Inicio de Console UI, en vivo">
+          <div class="tv">
+            <div class="screen"><iframe data-frame="home" src="app/home.html" title="Inicio" loading="eager"></iframe></div>
+          </div>
+          <div class="tv-stand" aria-hidden="true"></div>
+          <div class="pad-strip" data-pad-strip>
+            <button type="button" data-press="lb" title="Q">LB</button>
+            <div class="dpad">
+              <button type="button" data-nav="up" title="↑" aria-label="Arriba"></button>
+              <button type="button" data-nav="left" title="←" aria-label="Izquierda"></button>
+              <button type="button" data-nav="right" title="→" aria-label="Derecha"></button>
+              <button type="button" data-nav="down" title="↓" aria-label="Abajo"></button>
+            </div>
+            <div class="face">
+              <button type="button" data-press="y" title="Y">Y</button>
+              <button type="button" data-press="x" title="X">X</button>
+              <button type="button" data-press="b" title="Esc">B</button>
+              <button type="button" data-press="a" title="Enter">A</button>
+            </div>
+            <button type="button" data-press="menu" title="M" aria-label="Menu" class="sym"><i data-ic="btn-menu"></i></button>
+            <button type="button" data-press="rb" title="E">RB</button>
+          </div>
+          <p class="pad-status" data-pad-status>
+            <span data-when="none"><span data-l="es">Conecta tu control, usa las flechas o toca los botones</span><span data-l="en">Plug in your controller, use the arrow keys or tap the buttons</span></span>
+            <span data-when="pad" hidden><i data-ic="gamepad"></i> <span data-l="es">Control conectado</span><span data-l="en">Controller connected</span></span>
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pillars -->
+    <section id="funciones" class="block">
+      <div class="wrap">
+        <h2><span data-l="es">Lo que haces con el mouse, <em>ahora con el control</em></span><span data-l="en">What you do with a mouse, <em>now with a controller</em></span></h2>
+        <p class="sub"><span data-l="es">Seis piezas que trabajan juntas para que nunca tengas que levantarte.</span><span data-l="en">Six pieces that work together so you never have to get up.</span></p>
+        <div class="bento">
+          <article class="card pillar" data-mini="pointer">
+            <div class="mini"><div class="mini-target"></div><div class="mini-cursor"><i data-ic="pointer-fill"></i></div><div class="mini-trail"></div></div>
+            <h3><span data-l="es">Puntero asistido</span><span data-l="en">Assisted pointer</span></h3>
+            <p><span data-l="es">Acelera de forma predecible, frena sobre botones y enlaces y no se mueve al hacer clic.</span><span data-l="en">Predictable speed, it slows down over buttons and links, and holds still when you click.</span></p>
+          </article>
+          <article class="card pillar" data-mini="keys">
+            <div class="mini"><div class="mini-field"><span data-l="es">recetas fáciles con pas</span><span data-l="en">easy pasta rec</span><i class="caret"></i></div><div class="mini-sugs"><span data-l="es">pasta</span><span data-l="en">recipes</span><span data-l="es">pastel</span><span data-l="en">recipe</span><span data-l="es">pasas</span><span data-l="en">record</span></div></div>
+            <h3><span data-l="es">Teclado en pantalla</span><span data-l="en">On-screen keyboard</span></h3>
+            <p><span data-l="es">Aparece sobre cualquier app sin quitarle el foco, con sugerencias que ponen las tildes por ti.</span><span data-l="en">It opens over any app without taking its focus, with suggestions that add the accents for you.</span></p>
+          </article>
+          <article class="card pillar wide" data-mini="home">
+            <div class="mini mini-row"><span></span><span class="on"></span><span></span><span></span><span></span></div>
+            <h3><span data-l="es">Inicio tipo consola</span><span data-l="en">Console-style home</span></h3>
+            <p><span data-l="es">Tus juegos de Steam y Epic con su arte oficial, tus apps con sus íconos reales y lo que suena, en una sola pantalla.</span><span data-l="en">Your Steam and Epic games with their official art, your apps with their real icons and what is playing, on one screen.</span></p>
+          </article>
+          <article class="card pillar wide" data-mini="game">
+            <div class="mini"><div class="mini-notice"><span data-l="es">El control es del juego</span><span data-l="en">The controller is the game's</span></div></div>
+            <h3><span data-l="es">Modo juego automático</span><span data-l="en">Automatic game mode</span></h3>
+            <p><span data-l="es">Cuando un juego pasa al frente se queda con el control, venga de donde venga. Al cerrarlo, vuelve el puntero.</span><span data-l="en">When a game comes to the front it gets the controller, wherever it was opened from. Close it and the pointer is back.</span></p>
+          </article>
+          <article class="card pillar" data-mini="guide">
+            <div class="mini mini-windows"><span class="on"></span><span></span><span></span></div>
+            <h3><span data-l="es">Centro de control</span><span data-l="en">Control center</span></h3>
+            <p data-b><span data-l="es">{View} + {Menu} abre tus ventanas, la música y la batería, también en medio de un juego.</span><span data-l="en">{View} + {Menu} brings up your windows, music and battery, even in the middle of a game.</span></p>
+          </article>
+          <article class="card pillar" data-mini="tv">
+            <div class="mini mini-tv"><span class="mon"></span><span class="tvbox"></span></div>
+            <h3><span data-l="es">Modo TV</span><span data-l="en">TV mode</span></h3>
+            <p><span data-l="es">Deja encendida solo la pantalla de la TV y le manda el sonido. Al apagarlo, todo vuelve como estaba.</span><span data-l="en">Leaves only the TV's screen on and sends the sound to it. Turn it off and everything goes back.</span></p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Keyboard -->
+    <section class="block" id="teclado">
+      <div class="wrap split">
+        <div class="split-text">
+          <h2><span data-l="es">Escribe <em>sin levantarte</em></span><span data-l="en">Type <em>without getting up</em></span></h2>
+          <p class="sub" data-b><span data-l="es">Presiona {Y} o haz clic en un campo de texto y el teclado aparece donde lo necesitas.</span><span data-l="en">Press {Y} or click a text field and the keyboard shows up where you need it.</span></p>
+          <ul class="points">
+            <li><i data-ic="check"></i><span data-l="es">Completa la palabra y pone las tildes (esta → está).</span><span data-l="en">Completes the word and restores accents (esta → está).</span></li>
+            <li><i data-ic="check"></i><span data-l="es">Predice la siguiente palabra a partir de la anterior.</span><span data-l="en">Predicts the next word from the one before.</span></li>
+            <li><i data-ic="check"></i><span data-l="es">Aprende tus palabras, cifradas en tu PC y nunca en contraseñas.</span><span data-l="en">Learns your words, encrypted on your PC and never in password fields.</span></li>
+            <li><i data-ic="check"></i><span data-l="es">Español e inglés, ñ, tildes al mantener y una distribución en dos mitades.</span><span data-l="en">Spanish and English, ñ, accents on hold and a two-halves layout.</span></li>
+          </ul>
+        </div>
+        <div class="demo stage-kb" data-demo="keyboard" tabindex="0" aria-label="Teclado de Console UI, en vivo">
+          <div class="scene">
+            <div class="fake-app">
+              <div class="fake-bar"><i data-ic="search"></i><span class="typed" data-typed></span><i class="caret"></i></div>
+              <div class="fake-lines"><span></span><span></span><span></span></div>
+            </div>
+            <div class="kb-frame"><iframe data-frame="keyboard" src="app/keyboard.html" title="Teclado" loading="lazy"></iframe></div>
+          </div>
+          <div class="pad-strip compact" data-pad-strip>
+            <div class="dpad">
+              <button type="button" data-nav="up" aria-label="Arriba"></button>
+              <button type="button" data-nav="left" aria-label="Izquierda"></button>
+              <button type="button" data-nav="right" aria-label="Derecha"></button>
+              <button type="button" data-nav="down" aria-label="Abajo"></button>
+            </div>
+            <div class="face">
+              <button type="button" data-press="y" title="Espacio">Y</button>
+              <button type="button" data-press="x" title="Borrar">X</button>
+              <button type="button" data-press="b">B</button>
+              <button type="button" data-press="a" title="Enter">A</button>
+            </div>
+            <button type="button" data-press="view" class="sym" aria-label="View"><i data-ic="btn-view"></i></button>
+            <button type="button" data-press="rb">RB</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pointer -->
+    <section class="block" id="puntero">
+      <div class="wrap split reverse">
+        <div class="split-text">
+          <h2><span data-l="es">Un puntero que <em>encuentra los botones</em></span><span data-l="en">A pointer that <em>finds the buttons</em></span></h2>
+          <p class="sub"><span data-l="es">La palanca mueve el mouse como si lo tuvieras en la mano, y sabe dónde se puede hacer clic.</span><span data-l="en">The stick moves the mouse as if it were in your hand, and it knows where you can click.</span></p>
+          <ul class="points">
+            <li><i data-ic="check"></i><span data-l="es">Frena sobre botones y enlaces para que no te pases.</span><span data-l="en">Slows down over buttons and links so you don't overshoot.</span></li>
+            <li><i data-ic="check"></i><span data-l="es">Se queda quieto un instante al hacer clic.</span><span data-l="en">Holds still for a moment when you click.</span></li>
+            <li data-b><i data-ic="check"></i><span data-l="es">{LT} + cruceta salta al botón más cercano en esa dirección.</span><span data-l="en">{LT} + d-pad jumps to the nearest button in that direction.</span></li>
+            <li data-b><i data-ic="check"></i><span data-l="es">Mantener {View} abre un menú rápido con teclado, captura, escritorio, cerrar ventana e Inicio.</span><span data-l="en">Holding {View} opens a quick menu with keyboard, snip, desktop, close window and home.</span></li>
+          </ul>
+        </div>
+        <div class="card preview" data-preview>
+          <div class="seg wide" role="tablist" data-preview-options>
+            <button type="button" data-option="slowdown" class="on"><span data-l="es">Ayuda para apuntar</span><span data-l="en">Aim assist</span></button>
+            <button type="button" data-option="cursor_speed"><span data-l="es">Velocidad</span><span data-l="en">Speed</span></button>
+            <button type="button" data-option="deadzone"><span data-l="es">Movimientos pequeños</span><span data-l="en">Small movements</span></button>
+          </div>
+          <canvas class="preview-stage" data-preview-stage></canvas>
+          <div class="preview-values">
+            <div class="seg" role="group" data-preview-values></div>
+            <p class="preview-caption" data-preview-caption></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Home screen and media -->
+    <section class="block" id="inicio">
+      <div class="wrap">
+        <h2><span data-l="es">Tu biblioteca, <em>como en una consola</em></span><span data-l="en">Your library, <em>like on a console</em></span></h2>
+        <p class="sub" data-b><span data-l="es">Mantén {Menu} y aparece Inicio. Todo lo que ves arriba también funciona aquí.</span><span data-l="en">Hold {Menu} and the home screen appears. Everything shown above works here too.</span></p>
+        <div class="features">
+          <article class="card feat"><i data-ic="gamepad"></i><h3><span data-l="es">Steam y Epic</span><span data-l="en">Steam and Epic</span></h3><p><span data-l="es">Tus juegos instalados con su arte oficial de fondo y su tráiler en silencio tras unos segundos.</span><span data-l="en">Your installed games with their official art behind and a silent trailer after a few seconds.</span></p></article>
+          <article class="card feat"><i data-ic="restart"></i><h3><span data-l="es">Reanudar</span><span data-l="en">Resume</span></h3><p><span data-l="es">El juego que dejaste abierto va primero y vuelve al frente sin abrir otra copia.</span><span data-l="en">The game you left open comes first and returns to the front without starting another copy.</span></p></article>
+          <article class="card feat"><i data-ic="search"></i><h3><span data-l="es">Búsqueda</span><span data-l="en">Search</span></h3><p data-b><span data-l="es">{Y} busca entre cientos de juegos y {LT} / {RT} saltan de letra.</span><span data-l="en">{Y} searches hundreds of games and {LT} / {RT} jump between letters.</span></p></article>
+          <article class="card feat"><i data-ic="apps"></i><h3><span data-l="es">Tus apps</span><span data-l="en">Your apps</span></h3><p><span data-l="es">Las que fijas, con su ícono real y el color de su marca.</span><span data-l="en">The ones you pin, with their real icon and their brand colour.</span></p></article>
+          <article class="card feat"><i data-ic="music"></i><h3><span data-l="es">Multimedia</span><span data-l="en">Media</span></h3><p><span data-l="es">Spotify, VLC y tus sitios de video. Lo que suena va primero, con carátula en alta calidad y letra sincronizada.</span><span data-l="en">Spotify, VLC and your video sites. What is playing comes first, with a high-quality cover and synced lyrics.</span></p></article>
+          <article class="card feat"><i data-ic="photo"></i><h3><span data-l="es">Fondos</span><span data-l="en">Backgrounds</span></h3><p><span data-l="es">Cinco animaciones propias, tus videos de Wallpaper Engine o tus fotos y videos.</span><span data-l="en">Five built-in animations, your Wallpaper Engine videos, or your own pictures and videos.</span></p></article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Games and the control center -->
+    <section class="block" id="juegos">
+      <div class="wrap split">
+        <div class="split-text">
+          <h2><span data-l="es">Juega, cambia de ventana <em>y vuelve</em></span><span data-l="en">Play, switch windows <em>and come back</em></span></h2>
+          <p class="sub" data-b><span data-l="es">Con {View} + {Menu} ves todo lo que tienes abierto sin sacar el juego del frente.</span><span data-l="en">{View} + {Menu} shows everything you have open without taking the game off the front.</span></p>
+          <ul class="points">
+            <li data-b><i data-ic="check"></i><span data-l="es">{A} cambia a una ventana. Un juego recibe el control, lo demás el puntero.</span><span data-l="en">{A} switches to a window. A game gets the controller, anything else the pointer.</span></li>
+            <li data-b><i data-ic="check"></i><span data-l="es">{X} pausa la música y {LT} / {RT} cambian de canción sin salir del juego.</span><span data-l="en">{X} pauses the music and {LT} / {RT} change the song without leaving the game.</span></li>
+            <li data-b><i data-ic="check"></i><span data-l="es">{Y} cierra una ventana y {Menu} apaga, reinicia o suspende el PC.</span><span data-l="en">{Y} closes a window and {Menu} shuts down, restarts or puts the PC to sleep.</span></li>
+            <li><i data-ic="check"></i><span data-l="es">La batería del control junto a la hora, y un aviso cuando se está acabando.</span><span data-l="en">The controller's battery next to the clock, and a notice when it runs low.</span></li>
+          </ul>
+        </div>
+        <div class="demo stage-guide" data-demo="guide" tabindex="0" aria-label="Centro de control de Console UI, en vivo">
+          <div class="tv small">
+            <div class="screen game-bg"><iframe data-frame="guide" src="app/guide.html" title="Centro de control" loading="lazy"></iframe></div>
+          </div>
+          <div class="pad-strip compact" data-pad-strip>
+            <div class="dpad">
+              <button type="button" data-nav="up" aria-label="Arriba"></button>
+              <button type="button" data-nav="left" aria-label="Izquierda"></button>
+              <button type="button" data-nav="right" aria-label="Derecha"></button>
+              <button type="button" data-nav="down" aria-label="Abajo"></button>
+            </div>
+            <div class="face">
+              <button type="button" data-press="y">Y</button>
+              <button type="button" data-press="x">X</button>
+              <button type="button" data-press="b">B</button>
+              <button type="button" data-press="a">A</button>
+            </div>
+            <button type="button" data-press="lt">LT</button>
+            <button type="button" data-press="rt">RT</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- The controller, button by button -->
+    <section class="block" id="controles">
+      <div class="wrap">
+        <h2><span data-l="es">Cada botón, <em>en su lugar</em></span><span data-l="en">Every button, <em>in its place</em></span></h2>
+        <p class="sub"><span data-l="es">El mismo control hace lo justo en cada momento. Elige dónde estás y mira qué hace cada botón.</span><span data-l="en">The same controller does the right thing at each moment. Pick where you are and see what each button does.</span></p>
+        <div class="card pad-map" data-pad-map>
+          <div class="seg wide" role="tablist" data-pad-modes>
+            <button type="button" data-mode="cursor" class="on"><i data-ic="pointer"></i><span data-l="es">Escritorio</span><span data-l="en">Desktop</span></button>
+            <button type="button" data-mode="keyboard"><i data-ic="keyboard"></i><span data-l="es">Teclado</span><span data-l="en">Keyboard</span></button>
+            <button type="button" data-mode="home"><i data-ic="home"></i><span data-l="es">Inicio</span><span data-l="en">Home</span></button>
+            <button type="button" data-mode="game"><i data-ic="gamepad"></i><span data-l="es">En un juego</span><span data-l="en">In a game</span></button>
+          </div>
+          <div class="pad-board">
+            <ul class="pad-side left" data-side="left"></ul>
+            <div class="pad-art" data-pad-art></div>
+            <ul class="pad-side right" data-side="right"></ul>
+          </div>
+          <div class="pad-foot">
+            <div class="swatches" data-pad-themes></div>
+            <p class="pad-note"><span data-l="es">Cualquier botón se puede cambiar, y hay distribuciones para usarlo con una sola mano.</span><span data-l="en">Any button can be reassigned, and there are layouts to use it with one hand.</span></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Accessibility and personalization -->
+    <section class="block" id="para-ti">
+      <div class="wrap">
+        <h2><span data-l="es">Se adapta <em>a quien lo usa</em></span><span data-l="en">It adapts <em>to whoever uses it</em></span></h2>
+        <p class="sub"><span data-l="es">Cada opción de Ajustes se explica sola y las del puntero y los botones muestran una animación de lo que cambian. Prueba estas, cambian las pantallas de esta página.</span><span data-l="en">Every option in Settings explains itself, and the pointer and button options show an animation of what they change. Try these, they change the screens on this page.</span></p>
+        <div class="tweaks">
+          <article class="card tweak">
+            <h3><span data-l="es">Color principal</span><span data-l="en">Main colour</span></h3>
+            <div class="accents" data-accents></div>
+          </article>
+          <article class="card tweak">
+            <h3><span data-l="es">Tamaño del texto</span><span data-l="en">Text size</span></h3>
+            <div class="seg" role="group" data-pref-seg="text_size">
+              <button type="button" data-value="100">100 %</button>
+              <button type="button" data-value="120">120 %</button>
+              <button type="button" data-value="150">150 %</button>
+            </div>
+          </article>
+          <article class="card tweak">
+            <h3><span data-l="es">Alto contraste</span><span data-l="en">High contrast</span></h3>
+            <button type="button" class="switch" role="switch" aria-checked="false" data-pref-switch="high_contrast"><span></span></button>
+          </article>
+          <article class="card tweak">
+            <h3><span data-l="es">Marco de selección grueso</span><span data-l="en">Thicker selection frame</span></h3>
+            <button type="button" class="switch" role="switch" aria-checked="false" data-pref-switch="thick_focus"><span></span></button>
+          </article>
+        </div>
+        <div class="features three">
+          <article class="card feat"><i data-ic="settings"></i><h3><span data-l="es">Ajustes con palabras de todos los días</span><span data-l="en">Settings in everyday words</span></h3><p><span data-l="es">Velocidad del puntero, ayuda para apuntar, cuánto ignorar los movimientos pequeños o cuánto mantener un botón, con deslizadores que se detienen en los valores habituales.</span><span data-l="en">Pointer speed, aiming help, how much small movements are ignored or how long a button is held, with sliders that rest on the usual values.</span></p></article>
+          <article class="card feat"><i data-ic="hand"></i><h3><span data-l="es">Con una mano</span><span data-l="en">With one hand</span></h3><p><span data-l="es">Distribuciones para la mano izquierda o la derecha, también en Inicio y el teclado. Cambios así piden confirmar y se deshacen solos en 10 segundos.</span><span data-l="en">Layouts for the left or the right hand, on the home screen and the keyboard too. Changes like these ask to keep them and undo themselves after 10 seconds.</span></p></article>
+          <article class="card feat"><i data-ic="school"></i><h3><span data-l="es">Una práctica al empezar</span><span data-l="en">A short practice to start</span></h3><p><span data-l="es">La primera vez practicas apuntar, escribir y abrir Inicio, y ajustas el puntero a tu gusto. Se puede repetir desde Ajustes.</span><span data-l="en">The first time you practise pointing, typing and opening the home screen, and tune the pointer to your liking. You can repeat it from Settings.</span></p></article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Privacy -->
+    <section class="block" id="privacidad">
+      <div class="wrap">
+        <h2><span data-l="es">Tu PC sigue <em>siendo tuya</em></span><span data-l="en">Your PC stays <em>yours</em></span></h2>
+        <p class="sub"><span data-l="es">Funciona sin cuenta, sin permisos de administrador y sin enviar lo que escribes a ningún lado.</span><span data-l="en">It works without an account, without administrator rights and without sending what you type anywhere.</span></p>
+        <div class="features four">
+          <article class="card feat"><i data-ic="lock"></i><h3><span data-l="es">Palabras cifradas</span><span data-l="en">Encrypted words</span></h3><p><span data-l="es">Lo que el teclado aprende se guarda cifrado con tu cuenta de Windows, y nunca en campos de contraseña, consolas o escritorios remotos.</span><span data-l="en">What the keyboard learns is stored encrypted with your Windows account, and never from password fields, consoles or remote desktops.</span></p></article>
+          <article class="card feat"><i data-ic="cloud-off"></i><h3><span data-l="es">Internet solo si quieres</span><span data-l="en">Internet only if you want</span></h3><p><span data-l="es">Carátulas y letras mandan solo el título y el artista de la canción, y se apagan con una opción.</span><span data-l="en">Covers and lyrics send only the song's title and artist, and one option turns them off.</span></p></article>
+          <article class="card feat"><i data-ic="shield"></i><h3><span data-l="es">Sin permisos de más</span><span data-l="en">No extra rights</span></h3><p data-b><span data-l="es">Se instala para tu usuario. Si una ventana de administrador bloquea el control, te avisa y {B} te devuelve al escritorio.</span><span data-l="en">It installs for your user only. If an administrator window blocks the controller, it tells you and {B} takes you back.</span></p></article>
+          <article class="card feat"><i data-ic="eye-off"></i><h3><span data-l="es">Las apps no se confunden</span><span data-l="en">Apps don't get confused</span></h3><p><span data-l="es">Con HidHide, el menú Inicio y las apps de la Tienda dejan de ver el control mientras maneja Windows, y los juegos lo vuelven a ver.</span><span data-l="en">With HidHide, the Start menu and Store apps stop seeing the controller while it drives Windows, and games see it again.</span></p></article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Install -->
+    <section class="block" id="instalar">
+      <div class="wrap">
+        <h2><span data-l="es">Listo en <em>un minuto</em></span><span data-l="en">Ready in <em>a minute</em></span></h2>
+        <p class="sub"><span data-l="es">Un instalador para tu usuario, en español o inglés según tu Windows.</span><span data-l="en">One installer for your user, in Spanish or English following Windows.</span></p>
+        <div class="install">
+          <ol class="steps">
+            <li class="card step"><span class="num">1</span><h3><span data-l="es">Descarga el instalador</span><span data-l="en">Download the installer</span></h3><p><span data-l="es">Desde la última versión en GitHub.</span><span data-l="en">From the latest release on GitHub.</span></p></li>
+            <li class="card step"><span class="num">2</span><h3><span data-l="es">Instálalo</span><span data-l="en">Install it</span></h3><p><span data-l="es">Sin administrador. Si no tienes HidHide, una casilla lo ofrece y comprueba su firma.</span><span data-l="en">No administrator needed. If HidHide is missing, a check box offers it and verifies its signature.</span></p></li>
+            <li class="card step"><span class="num">3</span><h3><span data-l="es">Agarra el control</span><span data-l="en">Pick up the controller</span></h3><p><span data-l="es">Una práctica corta te enseña lo básico y ajusta el puntero.</span><span data-l="en">A short practice shows you the basics and tunes the pointer.</span></p></li>
+          </ol>
+          <aside class="card needs">
+            <h3><span data-l="es">Necesitas</span><span data-l="en">You need</span></h3>
+            <ul class="points">
+              <li><i data-ic="desktop"></i><span data-l="es">Windows 10 u 11 de 64 bits.</span><span data-l="en">Windows 10 or 11, 64-bit.</span></li>
+              <li><i data-ic="gamepad"></i><span data-l="es">Un control de Xbox o compatible. Los de PlayStation, con Steam Input o DS4Windows.</span><span data-l="en">An Xbox or compatible controller. PlayStation ones through Steam Input or DS4Windows.</span></li>
+            </ul>
+            <a class="btn primary full" href="https://github.com/alenj0x1/console-ui/releases/latest"><i data-ic="download"></i><span data-l="es">Descargar</span><span data-l="en">Download</span></a>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="block" id="preguntas">
+      <div class="wrap narrow">
+        <h2><span data-l="es">Preguntas <em>frecuentes</em></span><span data-l="en">Frequently asked <em>questions</em></span></h2>
+        <div class="faq">
+          <details class="card"><summary><span data-l="es">¿Es gratis?</span><span data-l="en">Is it free?</span><i data-ic="chevron-down"></i></summary><p><span data-l="es">Sí. Es de código abierto con licencia MIT.</span><span data-l="en">Yes. It is open source under the MIT license.</span></p></details>
+          <details class="card"><summary><span data-l="es">¿Se mete con mis juegos?</span><span data-l="en">Does it get in the way of my games?</span><i data-ic="chevron-down"></i></summary><p><span data-l="es">No. Cuando un juego pasa al frente le entrega el control y deja de moverse el puntero. Desde la bandeja también puedes dárselo a mano.</span><span data-l="en">No. When a game comes to the front it hands the controller over and the pointer stops. You can also hand it over from the tray.</span></p></details>
+          <details class="card"><summary><span data-l="es">¿Qué controles funcionan?</span><span data-l="en">Which controllers work?</span><i data-ic="chevron-down"></i></summary><p><span data-l="es">Los de Xbox y los compatibles. Los de PlayStation funcionan a través de Steam Input o DS4Windows.</span><span data-l="en">Xbox and compatible controllers. PlayStation ones work through Steam Input or DS4Windows.</span></p></details>
+          <details class="card"><summary><span data-l="es">¿Necesita internet?</span><span data-l="en">Does it need the internet?</span><i data-ic="chevron-down"></i></summary><p><span data-l="es">No. Solo las carátulas, las letras y los tráileres se descargan, y las carátulas y letras se pueden apagar.</span><span data-l="en">No. Only covers, lyrics and trailers are downloaded, and covers and lyrics can be turned off.</span></p></details>
+          <details class="card"><summary><span data-l="es">¿Para qué ofrece HidHide?</span><span data-l="en">Why does it offer HidHide?</span><i data-ic="chevron-down"></i></summary><p><span data-l="es">Algunas apps de Windows leen el control por su cuenta y saltan mientras mueves el puntero. HidHide se lo esconde a ellas y se lo devuelve a los juegos. Es opcional.</span><span data-l="en">Some Windows apps read the controller on their own and jump while you move the pointer. HidHide hides it from them and gives it back to games. It is optional.</span></p></details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap foot-row">
+      <div class="foot-brand">
+        <a class="brand" href="#"><img src="favicon.svg" alt="" width="24" height="24"><span>Console UI</span></a>
+        <p><span data-l="es">Todo Windows con el control.</span><span data-l="en">All of Windows with a controller.</span></p>
+      </div>
+      <nav class="foot-links">
+        <a href="docs/"><span data-l="es">Documentación</span><span data-l="en">Docs</span></a>
+        <a href="docs/changelog/"><span data-l="es">Cambios</span><span data-l="en">Changelog</span></a>
+        <a href="https://github.com/alenj0x1/console-ui/releases">Releases</a>
+        <a href="https://github.com/alenj0x1/console-ui">GitHub</a>
+      </nav>
+      <p class="license"><span data-l="es">Licencia MIT. Las imágenes de los juegos pertenecen a sus dueños.</span><span data-l="en">MIT license. Game images belong to their owners.</span></p>
+    </div>
+  </footer>
+
+  <script src="app/i18n.js"></script>
+  <script src="app/icons.js"></script>
+  <script src="app/previews.js"></script>
+  <script src="assets/site.js"></script>
+</body>
+</html>

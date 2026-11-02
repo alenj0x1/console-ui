@@ -10,6 +10,7 @@ Los cambios que esperan la próxima versión van en **Sin publicar**, arriba (es
 
 ### Agregado
 
+- Sitio web con Inicio, el teclado y el centro de control funcionando en vivo con datos de ejemplo, y documentación en inglés y español.
 - Interfaz en español e inglés (Ajustes › General › Idioma), empezando en el idioma de Windows. Cambia al instante en todas las ventanas, también en el menú de la bandeja, y es aparte de los idiomas de sugerencias del teclado. Cada idioma es un archivo de catálogo, así que sumar otro es un archivo y una línea.
 - Núcleo de entrada del control (XInput, leído en segundo plano) con cursor, scroll, clics, arrastre, flechas, Esc, atrás/adelante, vista de tareas y menú Inicio.
 - Cursor asistido: aceleración predecible, frenado sobre elementos clicables (UI Automation, solo al apuntar) y clic estable.

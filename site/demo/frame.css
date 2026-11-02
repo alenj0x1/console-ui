@@ -1,0 +1,7 @@
+/* The app's pages inside the website: no scrollbars, and the keyboard and
+   control center float over the scene around them instead of a page colour. */
+html { scrollbar-width: none; }
+html::-webkit-scrollbar { display: none; }
+html:has(#panel), html:has(#panel) body, html:has(#windows), html:has(#windows) body { background: transparent !important; }
+/* What the mouse can point at, as on the website around it. */
+.tile, .search-key, .cat, .setting, .pad-label, .pad-action, .swatch, .check, .tab, .key, .menu-item, .window, .power .row { cursor: pointer; }

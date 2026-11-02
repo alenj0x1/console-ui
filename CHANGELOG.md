@@ -10,6 +10,7 @@ Changes waiting for the next version sit under **Unreleased** at the top (this s
 
 ### Added
 
+- Website with the home screen, the keyboard and the control center running live on sample data, and documentation in English and Spanish.
 - Interface in Spanish and English (Settings › General › Language), starting in Windows' own language. It changes at once in every window, the tray menu included, and is separate from the keyboard's suggestion languages. Each language is one catalogue file, so adding another is one file plus one line.
 - Controller input core (XInput, read in the background) with cursor, scroll, clicks, drag, arrow keys, Esc, back/forward, Task view and Start menu.
 - Assisted cursor: predictable acceleration, slowdown over clickable elements (UI Automation, only while aiming) and click stabilization.
