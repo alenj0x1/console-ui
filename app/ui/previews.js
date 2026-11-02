@@ -254,30 +254,35 @@ const Previews = (() => {
     ctx.restore();
   }
 
-  // A small home screen: the info (a logo, a line and the action button) and
-  // the tiles, coloured like the art.
-  function drawHome({ info, tiles, alpha }) {
+  // The home screen at a third of its size (1920 × 1080 → 640 × 360): the
+  // tabs and the clock, the info, the tiles coloured like their art, the
+  // music bar. Every item is { x, y, w, h, fill?, on?, name? } in field units.
+  function drawHome({ y0, info, tiles, player, alpha }) {
     ctx.save();
     ctx.globalAlpha = alpha;
-    ctx.fillStyle = col(C.text, 0.85);
-    ctx.beginPath(); ctx.roundRect(info.x, info.y, info.compact ? 110 : 130, info.compact ? 14 : 22, 4); ctx.fill();
-    let y = info.y + (info.compact ? 26 : 36);
-    if (!info.compact) {
-      ctx.fillStyle = col(C.muted, 0.8);
-      ctx.beginPath(); ctx.roundRect(info.x, y, 90, 8, 4); ctx.fill();
-      y += 22;
-    }
-    ctx.fillStyle = col(C.accent);
-    ctx.beginPath(); ctx.roundRect(info.x, y, 64, 22, 6); ctx.fill();
+    const bar = (x, y, w, h, c, r = h / 2) => { ctx.fillStyle = c; ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fill(); };
+    // Tabs (the first one current) and the clock.
+    [0, 1, 2, 3].forEach((i) => bar(268 + i * 28, y0 + 18, 20, 5, col(i === 0 ? C.text : C.muted, i === 0 ? 0.9 : 0.6)));
+    bar(598, y0 + 18, 20, 5, col(C.text, 0.9));
+    // Info: the logo or title, a line, the button.
+    bar(info.x, info.y, info.title, info.big ? 14 : 10, col(C.text, 0.85), 3);
+    let y = info.y + (info.big ? 22 : 16);
+    if (info.meta) { bar(info.x, y, 44, 5, col(C.muted, 0.8)); y += 12; }
+    bar(info.x, y, 34, 14, col(C.accent), 4);
     const focus = C.focus / px;
-    tiles.forEach((tl) => {
-      ctx.beginPath(); ctx.roundRect(tl.x, tl.y, tl.w, tl.h, 6); ctx.fillStyle = col(tl.fill); ctx.fill();
-      if (tl.name) { ctx.fillStyle = col(C.text, 0.7); ctx.beginPath(); ctx.roundRect(tl.x + tl.h + 6, tl.y + tl.h / 2 - 3, tl.name, 6, 3); ctx.fill(); }
-      if (tl.on) {
-        ctx.beginPath(); ctx.roundRect(tl.x - focus / 2, tl.y - focus / 2, tl.w + focus, tl.h + focus, 6 + focus / 2);
-        ctx.lineWidth = focus; ctx.strokeStyle = col(C.accent, tl.on); ctx.stroke();
+    tiles.forEach((t) => {
+      bar(t.x, t.y, t.w, t.h, col(t.fill), 4);
+      if (t.name) bar(t.x + 10, t.y + t.h / 2 - 2.5, t.name, 5, col(C.text, 0.7));
+      if (t.on) {
+        ctx.beginPath(); ctx.roundRect(t.x - focus / 2, t.y - focus / 2, t.w + focus, t.h + focus, 4 + focus / 2);
+        ctx.lineWidth = focus; ctx.strokeStyle = col(C.accent, t.on); ctx.stroke();
       }
     });
+    if (player) {
+      bar(21, y0 + 328, 92, 19, col(C["surface-hover"]), 4);
+      bar(25, y0 + 331, 13, 13, col(C.muted, 0.6), 2);
+      bar(43, y0 + 335, 52, 5, col(C.text, 0.7));
+    }
     ctx.restore();
   }
 
@@ -614,52 +619,54 @@ const Previews = (() => {
     },
   };
 
-  // «Forma de Inicio»: the same items in each shape while the focus moves
-  // twice (right twice in a row; right then down in the grid; down twice in
-  // the list). Sizes keep the home screen's proportions (home.css .tile).
+  // «Forma de Inicio»: the home screen in each shape (home.css sizes at a
+  // third: 1 u = 16 / 3 field units) while the focus moves twice: right
+  // twice in a row, right then down in the grid, down twice in the list.
   const ART = [[20, 52, 40], [58, 22, 20], [13, 35, 59], [58, 50, 26], [44, 30, 70], [30, 52, 58], [52, 36, 24], [24, 40, 52]];
+  const U = 16 / 3, M = 21; // the unit and the side margin (4rem)
   // f: { at, prev, grow } — the focused item, the one before and how far
   // the change has gone (0 → 1).
-  function homeTiles(shape, f, L) {
-    const top = L.top + 6, bottom = L.top + 300, x0 = 40;
+  function homeShape(shape, f, y0) {
     const on = (i) => (i === f.at ? f.grow : i === f.prev ? 1 - f.grow : 0);
-    const size = (i, rest, big) => [rest[0] + (big[0] - rest[0]) * on(i), rest[1] + (big[1] - rest[1]) * on(i)];
+    const bottom = y0 + 320 - 3; // the row's bottom, above the music bar
     if (shape === "banners" || shape === "covers") {
-      const [rest, big, gap] = shape === "banners" ? [[120, 56], [156, 73], 14] : [[60, 90], [74, 111], 12];
-      let x = x0;
-      return ART.map((fill, i) => {
-        const [w, h] = size(i, rest, big);
-        const tile = { x, y: bottom - h, w, h, fill, on: on(i) };
-        x += w + gap;
-        return tile;
+      const [rest, big] = shape === "banners" ? [[20, 9.4], [25, 11.75]] : [[12, 18], [15, 22.5]];
+      let x = M;
+      const tiles = ART.map((fill, i) => {
+        const k = on(i), w = (rest[0] + (big[0] - rest[0]) * k) * U, h = (rest[1] + (big[1] - rest[1]) * k) * U;
+        const t = { x, y: bottom - h, w, h, fill, on: k };
+        x += w + 7;
+        return t;
       });
+      return { tiles, info: { x: M, y: bottom - big[1] * U - 11 - 52, title: 70, big: true, meta: true }, player: true };
     }
     if (shape === "grid") {
-      return [...ART, ...ART].slice(0, 14).map((fill, i) => ({ x: x0 + (i % 7) * 70, y: top + 76 + Math.floor(i / 7) * 96, w: 58, h: 87, fill, on: on(i) }));
+      const w = 12 * U, h = 18 * U, gap = 8;
+      const tiles = [...ART, ...ART].slice(0, 16).map((fill, i) => ({ x: M + (i % 8) * (w + gap), y: y0 + 82 + Math.floor(i / 8) * (h + gap), w, h, fill, on: on(i) }));
+      return { tiles, info: { x: M, y: y0 + 43, title: 60 }, player: true };
     }
-    return ART.slice(0, 7).map((fill, i) => ({ x: 400, y: top + i * 40, w: 200, h: 32, fill: C["surface-hover"], name: 60 + ((i * 37) % 70), on: on(i) }));
+    const tiles = ART.slice(0, 7).map((fill, i) => ({ x: 448, y: y0 + 53 + i * 25, w: 150, h: 21, fill: C["surface-hover"], name: 50 + ((i * 37) % 60), on: on(i) }));
+    return { tiles, info: { x: M, y: bottom - 52, title: 70, big: true, meta: true }, player: true };
   }
   SCENES.library_view = {
     values: ["banners", "covers", "grid", "list"],
     captions: {
       banners: "Una fila de arte ancho. La que eliges se agranda.",
-      covers: "Una fila de portadas, como la caja del juego. Caben más a la vez.",
+      covers: "Una fila de portadas, como la caja del juego. La que eliges se agranda.",
       grid: "Varias filas de portadas, para ver toda la biblioteca de una vez.",
       list: "Solo los nombres, uno debajo del otro, para encontrar algo rápido.",
     },
     sim(value) {
-      const steps = { banners: [1, 2], covers: [1, 2], grid: [1, 8], list: [1, 2] }[value];
+      const steps = { banners: [1, 2], covers: [1, 2], grid: [1, 9], list: [1, 2] }[value];
       return { shape: value, moves: [[0.9, steps[0]], [1.7, steps[1]]], done: 1.7 + 0.16 + HOLD + 0.4, key: 1.9 };
     },
     frame(run, t, alpha, ghost, L) {
-      const focusAt = (r) => {
-        let at = 0, prev = -1, since = 1;
-        r.moves.forEach(([when, to]) => { if (t >= when) { prev = at; at = to; since = t - when; } });
-        return { at, prev, grow: prev < 0 ? 1 : easeOut(clamp01(since / 0.16)) };
-      };
-      // No ghost: each shape is a different screen, and outlines of the one
-      // before only get in the way.
-      return { home: { info: { x: 40, y: L.top + 6, compact: run.shape === "grid" }, tiles: homeTiles(run.shape, focusAt(run), L), alpha } };
+      let at = 0, prev = -1, since = 1;
+      run.moves.forEach(([when, to]) => { if (t >= when) { prev = at; at = to; since = t - when; } });
+      const f = { at, prev, grow: prev < 0 ? 1 : easeOut(clamp01(since / 0.16)) };
+      // No ghost: each shape is a different screen.
+      const y0 = L.top - 25;
+      return { home: { y0, alpha, ...homeShape(run.shape, f, y0) } };
     },
   };
 

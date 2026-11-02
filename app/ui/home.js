@@ -341,9 +341,16 @@ function coverTones(image) {
 // An app's card takes its brand's colour or its icon's main colour, darkened
 // for ivory text. Colours are kept per icon so rebuilt cards never flash.
 const tones = new Map();
-// Darkened, then a fifth of the graphite surface mixed in so no card is loud.
+// Darkened, its colour capped so none is louder than the others, then a
+// fifth of the graphite surface mixed in.
 const GRAPHITE = [42, 43, 47];
-const deep = (rgb) => `rgb(${rgb.map((v, i) => Math.round(((v * 62) / Math.max(...rgb, 1)) * 0.8 + GRAPHITE[i] * 0.2)).join(",")})`;
+const MAX_SPREAD = 34;
+function deep(rgb) {
+  let d = rgb.map((v) => (v * 62) / Math.max(...rgb, 1));
+  const grey = (d[0] + d[1] + d[2]) / 3, spread = Math.max(...d) - Math.min(...d);
+  if (spread > MAX_SPREAD) d = d.map((v) => grey + ((v - grey) * MAX_SPREAD) / spread);
+  return `rgb(${d.map((v, i) => Math.round(v * 0.8 + GRAPHITE[i] * 0.2)).join(",")})`;
+}
 
 // The icon's most present clearly coloured tone; null for grey icons.
 function iconColour(image) {
@@ -1872,9 +1879,26 @@ function infoEl(i) {
     action);
 }
 
+// Where the volume is: the d-pad in a row, RT with it in a grid or a list.
+function volumeHint(head) {
+  const keys = libraryView() === "grid" || libraryView() === "list" ? "RT ↑ ↓" : "↑ ↓";
+  const hint = el("span", { className: "hint" }, glyph(keys), "Volumen");
+  const hints = head.querySelector(".hints");
+  if (hints) hints.append(hint);
+  else (head.querySelector(".action") ?? head.querySelector(".meta"))?.after(el("span", { className: "hints" }, hint));
+  return head;
+}
+
 // An item's info is a description for infoEl, or an element it built itself.
 function asInfo(i) {
   return i instanceof Element ? i : infoEl(i);
+}
+
+// Which sides of a row have more tiles beyond the edge (they fade there).
+function edges(strip) {
+  if (!strip.classList.contains("row")) return;
+  strip.classList.toggle("more-left", strip.scrollLeft > 1);
+  strip.classList.toggle("more-right", strip.scrollLeft + strip.clientWidth < strip.scrollWidth - 1);
 }
 
 // Big text or a long title may not fit above the row: the tiles give up size
@@ -1891,7 +1915,7 @@ function fitRow(strip) {
   const over = info.scrollHeight - info.clientHeight;
   if (over <= 0) return;
   // The focused tile's picture height at full size (see .tile in home.css).
-  const focused = (coversView() ? 17.1 : 12.2) * (innerHeight / 67.5);
+  const focused = (coversView() ? 22.5 : 11.75) * (innerHeight / 67.5);
   const fit = parseFloat(view.style.getPropertyValue("--fit") || "1");
   view.style.setProperty("--fit", Math.max(0.6, fit - (over + 4) / focused).toFixed(3));
 }
@@ -1953,7 +1977,7 @@ function render() {
     if (state.sheet === "search") return searchHead();
     const head = editing
       ? infoEl({ lead: el("div", { className: "lead-symbol" }, svg("edit")), title: state.sheet === "medit" ? "Editar Multimedia" : "Editar apps", meta: "", action: [editLabel(), "A"] })
-      : asInfo(list[at].info());
+      : volumeHint(asInfo(list[at].info()));
     const m = state.media;
     const sound = trailer.classList.contains("shown") ? `${trailerFor}:${soundWanted()}` : "";
     head.dataset.item = editing ? "edit" : [list[at].key, m.title, m.artist, m.playing, m.duration_ms > 0, sound].join("|");
@@ -1966,7 +1990,10 @@ function render() {
     // The focused tile grows after it is scrolled to, so it is scrolled again
     // once it has its full size.
     strip.addEventListener("transitionend", (e) => {
-      if (e.propertyName === "width" && e.target.classList.contains("on")) e.target.scrollIntoView({ inline: "nearest", block: "nearest" });
+      if (e.propertyName === "width" && e.target.classList.contains("on")) {
+        e.target.scrollIntoView({ inline: "nearest", block: "nearest" });
+        edges(strip);
+      }
     });
     list.forEach((item) => strip.append(item.tile()));
     view.replaceChildren(headFor(), strip);
@@ -1987,6 +2014,7 @@ function render() {
   if (nowTile) tileCover(nowTile);
   fitRow(strip);
   strip.children[at]?.scrollIntoView({ inline: "nearest", block: "nearest" });
+  edges(strip);
   updateMusic();
   renderPlayer();
 }
