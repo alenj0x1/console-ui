@@ -6,6 +6,12 @@ Aquí se documentan los cambios importantes del proyecto. El formato sigue [Keep
 
 Los cambios que esperan la próxima versión van en **Sin publicar**, arriba (esa sección solo existe mientras haya alguno y el sitio de documentación no la muestra); `scripts/release.py` la convierte en la versión nueva.
 
+## [Sin publicar]
+
+### Corregido
+
+- En Inicio, una fila de indicaciones de botones que no cabe en su línea (Multimedia en español) pasa una indicación completa a una segunda línea en vez de cortarse en el borde.
+
 ## [0.1.0] - 2026-11-02
 
 ### Agregado

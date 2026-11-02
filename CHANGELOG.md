@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows [Kee
 
 Changes waiting for the next version sit under **Unreleased** at the top (this section only exists while there are some, and the docs site doesn't show it); `scripts/release.py` turns it into the new version.
 
+## [Unreleased]
+
+### Fixed
+
+- On the home screen, a row of button hints too long for its line (Media in Spanish) wraps a whole hint onto a second line instead of being cut at the edge.
+
 ## [0.1.0] - 2026-11-02
 
 ### Added
