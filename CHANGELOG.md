@@ -32,6 +32,8 @@ Changes waiting for the next version sit under **Unreleased** at the top (this s
 - Game trailers: after a few seconds on a Steam game, its trailer plays over the art, silent and looping (the first seconds, downloaded once from the Steam store and kept).
 - Media tab: the background blends the cover's two main colours, and covers sent as a card with the player's logo are trimmed to the artwork.
 - Home tiles: larger banners, and the focused one grows while the rest stay on the bottom line. App and media cards take their brand's colour (Spotify, YouTube, Netflix…) or their icon's main colour, darkened, and the card of what is playing shows its cover on the right.
+- Forma de Inicio, in Apariencia, with an animated preview of each: Games, Apps and Media as a row of wide banners, a row of box covers, a grid of covers or a list of names. In the grid and the list up and down move through them (RT + d-pad keeps the volume). With big text or a long title the tiles give up some size so the info above is never cut.
+- Trailer sound: X on a game whose trailer is playing turns its sound on or off, and the choice stays for every trailer after it (also in Ajustes > Juegos). The sound is downloaded with the trailer, and trailers saved before get theirs the next time they play.
 - View and Menu hints show the symbols printed on those buttons instead of their names.
 - A tap on RT presses Enter, in the keyboard too (the first suggestion is on View).
 - Volume from anywhere: hold RT and use the d-pad (up/down volume, left/right previous/next track).

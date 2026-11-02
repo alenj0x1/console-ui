@@ -106,6 +106,7 @@ pub fn mime(path: &Path) -> &'static str {
     match path.extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase).as_deref() {
         Some("webm") => "video/webm",
         Some("mp4" | "m4v") => "video/mp4",
+        Some("m4a") => "audio/mp4",
         Some("png") => "image/png",
         Some("webp") => "image/webp",
         Some("gif") => "image/gif",

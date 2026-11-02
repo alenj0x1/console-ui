@@ -7,7 +7,8 @@
 //!   /cover                                      current track's cover
 //!   /wallpaper/<id>                             background file (byte ranges)
 //!   /wallpaper-preview/<id>                     its preview picture
-//!   /trailer/<game id>                          the game's saved silent trailer
+//!   /trailer/<game id>                          the game's saved trailer (video)
+//!   /trailer-sound/<game id>                    its sound (M4A)
 
 use std::collections::HashMap;
 use std::io::{Read, Seek, SeekFrom};
@@ -185,13 +186,29 @@ pub fn set_wallpaper(webview: tauri::Webview, state: tauri::State<HomeState>, st
     store.set_wallpaper(id)
 }
 
-/// Whether the game's silent trailer is ready to play. If it was never looked
-/// for, it is downloaded in the background and "trailer" (with the game id)
-/// is sent to the page when ready.
+/// Whether the game's trailer is ready to play. If it was never looked for,
+/// it is downloaded in the background and "trailer" (with the game id) is
+/// sent to the page when ready. A trailer saved before sound was kept gets
+/// its sound the same way, with "trailer-sound".
 #[tauri::command]
-pub fn game_trailer(app: AppHandle, state: tauri::State<HomeState>, id: String) -> bool {
+pub fn game_trailer(webview: tauri::Webview, app: AppHandle, state: tauri::State<HomeState>, id: String) -> bool {
+    if crate::only_from(&webview, &[LABEL]).is_err() {
+        return false;
+    }
     let Some(t) = state.trailers.lock().unwrap().clone() else { return false };
     if t.cached(&id).is_some() {
+        // Not while the trailer itself is still downloading: its sound comes with it.
+        let key = format!("{id}#sound");
+        let busy = state.fetching.lock().unwrap().contains(&id);
+        if !busy && !t.sound_known(&id) && state.fetching.lock().unwrap().insert(key.clone()) {
+            std::thread::spawn(move || {
+                let ready = matches!(t.fetch_sound(&id), Ok(Some(_)));
+                app.state::<HomeState>().fetching.lock().unwrap().remove(&key);
+                if ready {
+                    let _ = app.emit_to(LABEL, "trailer-sound", id);
+                }
+            });
+        }
         return true;
     }
     let in_library = state.library.lock().unwrap().games.iter().any(|g| g.id == id);
@@ -354,8 +371,12 @@ fn respond(status: StatusCode, mime: &str, body: Vec<u8>) -> Response<Vec<u8>> {
         .unwrap()
 }
 
+/// Never kept by the page: the file may exist a moment later (a trailer's
+/// sound, a cover).
 fn not_found() -> Response<Vec<u8>> {
-    respond(StatusCode::NOT_FOUND, "text/plain", Vec::new())
+    let mut r = respond(StatusCode::NOT_FOUND, "text/plain", Vec::new());
+    r.headers_mut().insert("Cache-Control", "no-store".parse().unwrap());
+    r
 }
 
 fn decode(s: &str) -> String {
@@ -504,6 +525,13 @@ pub fn protocol(ctx: UriSchemeContext<'_, Wry>, request: Request<Vec<u8>>, respo
             ["trailer", id] => {
                 let t = app.state::<HomeState>().trailers.lock().unwrap().clone();
                 match t.and_then(|t| t.cached(id)) {
+                    Some(f) => file_response(&f, range.as_deref()),
+                    None => not_found(),
+                }
+            }
+            ["trailer-sound", id] => {
+                let t = app.state::<HomeState>().trailers.lock().unwrap().clone();
+                match t.and_then(|t| t.cached_sound(id)) {
                     Some(f) => file_response(&f, range.as_deref()),
                     None => not_found(),
                 }

@@ -105,6 +105,8 @@ pub struct Preferences {
     pub rumble: bool,
     pub start_with_windows: bool,
     pub settings_view: String,
+    pub library_view: String,
+    pub trailer_sound: bool,
     pub cursor_speed: String,
     pub deadzone: String,
     pub slowdown: String,
@@ -136,6 +138,8 @@ impl Preferences {
             rumble: s.rumble,
             start_with_windows: starts_with_windows(),
             settings_view: s.settings_view.clone(),
+            library_view: s.library_view.clone(),
+            trailer_sound: s.trailer_sound,
             cursor_speed: s.cursor_speed.clone(),
             deadzone: s.deadzone.clone(),
             slowdown: s.slowdown.clone(),
@@ -216,6 +220,14 @@ pub fn set_preference(app: AppHandle, webview: tauri::Webview, name: String, val
         "settings_view" => {
             let v = pick(&["list", "tiles"])?;
             store.update(|s| s.settings_view = v)?
+        }
+        "trailer_sound" => {
+            let v = flag()?;
+            store.update(|s| s.trailer_sound = v)?
+        }
+        "library_view" => {
+            let v = pick(&["banners", "covers", "grid", "list"])?;
+            store.update(|s| s.library_view = v)?
         }
         "cursor_speed" | "scroll_speed" => {
             let v = pick(&["slow", "normal", "fast"])?;

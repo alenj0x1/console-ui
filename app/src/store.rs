@@ -78,9 +78,16 @@ pub struct Settings {
     pub auto_game: bool,
     #[serde(default = "yes")]
     pub rumble: bool,
+    /// Game trailers play with their sound.
+    #[serde(default)]
+    pub trailer_sound: bool,
     /// The settings screen: "list" or "tiles".
     #[serde(default = "list")]
     pub settings_view: String,
+    /// How the home tabs show their items: "banners" (a row of wide art),
+    /// "covers" (a row of box art), "grid" (box art) or "list" (names).
+    #[serde(default = "banners")]
+    pub library_view: String,
     /// Cursor and controls (see prefs::tuning): "slow" / "normal" / "fast"…
     #[serde(default = "normal")]
     pub cursor_speed: String,
@@ -143,6 +150,10 @@ fn normal() -> String {
 
 fn list() -> String {
     "list".into()
+}
+
+fn banners() -> String {
+    "banners".into()
 }
 
 fn both() -> String {

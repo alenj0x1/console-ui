@@ -254,6 +254,33 @@ const Previews = (() => {
     ctx.restore();
   }
 
+  // A small home screen: the info (a logo, a line and the action button) and
+  // the tiles, coloured like the art.
+  function drawHome({ info, tiles, alpha }) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = col(C.text, 0.85);
+    ctx.beginPath(); ctx.roundRect(info.x, info.y, info.compact ? 110 : 130, info.compact ? 14 : 22, 4); ctx.fill();
+    let y = info.y + (info.compact ? 26 : 36);
+    if (!info.compact) {
+      ctx.fillStyle = col(C.muted, 0.8);
+      ctx.beginPath(); ctx.roundRect(info.x, y, 90, 8, 4); ctx.fill();
+      y += 22;
+    }
+    ctx.fillStyle = col(C.accent);
+    ctx.beginPath(); ctx.roundRect(info.x, y, 64, 22, 6); ctx.fill();
+    const focus = C.focus / px;
+    tiles.forEach((tl) => {
+      ctx.beginPath(); ctx.roundRect(tl.x, tl.y, tl.w, tl.h, 6); ctx.fillStyle = col(tl.fill); ctx.fill();
+      if (tl.name) { ctx.fillStyle = col(C.text, 0.7); ctx.beginPath(); ctx.roundRect(tl.x + tl.h + 6, tl.y + tl.h / 2 - 3, tl.name, 6, 3); ctx.fill(); }
+      if (tl.on) {
+        ctx.beginPath(); ctx.roundRect(tl.x - focus / 2, tl.y - focus / 2, tl.w + focus, tl.h + focus, 6 + focus / 2);
+        ctx.lineWidth = focus; ctx.strokeStyle = col(C.accent, tl.on); ctx.stroke();
+      }
+    });
+    ctx.restore();
+  }
+
   // Layers, always in this order: dots → rail → content → ghost → pointer → controls → mark.
   function drawStage(scene, clock) {
     const k = canvas.width / W;
@@ -276,6 +303,7 @@ const Previews = (() => {
       R.dots.forEach((x) => { ctx.beginPath(); ctx.arc(x, R.y, 4, 0, 7); ctx.fill(); });
     }
 
+    if (scene.home) drawHome(scene.home);
     if (scene.target) drawTarget(scene.target);
     if (scene.list) drawList(scene.list);
     if (scene.guide) drawGuide(scene.guide);
@@ -583,6 +611,55 @@ const Previews = (() => {
         controls: [button("view", "Vista"), button("menu", "Menú")],
         join: true,
       };
+    },
+  };
+
+  // «Forma de Inicio»: the same items in each shape while the focus moves
+  // twice (right twice in a row; right then down in the grid; down twice in
+  // the list). Sizes keep the home screen's proportions (home.css .tile).
+  const ART = [[20, 52, 40], [58, 22, 20], [13, 35, 59], [58, 50, 26], [44, 30, 70], [30, 52, 58], [52, 36, 24], [24, 40, 52]];
+  // f: { at, prev, grow } — the focused item, the one before and how far
+  // the change has gone (0 → 1).
+  function homeTiles(shape, f, L) {
+    const top = L.top + 6, bottom = L.top + 300, x0 = 40;
+    const on = (i) => (i === f.at ? f.grow : i === f.prev ? 1 - f.grow : 0);
+    const size = (i, rest, big) => [rest[0] + (big[0] - rest[0]) * on(i), rest[1] + (big[1] - rest[1]) * on(i)];
+    if (shape === "banners" || shape === "covers") {
+      const [rest, big, gap] = shape === "banners" ? [[120, 56], [156, 73], 14] : [[60, 90], [74, 111], 12];
+      let x = x0;
+      return ART.map((fill, i) => {
+        const [w, h] = size(i, rest, big);
+        const tile = { x, y: bottom - h, w, h, fill, on: on(i) };
+        x += w + gap;
+        return tile;
+      });
+    }
+    if (shape === "grid") {
+      return [...ART, ...ART].slice(0, 14).map((fill, i) => ({ x: x0 + (i % 7) * 70, y: top + 76 + Math.floor(i / 7) * 96, w: 58, h: 87, fill, on: on(i) }));
+    }
+    return ART.slice(0, 7).map((fill, i) => ({ x: 400, y: top + i * 40, w: 200, h: 32, fill: C["surface-hover"], name: 60 + ((i * 37) % 70), on: on(i) }));
+  }
+  SCENES.library_view = {
+    values: ["banners", "covers", "grid", "list"],
+    captions: {
+      banners: "Una fila de arte ancho. La que eliges se agranda.",
+      covers: "Una fila de portadas, como la caja del juego. Caben más a la vez.",
+      grid: "Varias filas de portadas, para ver toda la biblioteca de una vez.",
+      list: "Solo los nombres, uno debajo del otro, para encontrar algo rápido.",
+    },
+    sim(value) {
+      const steps = { banners: [1, 2], covers: [1, 2], grid: [1, 8], list: [1, 2] }[value];
+      return { shape: value, moves: [[0.9, steps[0]], [1.7, steps[1]]], done: 1.7 + 0.16 + HOLD + 0.4, key: 1.9 };
+    },
+    frame(run, t, alpha, ghost, L) {
+      const focusAt = (r) => {
+        let at = 0, prev = -1, since = 1;
+        r.moves.forEach(([when, to]) => { if (t >= when) { prev = at; at = to; since = t - when; } });
+        return { at, prev, grow: prev < 0 ? 1 : easeOut(clamp01(since / 0.16)) };
+      };
+      // No ghost: each shape is a different screen, and outlines of the one
+      // before only get in the way.
+      return { home: { info: { x: 40, y: L.top + 6, compact: run.shape === "grid" }, tiles: homeTiles(run.shape, focusAt(run), L), alpha } };
     },
   };
 

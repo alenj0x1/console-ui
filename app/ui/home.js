@@ -112,9 +112,14 @@ const wallVideo = document.querySelector("video.wall");
 const wallImage = document.querySelector("img.wall");
 const wallCanvas = document.querySelector("canvas.wall");
 const trailer = document.querySelector("video.trailer");
+// The trailer's sound is its own file, played alongside the video only when
+// the user wants sound (X on the games tab, or Ajustes > Juegos).
+const trailerSound = Object.assign(new Audio(), { loop: true, preload: "auto" });
 // The game whose trailer may play, once it has kept the focus long enough.
 let trailerFor = null;
 let trailerTimer = null;
+// The game whose trailer is loaded (its sound may be asked for from then on).
+let trailerReady = null;
 const wallLayers = [wallCanvas, wallVideo, wallImage];
 const previews = new Map();
 let wallId = null;
@@ -215,13 +220,15 @@ function setWall(w, delay = 0) {
   else show();
 }
 
-// A game's silent trailer fades in over its art after it keeps the focus for
-// a moment; it is downloaded once the first time.
+// A game's trailer fades in over its art after it keeps the focus for a
+// moment; it is downloaded once the first time.
 function setTrailer(gameId) {
   if (gameId === trailerFor) return;
   trailerFor = gameId;
+  trailerReady = null;
   clearTimeout(trailerTimer);
   trailer.classList.remove("shown");
+  loadSound();
   if (!gameId || calm.matches) return syncMotion();
   trailerTimer = setTimeout(async () => {
     if (await invoke("game_trailer", { id: gameId }).catch(() => false)) playTrailer(gameId);
@@ -234,11 +241,48 @@ function playTrailer(gameId) {
     if (trailerFor !== gameId) return;
     trailer.classList.add("shown");
     syncMotion();
+    render(); // its sound button shows now
   }, { once: true });
   trailer.src = `${ASSET}/trailer/${encodeURIComponent(gameId)}`;
+  trailerReady = gameId;
+  loadSound();
 }
 
 listen("trailer", ({ payload }) => playTrailer(payload));
+listen("trailer-sound", ({ payload }) => payload === trailerFor && loadSound(true));
+
+function soundWanted() {
+  return !!Prefs.get()?.trailer_sound;
+}
+// The sound file of the trailer that may play, only while sound is wanted.
+function loadSound(again = false) {
+  const src = soundWanted() && trailerReady ? `${ASSET}/trailer-sound/${encodeURIComponent(trailerReady)}` : "";
+  if (!again && (trailerSound.dataset.src ?? "") === src) return syncSound();
+  trailerSound.dataset.src = src;
+  trailerSound.pause();
+  if (src) trailerSound.src = src;
+  else trailerSound.removeAttribute("src");
+  trailerSound.load();
+  syncSound();
+}
+// The sound follows the video: it plays while the video plays, at its time.
+function syncSound() {
+  const on = trailerSound.dataset.src && !trailer.paused && trailer.classList.contains("shown");
+  if (!on) {
+    if (!trailerSound.paused) trailerSound.pause();
+    return;
+  }
+  if (Math.abs(trailerSound.currentTime - trailer.currentTime) > 0.25) trailerSound.currentTime = trailer.currentTime;
+  if (trailerSound.paused) trailerSound.play().catch(() => {});
+}
+["play", "pause", "timeupdate"].forEach((e) => trailer.addEventListener(e, syncSound));
+trailerSound.addEventListener("canplay", syncSound);
+
+// X on a game whose trailer is playing: sound on or off, kept for every
+// trailer after it.
+function toggleTrailerSound() {
+  setPref("trailer_sound", !soundWanted());
+}
 
 // Windows' "Show animations" is off: backgrounds stay still and trailers
 // do not play.
@@ -343,6 +387,7 @@ function toneTile(tile, name, icon) {
       tones.set(icon, rgb);
       set(rgb);
     };
+    probe.onerror = () => tones.set(icon, null);
     probe.src = icon;
   }
   return tile;
@@ -366,6 +411,12 @@ function tileCover(tile) {
     tile.querySelector("img.cover")?.remove();
     tile.append(next);
     tile.classList.add("with-cover");
+  };
+  // No picture for this song: the card goes without, never with the last one.
+  next.onerror = () => {
+    if (tile.dataset.cover !== src) return;
+    tile.querySelector("img.cover")?.remove();
+    tile.classList.remove("with-cover");
   };
   next.src = src;
 }
@@ -472,11 +523,25 @@ function playedAgo(secs) {
 // A tab is a list of items; each item draws its tile and the information
 // shown on the left while it has the focus.
 
+// How the tabs show their items (Ajustes > Apariencia): a row of wide
+// banners, a row of box covers, a grid of covers or a list of names. Sheets
+// (editing, search, backgrounds) are always a grid.
+const libraryView = () => (state.sheet ? "" : state.prefs?.library_view ?? "banners");
+// Box covers instead of wide banners; the backgrounds sheet always keeps the
+// wide pictures.
+const coversView = () => {
+  const v = state.prefs?.library_view;
+  return (v === "covers" || v === "grid") && state.sheet !== "wall" && state.sheet !== "folder";
+};
+
 function gameItems() {
   return state.games.map((g) => ({
     key: g.id,
-    tile: () =>
-      el("div", { className: "tile" }, g.art.includes("header") ? img(art(g, "header"), "art") : el("span", { className: "name", textContent: g.name })),
+    tile: () => {
+      // The name shows in the list, or when there is no picture.
+      const kind = coversView() ? "capsule" : "header";
+      return el("div", { className: "tile" }, g.art.includes(kind) ? img(art(g, kind), "art") : null, el("span", { className: "name", textContent: g.name }));
+    },
     info: () => {
       const head = infoEl({
         lead: g.art.includes("logo") ? el("img", { className: "logo", src: art(g, "logo"), alt: g.name }) : null,
@@ -484,7 +549,11 @@ function gameItems() {
         meta: [playedAgo(g.last_played), SOURCES[g.source]].filter(Boolean).join(" · "),
         action: ["Jugar", "A"],
       });
-      if (state.sheet !== "search") head.querySelector(".action").after(el("span", { className: "hints" }, el("span", { className: "hint" }, glyph("Y"), "Buscar")));
+      if (state.sheet !== "search") {
+        const hints = el("span", { className: "hints" }, el("span", { className: "hint" }, glyph("Y"), "Buscar"));
+        if (trailerFor === g.id && trailer.classList.contains("shown")) hints.append(el("span", { className: "hint" }, glyph("X"), soundWanted() ? "Silenciar" : "Activar sonido"));
+        head.querySelector(".action").after(hints);
+      }
       return head;
     },
     name: g.name,
@@ -862,6 +931,7 @@ const CATEGORIES = [
       { kind: "toggle", name: "Marco de selección más grueso", pref: "thick_focus", desc: "Un borde más ancho alrededor de lo que tienes elegido, para verlo mejor desde el sillón." },
       { kind: "link", name: "Fondo", value: state.wallpaper?.title ?? "Color liso", run: openWalls, desc: "Lo que se ve detrás de Inicio, sea una animación, un video o una imagen." },
       { kind: "toggle", name: "Imágenes de los juegos", pref: "game_art", desc: "Muestra el arte del juego elegido detrás de la pestaña Juegos." },
+      { kind: "choice", name: "Forma de Inicio", pref: "library_view", options: [["banners", "Anchas"], ["covers", "Portadas"], ["grid", "Cuadrícula"], ["list", "Lista"]], desc: "Cómo se ven Juegos, Apps y Multimedia. En Cuadrícula y Lista, arriba y abajo se mueven por ellas y el volumen queda en {RT} con la cruceta." },
     ].filter(Boolean),
   },
   {
@@ -902,6 +972,7 @@ const CATEGORIES = [
     name: "Juegos",
     icon: "player-play",
     rows: () => [
+      { kind: "toggle", name: "Tráileres con sonido", pref: "trailer_sound", desc: "Los tráileres de los juegos suenan. También se cambia con {X} mientras se ve uno." },
       { kind: "toggle", name: "Dejar el control al juego que abras", pref: "auto_game", desc: "Cuando abres un juego, el control es solo del juego. Al cerrarlo, vuelve el puntero. Para usar el puntero sin cerrarlo, mantén {View} y {Menu} y elige otra ventana." },
     ],
   },
@@ -1806,11 +1877,32 @@ function asInfo(i) {
   return i instanceof Element ? i : infoEl(i);
 }
 
+// Big text or a long title may not fit above the row: the tiles give up size
+// (down to 60 %) before the info would be cut. Within a tab they only shrink,
+// so they don't change size while moving between items.
+function fitRow(strip) {
+  const key = `${state.tab}|${state.sheet}|${libraryView()}|${state.prefs?.text_size}|${innerHeight}`;
+  if (view.dataset.fit !== key) {
+    view.dataset.fit = key;
+    view.style.removeProperty("--fit");
+  }
+  const info = view.querySelector(".info");
+  if (state.sheet || !strip.classList.contains("row") || !info) return;
+  const over = info.scrollHeight - info.clientHeight;
+  if (over <= 0) return;
+  // The focused tile's picture height at full size (see .tile in home.css).
+  const focused = (coversView() ? 17.1 : 12.2) * (innerHeight / 67.5);
+  const fit = parseFloat(view.style.getPropertyValue("--fit") || "1");
+  view.style.setProperty("--fit", Math.max(0.6, fit - (over + 4) / focused).toFixed(3));
+}
+
 function render() {
   document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === state.tab));
 
   document.body.classList.toggle("settings-open", state.tab === "settings" && !state.sheet);
   document.body.classList.toggle("search-open", state.sheet === "search");
+  view.classList.remove("as-grid", "as-list");
+  document.body.classList.remove("as-list");
   if (state.tab === "settings" && !state.sheet) {
     paintBackground();
     // The music tab's cover would stay over the dimmed background.
@@ -1829,6 +1921,12 @@ function render() {
   state.focus[fk] = Math.max(0, Math.min(state.focus[fk], list.length - 1));
   const at = state.focus[fk];
 
+  // A grid shows the info in short over it; a list takes the right side.
+  const shape = libraryView();
+  view.classList.toggle("as-grid", shape === "grid" && list.length > 0);
+  view.classList.toggle("as-list", shape === "list" && list.length > 0);
+  document.body.classList.toggle("as-list", shape === "list");
+
   if (state.sheet === "search" && !list.length) {
     view.replaceChildren(searchHead(), el("div", { className: "search-empty" },
       el("div", { className: "lead-symbol" }, svg("search")),
@@ -1843,8 +1941,9 @@ function render() {
   }
 
   // Only what changed is rebuilt, so tiles never reload while moving.
-  const key = `${state.tab}|${state.sheet}|` + list.map((x) => x.key + (x.rev ?? "")).join("|");
-  let strip = view.querySelector(".row, .grid");
+  const covers = coversView();
+  const key = `${state.tab}|${state.sheet}|${covers}|${shape}|` + list.map((x) => x.key + (x.rev ?? "")).join("|");
+  let strip = view.querySelector(".row, .grid, .list");
   const editing = state.sheet === "edit" || state.sheet === "medit";
   const editLabel = () => {
     if (state.sheet !== "medit") return state.pinned.includes(state.apps[at]?.id) ? "Quitar" : "Fijar";
@@ -1856,11 +1955,13 @@ function render() {
       ? infoEl({ lead: el("div", { className: "lead-symbol" }, svg("edit")), title: state.sheet === "medit" ? "Editar Multimedia" : "Editar apps", meta: "", action: [editLabel(), "A"] })
       : asInfo(list[at].info());
     const m = state.media;
-    head.dataset.item = editing ? "edit" : [list[at].key, m.title, m.artist, m.playing, m.duration_ms > 0].join("|");
+    const sound = trailer.classList.contains("shown") ? `${trailerFor}:${soundWanted()}` : "";
+    head.dataset.item = editing ? "edit" : [list[at].key, m.title, m.artist, m.playing, m.duration_ms > 0, sound].join("|");
     return head;
   };
   if (!strip || strip.dataset.key !== key) {
-    strip = el("div", { className: state.sheet ? "grid" : "row" });
+    const kind = state.sheet || shape === "grid" ? "grid" : shape === "list" ? "list" : "row";
+    strip = el("div", { className: kind + (covers ? " covers" : "") });
     strip.dataset.key = key;
     // The focused tile grows after it is scrolled to, so it is scrolled again
     // once it has its full size.
@@ -1884,6 +1985,7 @@ function render() {
   if (song && song.textContent !== state.media.title) song.textContent = state.media.title;
   const nowTile = strip.querySelector(".tile.playing");
   if (nowTile) tileCover(nowTile);
+  fitRow(strip);
   strip.children[at]?.scrollIntoView({ inline: "nearest", block: "nearest" });
   updateMusic();
   renderPlayer();
@@ -1921,6 +2023,7 @@ function renderPlayer() {
 
 // Columns of the edit grid as laid out right now.
 function columns(grid) {
+  if (!grid) return 1;
   const tiles = [...grid.children];
   const top = tiles[0]?.offsetTop;
   const n = tiles.findIndex((t) => t.offsetTop !== top);
@@ -1951,15 +2054,18 @@ function searchNav(dir) {
 function onNav(dir) {
   if (state.tab === "settings" && !state.sheet) return settingsNav(dir);
   if (state.sheet === "search" && searchNav(dir)) return;
-  // Up / down outside the app grid change the volume.
-  if (!state.sheet && (dir === "up" || dir === "down")) {
+  // Up / down in a row change the volume (in a grid or a list they move;
+  // RT + d-pad changes the volume from anywhere).
+  const shape = libraryView();
+  if (!state.sheet && (shape === "banners" || shape === "covers") && (dir === "up" || dir === "down")) {
     changeVolume(invoke("volume_step", { delta: dir === "up" ? VOLUME_STEP : -VOLUME_STEP }));
     return;
   }
   const fk = focusKey();
   const count = items().length;
   let step = { left: -1, right: 1 }[dir] ?? 0;
-  if (state.sheet && (dir === "up" || dir === "down")) {
+  if (shape === "list") step = { up: -1, down: 1 }[dir] ?? 0;
+  else if (dir === "up" || dir === "down") {
     const cols = columns(view.querySelector(".grid"));
     step = dir === "up" ? -cols : cols;
   }
@@ -2153,11 +2259,14 @@ function onPress(button) {
       back();
       break;
     case "x":
-      if (state.media.title) invoke("media_control", { action: "toggle" });
+      if (state.tab === "games" && !state.sheet && trailer.classList.contains("shown")) toggleTrailerSound();
+      else if (state.media.title) invoke("media_control", { action: "toggle" });
       break;
     case "lt":
+      if (state.media.title) invoke("media_control", { action: "prev" });
+      break;
     case "rt":
-      if (state.media.title) invoke("media_control", { action: button === "lt" ? "prev" : "next" });
+      Object.assign(rt, { held: true, used: false });
       break;
     case "lb":
       switchTab(-1);
@@ -2171,9 +2280,23 @@ function onPress(button) {
 listen("pad", ({ payload }) => {
   if (!active) return;
   if (payload.kind === "nav" && payload.source !== "right") {
-    if (!confirming) onNav(payload.dir);
+    if (!confirming) (rt.held ? rtNav : onNav)(payload.dir);
   } else if (payload.kind === "press") onPress(payload.button);
+  else if (payload.kind === "release" && payload.button === "rt") rtUp();
 });
+
+// RT held with the d-pad: up / down change the volume, left / right the
+// song, as everywhere else. A tap alone, on release, plays the next song.
+const rt = { held: false, used: false };
+function rtNav(dir) {
+  rt.used = true;
+  if (dir === "up" || dir === "down") changeVolume(invoke("volume_step", { delta: dir === "up" ? VOLUME_STEP : -VOLUME_STEP }));
+  else if (state.media.title) invoke("media_control", { action: dir === "left" ? "prev" : "next" });
+}
+function rtUp() {
+  if (rt.held && !rt.used && !confirming && state.media.title) invoke("media_control", { action: "next" });
+  rt.held = false;
+}
 
 // ---------- data ----------
 
@@ -2227,6 +2350,7 @@ load();
 Prefs.watch((p) => {
   state.prefs = p;
   state.gameArt = p.game_art;
+  loadSound();
   render();
   syncMotion(); // high contrast stops the videos and animations behind
   // Its hints show the buttons as they are now.
