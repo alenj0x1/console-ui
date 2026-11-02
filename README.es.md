@@ -75,7 +75,7 @@ npm --prefix app ci && npm --prefix app run build   # instalador
 ## Créditos
 
 - [Tauri](https://tauri.app) (MIT / Apache-2.0), [egui/eframe](https://github.com/emilk/egui) para el laboratorio del cursor (MIT / Apache-2.0), [windows-rs](https://github.com/microsoft/windows-rs) (MIT / Apache-2.0).
-- Fuentes [Fredoka](https://github.com/hafontia/Fredoka-One), [Nunito](https://github.com/googlefonts/nunito) y [DM Mono](https://github.com/googlefonts/dm-mono), SIL Open Font License 1.1 (`app/ui/fonts`).
+- Fuentes [Figtree](https://github.com/erikdkennedy/figtree) y [DM Mono](https://github.com/googlefonts/dm-mono), SIL Open Font License 1.1 (`app/ui/fonts`).
 - Listas de palabras derivadas de [FrequencyWords](https://github.com/hermitdave/FrequencyWords) de Hermit Dave (OpenSubtitles 2018), CC BY-SA 4.0. Pares de palabras calculados con frases de [Tatoeba](https://tatoeba.org), CC BY 2.0 FR. Detalle en `app/ui/data/LICENSE-data.txt`.
 
 ## Licencia

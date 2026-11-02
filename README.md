@@ -75,7 +75,7 @@ npm --prefix app ci && npm --prefix app run build   # installer
 ## Credits
 
 - [Tauri](https://tauri.app) (MIT / Apache-2.0), [egui/eframe](https://github.com/emilk/egui) for the cursor lab (MIT / Apache-2.0), [windows-rs](https://github.com/microsoft/windows-rs) (MIT / Apache-2.0).
-- Fonts [Fredoka](https://github.com/hafontia/Fredoka-One), [Nunito](https://github.com/googlefonts/nunito) and [DM Mono](https://github.com/googlefonts/dm-mono), SIL Open Font License 1.1 (`app/ui/fonts`).
+- Fonts [Figtree](https://github.com/erikdkennedy/figtree) and [DM Mono](https://github.com/googlefonts/dm-mono), SIL Open Font License 1.1 (`app/ui/fonts`).
 - Word lists derived from [FrequencyWords](https://github.com/hermitdave/FrequencyWords) by Hermit Dave (OpenSubtitles 2018), CC BY-SA 4.0. Word pairs computed from [Tatoeba](https://tatoeba.org) sentences, CC BY 2.0 FR. Details in `app/ui/data/LICENSE-data.txt`.
 
 ## License

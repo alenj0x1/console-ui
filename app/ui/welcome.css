@@ -5,7 +5,7 @@ body { position: relative; }
 
 /* The title stays in the same place on every step. */
 main { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 16rem 8rem 0; }
-h1 { margin: 0; font-family: var(--font-display); font-weight: 500; font-size: 3.5rem; line-height: 1.1; }
+h1 { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 3.5rem; line-height: 1.1; }
 .line { margin: 1.25rem 0 0; max-width: 56rem; font-size: 1.5rem; line-height: 1.6; color: var(--muted); }
 .area { position: relative; margin-top: 3rem; min-height: 22rem; }
 
@@ -32,7 +32,7 @@ button { font: inherit; border: 0; cursor: default; }
 .tune + .action { margin-top: 3rem; }
 
 /* Typing: a field the keyboard writes into. */
-.field { width: 32rem; height: 4rem; padding: 0 1.5rem; border: 0; border-radius: var(--radius); background: var(--surface); color: var(--text); font: 500 2rem var(--font-display); outline: none; box-shadow: inset 0 0 0 var(--line) var(--ring-strong); }
+.field { width: 32rem; height: 4rem; padding: 0 1.5rem; border: 0; border-radius: var(--radius); background: var(--surface); color: var(--text); font: 600 2rem var(--font-display); outline: none; box-shadow: inset 0 0 0 var(--line) var(--ring-strong); }
 .field:focus { box-shadow: inset 0 0 0 var(--focus) var(--accent); }
 
 /* A step done: its tick, then the next one. */
