@@ -66,6 +66,13 @@ pub fn cursor_pos() -> (i32, i32) {
     (p.x, p.y)
 }
 
+/// Puts the cursor on a screen pixel (a jump, not a glide). The engine's
+/// injector notices the cursor moved and continues from there.
+pub fn move_to(x: i32, y: i32) {
+    let r = DeskRect::current();
+    send_mouse(r.norm_x(x), r.norm_y(y), 0, MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK);
+}
+
 /// Height of the primary monitor in pixels; cursor speeds scale with it.
 pub fn primary_height() -> f32 {
     primary_size().1 as f32

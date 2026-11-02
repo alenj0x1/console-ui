@@ -119,6 +119,85 @@ impl Drop for UiaProbe {
     }
 }
 
+/// Direction of a jump between clickable elements (LT + D-pad).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Toward {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
+/// Elements past this many are not looked at (huge pages): the jump stays
+/// quick and the nearest ones are found among the first.
+const JUMP_MAX: i32 = 1500;
+
+/// The centre of the clickable element nearest to `from` in a direction, in
+/// the foreground window. Elements straight ahead win over ones off to the
+/// side. Reads the accessibility tree only (nothing is clicked). Safe to
+/// call from any thread.
+pub fn nearest_clickable(from: (i32, i32), toward: Toward) -> Option<(i32, i32)> {
+    use windows::Win32::System::Variant::VARIANT;
+    unsafe {
+        let init = CoInitializeEx(None, COINIT_MULTITHREADED);
+        let answer = (|| -> windows::core::Result<Option<(i32, i32)>> {
+            let uia: IUIAutomation = CoCreateInstance(&CUIAutomation, None, CLSCTX_INPROC_SERVER)?;
+            let fg = windows_sys::Win32::UI::WindowsAndMessaging::GetForegroundWindow();
+            let root = uia.ElementFromHandle(windows::Win32::Foundation::HWND(fg))?;
+            let kinds = CLICKABLE
+                .iter()
+                .map(|k| uia.CreatePropertyCondition(UIA_ControlTypePropertyId, &VARIANT::from(k.0)).ok())
+                .collect::<Vec<_>>();
+            let shown = uia.CreatePropertyCondition(UIA_IsOffscreenPropertyId, &VARIANT::from(false))?;
+            let enabled = uia.CreatePropertyCondition(UIA_IsEnabledPropertyId, &VARIANT::from(true))?;
+            let cond = uia.CreateAndCondition(&uia.CreateOrConditionFromNativeArray(&kinds)?, &uia.CreateAndCondition(&shown, &enabled)?)?;
+            let cache = uia.CreateCacheRequest()?;
+            cache.AddProperty(UIA_BoundingRectanglePropertyId)?;
+            let found = root.FindAllBuildCache(TreeScope_Descendants, &cond, &cache)?;
+            let (w, h) = inject::primary_size();
+            let screen = w as f64 * h as f64;
+            let mut best: Option<(f64, (i32, i32))> = None;
+            for i in 0..found.Length()?.min(JUMP_MAX) {
+                let Ok(r) = found.GetElement(i).and_then(|e| e.CachedBoundingRectangle()) else { continue };
+                let (rw, rh) = ((r.right - r.left) as f64, (r.bottom - r.top) as f64);
+                if rw <= 0.0 || rh <= 0.0 || rw * rh / screen > MAX_AREA_SHARE {
+                    continue;
+                }
+                let rect = ScreenRect { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+                if rect.contains(from) {
+                    continue;
+                }
+                let c = ((r.left + r.right) / 2, (r.top + r.bottom) / 2);
+                if let Some(score) = jump_score(from, c, toward) {
+                    if best.is_none_or(|(s, _)| score < s) {
+                        best = Some((score, c));
+                    }
+                }
+            }
+            Ok(best.map(|(_, c)| c))
+        })();
+        if init.is_ok() {
+            CoUninitialize();
+        }
+        answer.ok().flatten()
+    }
+}
+
+/// How far `to` is from `from` going `toward` (lower is nearer); None when
+/// it is not that way. Sideways distance counts double, so a jump goes
+/// straight ahead before it goes diagonally.
+fn jump_score(from: (i32, i32), to: (i32, i32), toward: Toward) -> Option<f64> {
+    let (dx, dy) = ((to.0 - from.0) as f64, (to.1 - from.1) as f64);
+    let (ahead, side) = match toward {
+        Toward::Right => (dx, dy),
+        Toward::Left => (-dx, dy),
+        Toward::Down => (dy, dx),
+        Toward::Up => (-dy, dx),
+    };
+    // At least a few pixels ahead, and within 60° of straight ahead.
+    (ahead >= 4.0 && side.abs() <= ahead * 1.75).then(|| ahead + 2.0 * side.abs())
+}
+
 /// True when the focused control is a password field (or when it cannot be
 /// told, so callers err on the private side). Safe to call from any thread.
 pub fn focused_is_password() -> bool {
@@ -240,4 +319,22 @@ pub fn spawn_probe(hover: Arc<Hover>, stop: Arc<AtomicBool>) -> JoinHandle<()> {
             }
         })
         .expect("spawn uia probe")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn jumps_prefer_straight_ahead() {
+        let from = (100, 100);
+        // Behind or exactly sideways: never.
+        assert_eq!(jump_score(from, (50, 100), Toward::Right), None);
+        assert_eq!(jump_score(from, (102, 300), Toward::Right), None);
+        // Straight ahead but farther beats close but off to the side.
+        let ahead = jump_score(from, (300, 100), Toward::Right).unwrap();
+        let aside = jump_score(from, (200, 220), Toward::Right).unwrap();
+        assert!(ahead < aside);
+        assert!(jump_score(from, (100, 40), Toward::Up).is_some());
+    }
 }

@@ -7,6 +7,9 @@
 //! or with a host that shows the guide, opens and closes it from any mode
 //! (View alone opens it from the cursor); Y opens the keyboard and B closes
 //! it; holding Menu opens and closes the home screen. A tap on RT presses Enter.
+//! In the cursor, holding View opens a radial menu (with a host that shows
+//! it): the stick aims, letting go of View picks; LT + D-pad jumps between
+//! clickable elements.
 
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -40,6 +43,21 @@ pub enum Event {
     /// A left click ended (cursor mode): the host may open the keyboard if
     /// it landed in a text field.
     Click,
+    /// LT + D-pad (cursor mode): move the cursor to the nearest clickable
+    /// element that way (the host looks it up, off the engine's thread).
+    Jump(crate::hover::Toward),
+    /// The radial menu (holding View in the cursor).
+    Radial(Radial),
+}
+
+/// The radial menu's slots are numbered clockwise from the top.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Radial {
+    Open,
+    /// The stick points at a slot (None: not yet).
+    Aim(Option<u8>),
+    /// View was let go: the slot aimed at, or None (cancelled).
+    Pick(Option<u8>),
 }
 
 /// What a reassigned button does: another button, a trigger, scrolling
@@ -190,6 +208,9 @@ pub struct EngineConfig {
     /// tap opens it from the cursor instead of Task View (needs a host that
     /// shows it).
     pub guide_enabled: bool,
+    /// Slots of the radial menu that holding View opens in the cursor (0:
+    /// no radial menu; needs a host that shows it).
+    pub radial_slots: u8,
 }
 
 impl EngineConfig {
@@ -205,6 +226,7 @@ impl EngineConfig {
             keyboard_enabled: false,
             keyboard_locked: false,
             guide_enabled: false,
+            radial_slots: 0,
         }
     }
 }
@@ -226,6 +248,12 @@ const DPAD_KEYS: [VIRTUAL_KEY; 4] = [VK_UP, VK_DOWN, VK_LEFT, VK_RIGHT];
 /// D-pad while holding RT: volume up / down, previous / next track.
 const DPAD_MEDIA_KEYS: [VIRTUAL_KEY; 4] = [VK_VOLUME_UP, VK_VOLUME_DOWN, VK_MEDIA_PREV_TRACK, VK_MEDIA_NEXT_TRACK];
 const MEDIA_TRIGGER: f32 = 0.5;
+/// The stick aims the radial menu once pushed this far, and aims at nothing
+/// again once back under the rest line.
+const RADIAL_AIM: f32 = 0.5;
+const RADIAL_REST: f32 = 0.3;
+/// Holding LT + a D-pad direction keeps jumping, one element at a time.
+const JUMP_REPEAT: Duration = Duration::from_millis(350);
 /// RT back below this ends a press (hysteresis against a jittery trigger).
 const TRIGGER_RELEASE: f32 = 0.3;
 
@@ -273,6 +301,11 @@ pub struct Engine {
     rescue: bool,
     /// Mode the guide was opened from: closing it goes back there.
     guide_from: Mode,
+    /// The radial menu is open, aiming at a slot or at nothing.
+    radial: Option<Option<u8>>,
+    /// It closed without a pick (a mode change, the controller gone): the
+    /// next step tells the host.
+    radial_cancel: bool,
     /// The profile before the user's tuning, and the tuning.
     base: CursorProfile,
     tuning: Tuning,
@@ -319,6 +352,8 @@ impl Engine {
             rescue: false,
             resync_until: None,
             guide_from: Mode::Cursor,
+            radial: None,
+            radial_cancel: false,
             rumble_on: true,
         }
     }
@@ -365,6 +400,10 @@ impl Engine {
         self.connected
     }
 
+    pub fn battery(&self) -> Option<crate::xinput::Battery> {
+        self.pad.battery()
+    }
+
     pub fn profile(&self) -> &CursorProfile {
         &self.curve.profile
     }
@@ -401,6 +440,8 @@ impl Engine {
         if mode == Mode::Guide {
             self.guide_from = self.mode;
         }
+        // The radial menu closes without picking (its window must hide too).
+        self.radial_cancel |= self.radial.take().is_some();
         if mode == Mode::Off {
             self.queue_rumble(PULSE_OFF);
         } else if self.mode == Mode::Off {
@@ -433,10 +474,15 @@ impl Engine {
             if std::mem::take(&mut self.connected) {
                 self.release_all();
                 self.prev = PadState::default();
+                // A View held when the controller went away is not a hold any more.
+                self.view_down = None;
+                self.radial_cancel |= self.radial.take().is_some();
                 out.push(Event::Disconnected);
             }
+            self.flush_radial_cancel(out);
             return;
         };
+        self.flush_radial_cancel(out);
         if !self.connected {
             self.connected = true;
             self.prev = pad;
@@ -547,6 +593,13 @@ impl Engine {
     }
 
     fn cursor(&mut self, pad: &PadState, dt: f32, now: Instant, out: &mut Vec<Event>) {
+        use crate::hover::Toward;
+        const TOWARD: [Toward; 4] = [Toward::Up, Toward::Down, Toward::Left, Toward::Right];
+        // LT held: the D-pad jumps between clickable elements.
+        let jumping = pad.lt >= TRIGGER_PRESS && self.rt_down.is_none();
+        if self.radial_menu(pad, now, out) {
+            return;
+        }
         let pressed = pad.buttons & !self.prev.buttons;
         let released = !pad.buttons & self.prev.buttons;
 
@@ -615,13 +668,23 @@ impl Engine {
             let b = btn::DPAD[i];
             if pressed & b != 0 {
                 self.rt_used |= self.rt_down.is_some();
-                inject::key_tap(keys[i]);
-                self.dpad_next[i] = Some(now + self.cfg.repeat_delay);
+                if jumping {
+                    out.push(Event::Jump(TOWARD[i]));
+                    self.dpad_next[i] = Some(now + JUMP_REPEAT);
+                } else {
+                    inject::key_tap(keys[i]);
+                    self.dpad_next[i] = Some(now + self.cfg.repeat_delay);
+                }
             } else if !pad.held(b) {
                 self.dpad_next[i] = None;
             } else if let Some(t) = self.dpad_next[i].filter(|t| now >= *t) {
-                inject::key_tap(keys[i]);
-                self.dpad_next[i] = Some(t + self.cfg.repeat_every);
+                if jumping {
+                    out.push(Event::Jump(TOWARD[i]));
+                    self.dpad_next[i] = Some(now + JUMP_REPEAT);
+                } else {
+                    inject::key_tap(keys[i]);
+                    self.dpad_next[i] = Some(t + self.cfg.repeat_every);
+                }
             }
         }
 
@@ -647,6 +710,54 @@ impl Engine {
             if !self.chord_used && !self.menu_hold_used && tap(self.menu_down) {
                 inject::key_tap(VK_LWIN);
             }
+        }
+    }
+
+    /// Holding View opens the radial menu; while it is open the stick aims
+    /// (the cursor stays put) and letting go of View picks. True while it
+    /// has the controller.
+    fn radial_menu(&mut self, pad: &PadState, now: Instant, out: &mut Vec<Event>) -> bool {
+        let slots = self.cfg.radial_slots;
+        if slots == 0 {
+            return false;
+        }
+        let Some(aim) = self.radial else {
+            let held = self.view_down.is_some_and(|t| now - t >= self.cfg.tap_max);
+            if pad.held(btn::BACK) && held && !self.chord_used {
+                self.release_all();
+                self.radial = Some(None);
+                out.push(Event::Radial(Radial::Open));
+                return true;
+            }
+            return false;
+        };
+        // View + Menu (the guide) cancels it.
+        if self.chord_used || !pad.held(btn::BACK) {
+            self.radial = None;
+            self.view_down = None;
+            out.push(Event::Radial(Radial::Pick(if self.chord_used { None } else { aim })));
+            return true;
+        }
+        // The stick back in the middle aims at nothing: letting go cancels.
+        let push = pad.lx.hypot(pad.ly);
+        let now_aim = if push > RADIAL_AIM {
+            let turn = pad.lx.atan2(pad.ly).rem_euclid(std::f32::consts::TAU) / std::f32::consts::TAU;
+            Some((turn * slots as f32).round() as u8 % slots)
+        } else if push < RADIAL_REST {
+            None
+        } else {
+            aim
+        };
+        if now_aim != aim {
+            self.radial = Some(now_aim);
+            out.push(Event::Radial(Radial::Aim(now_aim)));
+        }
+        true
+    }
+
+    fn flush_radial_cancel(&mut self, out: &mut Vec<Event>) {
+        if std::mem::take(&mut self.radial_cancel) {
+            out.push(Event::Radial(Radial::Pick(None)));
         }
     }
 
@@ -719,6 +830,60 @@ mod tests {
         assert_eq!(out.ry, SCROLL_PUSH);
         // Released: nothing is left pressed.
         assert_eq!(t.apply(PadState::default()), PadState::default());
+    }
+
+    #[test]
+    fn holding_view_opens_the_radial_menu_and_the_stick_aims() {
+        let mut cfg = EngineConfig::with_profile(crate::curve::profile("asistido").unwrap());
+        cfg.radial_slots = 5;
+        let mut e = Engine::new(cfg);
+        let mut out = Vec::new();
+        let t0 = Instant::now();
+        let view = PadState { buttons: btn::BACK, ..PadState::default() };
+        e.view_down = Some(t0);
+        // Not held long enough yet: nothing.
+        assert!(!e.radial_menu(&view, t0 + Duration::from_millis(100), &mut out));
+        let later = t0 + Duration::from_millis(600);
+        assert!(e.radial_menu(&view, later, &mut out));
+        // Stick to the right: the second slot of five (clockwise from the top).
+        let right = PadState { lx: 1.0, ..view };
+        e.radial_menu(&right, later, &mut out);
+        // Straight down-left: the fourth.
+        let down_left = PadState { lx: -0.6, ly: -0.8, ..view };
+        e.radial_menu(&down_left, later, &mut out);
+        // Letting go of View picks the last aim.
+        e.radial_menu(&PadState::default(), later, &mut out);
+        let got: Vec<_> = out.iter().map(|ev| match ev { Event::Radial(r) => *r, _ => panic!() }).collect();
+        assert_eq!(got, [Radial::Open, Radial::Aim(Some(1)), Radial::Aim(Some(3)), Radial::Pick(Some(3))]);
+    }
+
+    #[test]
+    fn the_radial_menu_cancels_on_a_mode_change_and_with_the_stick_at_rest() {
+        let mut cfg = EngineConfig::with_profile(crate::curve::profile("asistido").unwrap());
+        cfg.radial_slots = 5;
+        let mut e = Engine::new(cfg);
+        let mut out = Vec::new();
+        let t0 = Instant::now();
+        let view = PadState { buttons: btn::BACK, ..PadState::default() };
+        e.view_down = Some(t0);
+        let later = t0 + Duration::from_millis(600);
+        e.radial_menu(&view, later, &mut out);
+        e.radial_menu(&PadState { lx: 1.0, ..view }, later, &mut out);
+        // Back to the middle: nothing aimed, so letting go picks nothing.
+        e.radial_menu(&view, later, &mut out);
+        e.radial_menu(&PadState::default(), later, &mut out);
+        // Near the top from the left still wraps to the first slot.
+        e.view_down = Some(t0);
+        e.radial_menu(&view, later, &mut out);
+        e.radial_menu(&PadState { lx: -0.2, ly: 1.0, ..view }, later, &mut out);
+        // A mode change closes it without a pick.
+        e.set_mode(Mode::Keyboard);
+        e.flush_radial_cancel(&mut out);
+        let got: Vec<_> = out.iter().map(|ev| match ev { Event::Radial(r) => *r, _ => panic!() }).collect();
+        assert_eq!(got, [
+            Radial::Open, Radial::Aim(Some(1)), Radial::Aim(None), Radial::Pick(None),
+            Radial::Open, Radial::Aim(Some(0)), Radial::Pick(None),
+        ]);
     }
 
     #[test]

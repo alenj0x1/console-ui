@@ -5,12 +5,21 @@
 use std::time::{Duration, Instant};
 
 use windows_sys::Win32::UI::Input::XboxController::{
-    XINPUT_STATE, XINPUT_VIBRATION, XInputGetState, XInputSetState,
+    BATTERY_DEVTYPE_GAMEPAD, BATTERY_TYPE_DISCONNECTED, BATTERY_TYPE_UNKNOWN, BATTERY_TYPE_WIRED, XINPUT_BATTERY_INFORMATION, XINPUT_STATE,
+    XINPUT_VIBRATION, XInputGetBatteryInformation, XInputGetState, XInputSetState,
 };
 
 use crate::pad::PadState;
 
 const SCAN_EVERY: Duration = Duration::from_secs(1);
+
+/// The controller's battery as XInput reports it: a level from 0 (empty) to
+/// 3 (full), or wired (no battery to worry about).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
+pub struct Battery {
+    pub wired: bool,
+    pub level: u8,
+}
 
 #[derive(Default)]
 pub struct XInput {
@@ -46,6 +55,20 @@ impl XInput {
             }
         }
         None
+    }
+
+    /// None when no controller is connected or it does not report a battery
+    /// it knows (some third-party controllers say "unknown").
+    pub fn battery(&self) -> Option<Battery> {
+        let slot = self.slot?;
+        let mut b: XINPUT_BATTERY_INFORMATION = unsafe { std::mem::zeroed() };
+        if unsafe { XInputGetBatteryInformation(slot, BATTERY_DEVTYPE_GAMEPAD, &mut b) } != 0
+            || b.BatteryType == BATTERY_TYPE_DISCONNECTED
+            || b.BatteryType == BATTERY_TYPE_UNKNOWN
+        {
+            return None;
+        }
+        Some(Battery { wired: b.BatteryType == BATTERY_TYPE_WIRED, level: b.BatteryLevel.min(3) })
     }
 
     /// Motor strengths in [0, 1]; (0, 0) stops.
