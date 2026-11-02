@@ -1,0 +1,46 @@
+---
+title: Pointer
+description: How the assisted pointer moves, aims, clicks and scrolls.
+---
+
+import Btn from "../../../components/Btn.astro";
+
+The left stick moves the mouse pointer anywhere in Windows. It is tuned to be predictable rather than fast, so you can aim at small things from the couch.
+
+## How it moves
+
+- **Gentle near the centre, faster at the edge.** A small push moves the pointer slowly; the further you push, the faster it goes.
+- **A steady speed-up.** Keep the stick pushed far and the pointer speeds up smoothly over a moment, to at most twice its normal top speed. Let go and it starts again from normal speed, so it never jumps.
+- **The same feel on any screen.** Speeds are measured in screen heights, so the pointer feels the same on a 1080p TV and a 4K one.
+- **Ignores small movements.** A bit of stick travel around the centre counts as resting, so the pointer doesn't drift by itself.
+- **Windows' "Enhance pointer precision" does not change it.**
+
+## Help aiming
+
+- **Slows down over clickable things.** Over a button, link, tab, check box, menu or list item, text field or slider, the pointer goes slower so you don't overshoot. It only does this while you are aiming, not while you cross the screen at full speed. How much it slows is **Aim assist** in [Settings](../settings/#pointer).
+- **Holds still when you click.** For a brief moment after <Btn b="A" /> or <Btn b="X" />, the stick doesn't move the pointer, so a click lands where you aimed.
+- **Slow pointer on demand.** Hold <Btn b="LT" /> for a slower, finer pointer.
+- **Jump between buttons.** Hold <Btn b="LT" /> and press the d-pad: the pointer jumps to the nearest button or link in that direction. Keep the direction held to keep jumping.
+
+The pointer can only slow down over, or jump to, things an app makes visible to accessibility tools (the same information a screen reader uses). Apps that don't expose it get no slowdown there.
+
+## Clicks, scroll and keys
+
+| Control | Does |
+|---|---|
+| <Btn b="A" /> | Left click; hold it to drag |
+| <Btn b="X" /> | Right click |
+| <Btn b="L3" /> | Middle click |
+| Right stick | Scroll up, down and sideways |
+| <Btn b="dpad" /> | Arrow keys |
+| <Btn b="B" /> | Esc |
+| <Btn b="LB" /> / <Btn b="RB" /> | Back / forward |
+| <Btn b="RT" /> | Tap: Enter |
+| <Btn b="R3" /> | Enter |
+| <Btn b="RT+updown" /> | Volume up / down |
+| <Btn b="RT+leftright" /> | Previous / next track |
+| <Btn b="Menu" /> | Tap: Start menu |
+
+## Adjust it
+
+In **Settings › Pointer**: **Pointer speed**, **Aim assist**, **Ignore small movements**, **Scroll speed** and **Reverse scrolling**. In **Settings › Buttons**, **Pointer on the right stick** swaps the sticks. Each option shows an animated preview of what it changes. All values are in the [settings reference](../../reference/settings/).

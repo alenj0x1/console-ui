@@ -1,0 +1,62 @@
+---
+title: Controls
+description: What every button does with the pointer, the keyboard, Home and the control center.
+---
+
+import Btn from "../../../components/Btn.astro";
+
+Console UI uses the names printed on an Xbox-style controller: <Btn b="A" /> <Btn b="B" /> <Btn b="X" /> <Btn b="Y" />, the bumpers <Btn b="LB" /> <Btn b="RB" />, the triggers <Btn b="LT" /> <Btn b="RT" />, the stick clicks <Btn b="L3" /> <Btn b="R3" />, the d-pad <Btn b="dpad" />, and the two small buttons in the middle: **View** <Btn b="View" /> (two squares) and **Menu** <Btn b="Menu" /> (three lines). Throughout the app, hints draw the buttons the same way.
+
+These are the usual controls. Many can be changed: see [Accessibility](../accessibility/) for one-hand layouts and custom buttons, and [Settings](../settings/#buttons) for confirming with B and the pointer on the right stick.
+
+## Pointer and keyboard
+
+| Control | Pointer | Keyboard |
+|---|---|---|
+| Left stick, <Btn b="dpad" /> | Move the pointer / arrow keys | Move the highlight |
+| Right stick | Scroll | Move the text caret |
+| <Btn b="A" /> | Left click (hold to drag) | Type (hold for the accented letter) |
+| <Btn b="X" /> | Right click | Backspace |
+| <Btn b="L3" /> | Middle click | Languages menu |
+| <Btn b="B" /> | Esc | Close the keyboard |
+| <Btn b="Y" /> | Open the keyboard (a click in a text field opens it too) | Space |
+| <Btn b="LB" /> / <Btn b="RB" /> | Back / forward | Shift / symbols |
+| <Btn b="LT" /> | Hold: slow pointer. With the d-pad: jump to the nearest button that way | |
+| <Btn b="RT" /> | Tap: Enter. Hold with the d-pad: volume up/down, previous/next track | Enter |
+| <Btn b="R3" /> | Enter | |
+| <Btn b="View" /> | Tap: control center. Hold: [quick menu](../quick-menu/) | Take the first suggestion |
+| <Btn b="Menu" /> | Tap: Start menu. Hold: [Home](../home/) | Enter |
+| <Btn b="View+Menu" /> held | [Control center](../game-mode/#control-center), also in a game | |
+
+The split keyboard layout types with <Btn b="LT" /> (left half) and <Btn b="RT" /> (right half) instead of <Btn b="A" />; see [Keyboard](../keyboard/#layouts).
+
+## Home
+
+| Control | What it does |
+|---|---|
+| Left stick, <Btn b="dpad" /> | Move between tiles. In the wide-banner and box-cover shapes, up and down change the system volume |
+| <Btn b="LB" /> / <Btn b="RB" /> | Previous / next tab |
+| <Btn b="A" /> | Open, play or choose |
+| <Btn b="B" /> | Go back; from a tab, close Home and return to the pointer |
+| <Btn b="Y" /> | In Games: search. Elsewhere: mute |
+| <Btn b="X" /> | Play / pause the music. Over a playing trailer: its sound on or off |
+| <Btn b="LT" /> / <Btn b="RT" /> | Previous / next song |
+| <Btn b="RT+updown" /> | Volume, in every shape |
+| <Btn b="R3" /> | On the playing card in Media: lyrics or cover |
+| <Btn b="Menu" /> | In Games, Apps or Media: the [Customize](../personalize/) panel. Held: close Home |
+
+## Control center
+
+| Control | What it does |
+|---|---|
+| <Btn b="dpad" /> | Move between Home and the open windows |
+| <Btn b="A" /> | Open Home, or switch to the window |
+| <Btn b="Y" /> | Close the window |
+| <Btn b="X" /> | Play / pause the music |
+| <Btn b="LT" /> / <Btn b="RT" /> | Previous / next song |
+| <Btn b="Menu" /> | Power menu: sleep, restart, shut down, sign out |
+| <Btn b="B" /> | Close the control center |
+
+## Holding and tapping
+
+A hold is <Btn b="Menu" /> or <Btn b="View+Menu" /> kept down for a moment (600 ms by default; <Btn b="Menu" /> alone opens Home a little sooner). Anything shorter is a tap. The time is **Hold time** in [Settings › Buttons](../settings/#buttons).

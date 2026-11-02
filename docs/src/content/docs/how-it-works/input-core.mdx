@@ -1,0 +1,49 @@
+---
+title: Input core
+description: How the controller becomes a pointer, keys and navigation.
+---
+
+import Diagram from "../../../components/Diagram.astro";
+import { inputCore } from "../../../diagrams";
+
+Everything Console UI does with the controller goes through one small core that runs in the background, inside the app. It reads the controller, decides what each input means in the current mode, and either moves the pointer and presses keys in Windows or hands navigation to Console UI's own screens.
+
+<Diagram {...inputCore("en")} />
+
+## Reading the controller
+
+The core reads Xbox-compatible (XInput) controllers, which works while Console UI is in the background and needs nothing extra installed. It reads every 4 ms while you use the controller, every 16 ms when it has been idle for a while, and every half second while no controller is connected. Empty controller slots are checked only once per second, since asking an empty slot is slow.
+
+## Modes
+
+The core is always in one of five modes:
+
+| Mode | The controller… |
+|---|---|
+| Pointer | moves the mouse and presses a few keys in Windows |
+| Keyboard | drives the on-screen keyboard |
+| Home | drives the home screen |
+| Control center | drives the control center, over whatever is in front |
+| Game | is left untouched for the game |
+
+Holds and taps switch between them: <kbd>Y</kbd> opens the keyboard and <kbd>B</kbd> closes it, holding <kbd>Menu</kbd> opens and closes Home, holding <kbd>View</kbd> + <kbd>Menu</kbd> opens the control center from any mode. In the keyboard, Home and the control center, View and Menu only count as taps, so pressing them together never also triggers a single-button action.
+
+## Pointer
+
+- **Curve.** The stick's travel past the ignored centre is squared, so small pushes are fine and full pushes are fast. Past about two thirds of the travel, a boost builds up smoothly over 0.85 s to twice the top speed, and fades when you ease off. Letting go of the stick resets it.
+- **Screen-independent.** Speeds are in screen heights per second, so a 1080p and a 4K screen feel the same.
+- **Exact positions.** The pointer is placed at absolute coordinates on the whole desktop, with sub-pixel movement carried over between steps. That is why Windows' "Enhance pointer precision" doesn't bend the curve.
+- **Aim help.** A separate thread asks Windows' accessibility interface (the one screen readers use) whether the element under the pointer can be clicked: buttons, links, tabs, check boxes, menu and list items, text fields, sliders and similar, if they are enabled and smaller than a fifth of the screen. Over one, the pointer slows down, but only while you aim, not while it is speeding across. It only asks while the stick moved in the last second, and it only reads: it never changes or clicks anything. The same interface answers <kbd>LT</kbd> + d-pad jumps and finds text fields for the keyboard.
+- **Steady clicks.** For 90 ms after <kbd>A</kbd> or <kbd>X</kbd> the stick doesn't move the pointer.
+
+## Navigation for Console UI's screens
+
+In the keyboard, Home and the control center, sticks and d-pad become four-way moves that repeat like a held key: first after 260 ms, then every 110 to 60 ms depending on how far the stick is pushed (80 ms on the d-pad). Buttons arrive as presses and releases.
+
+## Windows that never take the focus
+
+The keyboard, the control center and the quick menu are always on top but never take the focus. That is how the keyboard types into the window you were using and how a game stays in front while the control center is open. Letters are sent as Unicode characters, so ñ, accents and symbols arrive as typed whatever keyboard layout Windows has.
+
+## Reassigned buttons
+
+One-hand layouts, your own button changes and **Accept with B** are applied by the core itself, before anything else reads the controller. That is why they work the same in the pointer, the keyboard, Home and the control center.

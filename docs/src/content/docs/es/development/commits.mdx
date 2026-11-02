@@ -1,0 +1,52 @@
+---
+title: Commits
+description: Cómo se escriben los mensajes de commit.
+---
+
+Los commits siguen [Conventional Commits 1.0](https://www.conventionalcommits.org/es/v1.0.0/), en inglés: un resumen corto en imperativo y luego un cuerpo que lista cada cambio agrupado por área. Así el historial se lee solo, y `scripts/release.py --next` calcula la próxima versión a partir de él (ver [Versiones](../releases/)).
+
+```
+type(scope): imperative summary in lowercase, no trailing period
+
+Area:
+- what changed and why, one bullet per change
+- …
+```
+
+La primera línea va corta (72 caracteres como máximo). El cuerpo dice qué cambió y por qué, nunca «varios arreglos». Los nombres que la persona ve en la app se escriben como los muestra la interfaz en inglés (`Customize`, `Resume`…), porque los commits van en inglés.
+
+## Tipos
+
+| Tipo | Para |
+|---|---|
+| `feat` | Algo nuevo que la gente puede usar |
+| `fix` | La corrección de un error |
+| `perf` | Más rápido o más liviano, con el mismo comportamiento |
+| `style` | Pulido visual de la interfaz, o formato del código |
+| `refactor` | Código reorganizado sin cambiar el comportamiento |
+| `docs` | Solo documentación |
+| `test` | Pruebas |
+| `build` | Dependencias y empaquetado |
+| `chore` | Mantenimiento, incluido `chore(release)` |
+
+Un `feat` desde la última versión sube la versión menor; cualquier otra cosa, el parche. Un `!` antes de los dos puntos (`feat(core)!: …`) o una línea `BREAKING CHANGE:` marca un cambio incompatible y sube la versión mayor (la menor mientras la versión sea 0.x).
+
+## Ámbitos
+
+Opcionales, en minúsculas: la parte del proyecto que cambia. Los usados hasta ahora:
+
+`core` · `app` · `home` · `guide` · `keyboard` · `settings` · `ui` · `installer`
+
+## Ejemplos
+
+Del historial:
+
+```
+feat(home): Customize panel and sliders for amounts
+feat(guide): open Inicio from the control center
+fix(core): aim the quick menu with the right stick
+fix(installer): run HidHide's setup from its own folder, locked
+style(ui): clearer button hints and Customize panel
+```
+
+Cada cambio que la gente puede notar también lleva una línea en **Unreleased** de `CHANGELOG.md` y en **Sin publicar** de `CHANGELOG.es.md`.

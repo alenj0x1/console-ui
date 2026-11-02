@@ -1,0 +1,60 @@
+---
+title: Troubleshooting
+description: Fixes for the most common problems.
+---
+
+import Btn from "../../components/Btn.astro";
+
+## The controller does nothing
+
+- Console UI reads Xbox-compatible (XInput) controllers. A PlayStation controller needs Steam Input or DS4Windows to show up as one.
+- When the controller connects, a notice shows with its battery level. If it never shows, Windows isn't seeing the controller as an Xbox-compatible one.
+- If a game was in front, the controller may still belong to it ([game mode](../guide/game-mode/)). Hold <Btn b="View+Menu" /> to open the control center and pick another window, or use **Use the controller in Windows again** in the tray menu.
+
+## The controller does nothing over a window
+
+That window runs as administrator. Windows doesn't let a normal app send input to it, so Console UI shows a notice explaining it. Press <Btn b="B" /> to hand the focus to the next normal window, and use a mouse or keyboard for the administrator window. Console UI doesn't raise its own rights to get around this; see [Privacy and security](../how-it-works/privacy-security/#administrator-windows).
+
+## The Start menu still moves with the stick
+
+The Start menu and other Windows apps read the controller themselves.
+
+- Install [HidHide](../getting-started/hidhide/) so Console UI can hide the controller from them.
+- If HidHide is installed and the Start menu still reacts, a Windows component opened the controller before Console UI could hide it, when you signed in. Unplug the controller and plug it back in (or turn it off and on). It's needed once per sign-in.
+
+## A game doesn't see the controller
+
+Games only get the controller in game mode. If the game came to the front and the pointer is still active:
+
+- check that **Settings › Games › Give the controller to the game you open** is on;
+- the game may not look like a game to Console UI (a windowed game installed outside Steam and Epic, for example). Open the control center and select its window: <Btn b="A" /> on a game gives it the controller. [Game detection](../how-it-works/game-detection/) explains what counts.
+
+If Console UI was closed abruptly while hiding the controller, its watchdog shows it again. If a game still can't see it, open Console UI and close it from the tray (**Quit**), or turn hiding off in HidHide's own configuration app.
+
+## A program is taken for a game
+
+A borderless window covering the whole screen counts as a game. Hold <Btn b="View+Menu" /> and switch to any other window to get the pointer back, or turn off **Give the controller to the game you open**.
+
+## The pointer moves by itself or feels wrong
+
+- Moves by itself: raise **Settings › Pointer › Ignore small movements**.
+- Too fast or too slow: change **Pointer speed**. Hold <Btn b="LT" /> for a slower pointer while aiming at something small.
+- Overshoots small buttons: raise **Aim assist**. It only works where the app exposes its buttons to accessibility tools.
+
+## The keyboard covers what I'm typing
+
+It moves to the top of the screen when it would cover the text field. If an app doesn't report where its text field or caret is, the keyboard can't know: move the window, or close the keyboard with <Btn b="B" /> to look.
+
+## No cover or lyrics in Media
+
+- **Settings › General › Covers and lyrics from the internet** must be on, and the PC online.
+- Covers and lyrics are used only when their title and artist match what the player reports, so some songs have none.
+- The player must report what it plays to Windows (the same information the volume flyout shows).
+
+## The screens stayed off after TV mode
+
+Press Windows + P to choose the screens again, or restart. Opening Console UI again also puts the screens and the sound back as they were.
+
+## Send a useful bug report
+
+Attach `events.log` from `%APPDATA%\dev.alejandro.consoleui` to an [issue on GitHub](https://github.com/alenj0x1/console-ui/issues). It records what the app did, never what you typed.

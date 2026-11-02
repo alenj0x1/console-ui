@@ -1,0 +1,55 @@
+---
+title: Inicio
+description: La pantalla de inicio con tus juegos, apps y multimedia.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+import Btn from "../../../../components/Btn.astro";
+
+**Inicio** es la pantalla de inicio de Console UI, a pantalla completa. Mantén <Btn b="Menu" /> para abrirla desde cualquier lado, y mantenlo otra vez (o presiona <Btn b="B" />) para volver al puntero. Abrir la app, o hacer clic en su ícono de la bandeja, también la muestra.
+
+Tiene cuatro pestañas, que se cambian con <Btn b="LB" /> y <Btn b="RB" />: **Juegos**, **Apps**, **Multimedia** y **Ajustes** (mira [Ajustes](../settings/)). Lo elegido muestra sus detalles y su acción principal sobre la fila de tarjetas; las indicaciones junto a ella muestran los botones que hacen lo demás.
+
+## Juegos
+
+Tus juegos instalados de Steam y Epic Games aparecen solos, con el arte oficial de Steam de fondo para el elegido.
+
+- <Btn b="A" /> **Jugar** abre el juego y el control pasa a él ([modo juego](../game-mode/)).
+- **Reanudar.** Los juegos que ya tienen una ventana abierta van primero, el último que jugaste antes que los demás, y su botón dice **Reanudar**: trae el juego al frente en lugar de abrirlo otra vez. La lista sigue los juegos que abres o cierras mientras Inicio está a la vista. Si no hay ninguno abierto, el último que jugaste va primero.
+- **Orden.** Después de los abiertos, los juegos se ordenan por más recientes o de la A a la Z (**Orden de los juegos** en [Personalizar](../personalize/)).
+- **Tráileres.** Tras un par de segundos sobre un juego de Steam, su tráiler se reproduce sobre el arte, sin sonido y en bucle. Es la primera parte del tráiler principal del juego, descargada una vez desde la tienda de Steam y guardada. <Btn b="X" /> activa o quita su sonido, y esa elección queda para todos los tráileres que siguen (también **Tráileres con sonido** en Ajustes › Juegos).
+- **Buscar.** <Btn b="Y" /> abre una búsqueda con letras y números que eliges con el control. Los resultados van en orden alfabético y coinciden con el comienzo de cada palabra del título; <Btn b="LT" /> y <Btn b="RT" /> saltan a la letra anterior o siguiente.
+
+## Apps
+
+Las apps que fijas, con sus íconos reales. La tarjeta **Editar apps** muestra todo lo que hay en el menú Inicio (incluidas las apps de la Store) para fijar o quitar, hasta 24 apps. <Btn b="A" /> abre una app.
+
+## Multimedia
+
+Tus apps de música y video y tus sitios de streaming en una fila.
+
+- Al principio muestra las apps de música y video instaladas en tu computadora (Spotify, VLC y similares). **Editar Multimedia** agrega o quita apps (primero las de música y video; las demás, en **Todas las apps**) y los sitios YouTube, YouTube Music, Netflix, Twitch, Prime Video y Disney+, que se abren en tu navegador predeterminado, donde ya tienes tu sesión.
+- **Lo que está sonando va primero**, con la canción en su tarjeta: todo lo que se informa a los controles multimedia de Windows (los mismos que muestra el control de volumen), como Spotify o un navegador. Con el foco en ella, el fondo toma los colores de la carátula y muestra el progreso de la canción.
+- <Btn b="X" /> reproduce o pausa, <Btn b="LT" /> / <Btn b="RT" /> cambian de canción.
+- **Carátulas en alta resolución y letras.** La carátula se busca en alta resolución, y la letra sincronizada se muestra con la línea que se está cantando iluminada y centrada. <Btn b="R3" /> en la tarjeta de lo que suena cambia entre la letra y la carátula; la elección se guarda (**Mostrar la letra de la canción**). Las dos cosas se pueden apagar: mira [Privacidad y seguridad](../../how-it-works/privacy-security/#carátulas-y-letras-de-internet).
+
+## Volumen
+
+En todas las pestañas, arriba y abajo en la cruceta cambian el volumen del sistema (en las formas **Lista** y **Cuadrícula** se mueven por las tarjetas, y <Btn b="RT+updown" /> sigue manejando el volumen). <Btn b="Y" /> silencia, salvo en Juegos, donde busca.
+
+## Formas
+
+**Forma de Inicio** (en Personalizar y en Ajustes › Apariencia) cambia cómo se ven Juegos, Apps y Multimedia:
+
+| Forma | Se ve como |
+|---|---|
+| **Anchas** | Una fila de banners anchos (la de entrada) |
+| **Portadas** | Una fila de portadas de caja |
+| **Cuadrícula** | Una cuadrícula de portadas |
+| **Lista** | Una lista de nombres |
+
+Con letra grande o un título largo, las tarjetas ceden un poco de tamaño para que los detalles de arriba nunca se corten.
+
+<Aside>
+Si algo no se puede abrir o guardar, aparece un aviso breve en Inicio en lugar de fallar en silencio.
+</Aside>

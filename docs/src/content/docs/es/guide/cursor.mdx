@@ -1,0 +1,46 @@
+---
+title: Puntero
+description: Cómo el puntero asistido se mueve, apunta, hace clic y desplaza.
+---
+
+import Btn from "../../../../components/Btn.astro";
+
+La palanca izquierda mueve el puntero del mouse por todo Windows. Está ajustado para ser predecible más que rápido, así puedes apuntar a cosas pequeñas desde el sillón.
+
+## Cómo se mueve
+
+- **Suave cerca del centro, más rápido en el borde.** Un empujón pequeño mueve el puntero despacio; cuanto más empujas, más rápido va.
+- **Una aceleración pareja.** Si mantienes la palanca muy empujada, el puntero acelera de a poco durante un momento, hasta el doble de su velocidad máxima normal. Al soltarla vuelve a la velocidad normal, así que nunca da saltos.
+- **Se siente igual en cualquier pantalla.** Las velocidades se miden en altos de pantalla, así que el puntero se siente igual en una TV 1080p que en una 4K.
+- **Ignora los movimientos pequeños.** Un poco de recorrido de la palanca alrededor del centro cuenta como reposo, así el puntero no se mueve solo.
+- **La opción "Mejorar la precisión del puntero" de Windows no lo cambia.**
+
+## Ayuda para apuntar
+
+- **Va más lento sobre lo que se puede pulsar.** Sobre un botón, enlace, pestaña, casilla, elemento de menú o de lista, campo de texto o control deslizante, el puntero va más lento para que no te pases. Solo lo hace mientras apuntas, no cuando cruzas la pantalla a toda velocidad. Cuánto frena es **Ayuda para apuntar** en [Ajustes](../settings/#puntero).
+- **Se queda quieto al hacer clic.** Durante un instante después de <Btn b="A" /> o <Btn b="X" />, la palanca no mueve el puntero, así el clic cae donde apuntaste.
+- **Puntero lento cuando lo pides.** Mantén <Btn b="LT" /> para un puntero más lento y fino.
+- **Saltar entre botones.** Mantén <Btn b="LT" /> y presiona la cruceta: el puntero salta al botón o enlace más cercano en esa dirección. Mantén la dirección para seguir saltando.
+
+El puntero solo puede frenar sobre, o saltar a, lo que una app deja ver a las herramientas de accesibilidad (la misma información que usa un lector de pantalla). En las apps que no la muestran, no frena.
+
+## Clics, desplazamiento y teclas
+
+| Control | Hace |
+|---|---|
+| <Btn b="A" /> | Clic izquierdo; mantenlo para arrastrar |
+| <Btn b="X" /> | Clic derecho |
+| <Btn b="L3" /> | Clic central |
+| Palanca derecha | Desplazar hacia arriba, abajo y a los lados |
+| <Btn b="dpad" /> | Flechas |
+| <Btn b="B" /> | Esc |
+| <Btn b="LB" /> / <Btn b="RB" /> | Atrás / adelante |
+| <Btn b="RT" /> | Toque: Intro |
+| <Btn b="R3" /> | Intro |
+| <Btn b="RT+updown" /> | Subir / bajar el volumen |
+| <Btn b="RT+leftright" /> | Canción anterior / siguiente |
+| <Btn b="Menu" /> | Toque: menú Inicio de Windows |
+
+## Ajustarlo
+
+En **Ajustes › Puntero**: **Velocidad del puntero**, **Ayuda para apuntar**, **Ignorar movimientos pequeños**, **Velocidad al desplazar** y **Desplazar al revés**. En **Ajustes › Botones**, **Puntero con la palanca derecha** intercambia las palancas. Cada opción muestra una vista previa animada de lo que cambia. Todos los valores están en la [referencia de ajustes](../../reference/settings/).

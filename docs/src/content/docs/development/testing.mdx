@@ -1,0 +1,65 @@
+---
+title: Testing
+description: Unit tests, tests that read this PC, and how to try changes in the real app.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+## Unit tests
+
+```sh
+cargo test
+```
+
+Runs the tests of the whole workspace. They cover, among others:
+
+| Area | What is checked |
+|---|---|
+| `padcore::curve` | The deadzone is still; the boost builds smoothly, never drops while held and resets on release; the slowdown over clickable elements only applies while aiming |
+| `padcore::engine` | Swapping A/B and the sticks; remapping buttons, triggers and scroll; holding View opens the quick menu and the stick aims it; the quick menu cancels on a mode change or with the stick at rest; the tuning shapes the profile |
+| `padcore::hover` | Jumps prefer elements straight ahead |
+| `app::i18n` | Every language has the same keys as Spanish, in Rust and in the pages' catalogues, with no empty text; every key the pages use exists |
+| `app::store` | DPAPI round trip; learned words persist encrypted; settings saved by earlier versions (named levels such as `"fast"`) read as numbers |
+| `app::songinfo` | Matching across services, reading synced lyrics, and accepting only the expected image hosts (`https://cdn-images.dzcdn.net@evil.example/…` is refused) |
+| `app::sources` | Paths stay inside their folder whatever the case or slashes; Steam's nested and escaped library files; Wallpaper Engine files stay inside their folder |
+| `app::sources::trailers` | Picking the 1080p video and the sound; only Steam ids are accepted |
+
+## Tests that need this PC or the internet
+
+Some tests are marked `#[ignore]` because they read this PC (players, windows, installed apps) or go online. Run them on purpose, with output:
+
+```sh
+cargo test -p console-ui-app admin -- --ignored --nocapture
+cargo test -p console-ui-app switcher -- --ignored --nocapture
+```
+
+| Test | Needs |
+|---|---|
+| `admin` | An elevated process running, to check it is detected |
+| `switcher` | Open windows, to list them |
+| `library` | The Start menu apps of this PC |
+| `media` | A player that is playing |
+| `sources` | This PC's games and backgrounds |
+| `songinfo` | The internet |
+| `sources::trailers` | The internet (downloads from the Steam store) |
+
+## Suggestion quality
+
+```sh
+node labs/keyboard-lab/suggest_eval.js es
+```
+
+Simulates typing phrases from `labs/keyboard-lab/eval-phrases.txt` without accents and reports the keystroke saving and how often the target word comes first. Run it after changing `app/ui/suggest.js` or the data. See [Labs](../labs/#keyboard-lab).
+
+## In the real app
+
+```sh
+cargo build --release
+target/release/console-ui.exe
+```
+
+<Aside>
+Check changes in the real app, with the controller, before committing: also with a larger text size (Settings › Appearance › Text size), since every tab must still fit at 150 %.
+</Aside>
+
+`target/release/padd.exe` runs the input core alone in a console, without the app.

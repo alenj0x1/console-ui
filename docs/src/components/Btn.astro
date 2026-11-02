@@ -1,0 +1,60 @@
+---
+// A controller button drawn as in the app (app/ui/icons.js buttonShape): A, B, X, Y, L3 and R3 round,
+// LB / RB as bumpers, LT / RT as triggers, View and Menu with the symbols printed on them, and the d-pad as
+// a cross with the pressed arm filled. `b` takes several buttons pressed together: "View+Menu", "RT+dpad".
+// d-pad names: up, down, left, right, updown, leftright, dpad (no arm lit).
+interface Props { b: string }
+const { b } = Astro.props;
+
+const SYMBOL: Record<string, string> = {
+  View: '<rect x="3" y="4" width="12" height="10" rx="2"/><path d="M9 14v4a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2v-6a2 2 0 0 0 -2 -2h-4"/>',
+  Menu: '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>',
+};
+const ARM: Record<string, string> = {
+  up: '<rect class="arm-on" x="8.5" y="2.5" width="7" height="10"/>',
+  down: '<rect class="arm-on" x="8.5" y="11.5" width="7" height="10"/>',
+  left: '<rect class="arm-on" x="2.5" y="8.5" width="10" height="7"/>',
+  right: '<rect class="arm-on" x="11.5" y="8.5" width="10" height="7"/>',
+  updown: '<path class="arm-on" d="M12 4.4l2.4 3h-4.8zM12 19.6l2.4-3h-4.8z"/>',
+  leftright: '<path class="arm-on" d="M4.4 12l3-2.4v4.8zM19.6 12l-3-2.4v4.8z"/>',
+  dpad: "",
+};
+// Names for screen readers, in the page's language.
+const es = /\/es(\/|$)/.test(Astro.url.pathname);
+const NAME: Record<string, string> = es
+  ? { up: "cruceta arriba", down: "cruceta abajo", left: "cruceta izquierda", right: "cruceta derecha",
+      updown: "cruceta arriba o abajo", leftright: "cruceta izquierda o derecha", dpad: "cruceta" }
+  : { up: "d-pad up", down: "d-pad down", left: "d-pad left", right: "d-pad right",
+      updown: "d-pad up or down", leftright: "d-pad left or right", dpad: "d-pad" };
+
+const parts = b.split("+").map((name) => {
+  if (name in ARM) {
+    return {
+      cls: "pad pad-dpad",
+      label: NAME[name],
+      html: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true">${ARM[name]}<path d="M8.5 2.5h7v6h6v7h-6v6h-7v-6h-6v-7h6z"/></svg>`,
+    };
+  }
+  if (name in SYMBOL) {
+    return {
+      cls: "pad pad-face",
+      label: name,
+      html: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${SYMBOL[name]}</svg>`,
+    };
+  }
+  const kind = /^([ABXY]|[LR]3)$/.test(name) ? "face" : /^[LR]B$/.test(name) ? "bumper" : /^[LR]T$/.test(name) ? "trigger" : "face";
+  return { cls: `pad pad-${kind}${kind === "face" && name.length > 1 ? " pad-wide" : ""}`, label: name, text: name };
+});
+---
+{parts.length === 1 ? (
+  parts[0].html ? <span class={parts[0].cls} role="img" aria-label={parts[0].label} title={parts[0].label} set:html={parts[0].html} /> : <span class={parts[0].cls}>{parts[0].text}</span>
+) : (
+  <span class="pad-combo">
+    {parts.map((p, i) => (
+      <>
+        {i > 0 && <span class="pad-plus">+</span>}
+        {p.html ? <span class={p.cls} role="img" aria-label={p.label} title={p.label} set:html={p.html} /> : <span class={p.cls}>{p.text}</span>}
+      </>
+    ))}
+  </span>
+)}

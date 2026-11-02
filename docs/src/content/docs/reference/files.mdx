@@ -1,0 +1,31 @@
+---
+title: File locations
+description: Where Console UI is installed and where it keeps your settings and data.
+---
+
+## The app
+
+| Path | What |
+|---|---|
+| `%LOCALAPPDATA%\Console UI` | The installed app, for your Windows user only |
+
+## Your data
+
+Everything Console UI saves lives in `%APPDATA%\dev.alejandro.consoleui`:
+
+| File or folder | What |
+|---|---|
+| `settings.json` | Your options, pinned apps, the Media tab, background folders and TV mode choices, in plain text. See the [settings reference](../settings/) |
+| `learned.bin` | Learned words, encrypted for your Windows user (see [Privacy and security](../../how-it-works/privacy-security/#learned-words)) |
+| `events.log` | The diagnostic log: mode changes, launches and which program the keyboard typed into, never the text |
+| `icons\` | App icons for Home, saved once |
+| `covers\` | High-resolution song covers, saved once each |
+| `trailers\` | Game trailers and their sound, saved once each |
+
+Uninstalling Console UI deletes this folder only if you check **Delete the application data**.
+
+## Elsewhere in Windows
+
+| Where | What |
+|---|---|
+| `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run`, value `Console UI` | Present while **Start with Windows** is on |

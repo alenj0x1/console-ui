@@ -1,0 +1,45 @@
+---
+title: Build from source
+description: Build the app and the Windows installer yourself.
+---
+
+import { Steps } from "@astrojs/starlight/components";
+
+## What you need
+
+- Windows 10 or 11, 64-bit.
+- [Rust](https://rustup.rs) with a toolchain that supports the 2024 edition, and the Visual Studio C++ build tools that Rust uses on Windows.
+- [Node.js](https://nodejs.org), only to build the installer.
+- [Git](https://git-scm.com).
+
+## Build
+
+<Steps>
+
+1. Get the code:
+
+   ```sh
+   git clone https://github.com/alenj0x1/console-ui.git
+   cd console-ui
+   ```
+
+2. Build the app:
+
+   ```sh
+   cargo build --release
+   ```
+
+   This leaves `target/release/console-ui.exe`, the app, which opens Home. See the [command line flags](../../reference/command-line/) for the other ways to start it.
+
+3. Build the installer:
+
+   ```sh
+   npm --prefix app ci
+   npm --prefix app run build
+   ```
+
+   The installer ends up in `target/release/bundle/nsis/Console UI_X.Y.Z_x64-setup.exe`. Install it as in [Install](../install/).
+
+</Steps>
+
+The suggestion data the keyboard uses (`app/ui/data/`) is already in the repository, so building never downloads it. How it is rebuilt is in [Project structure](../../development/structure/#suggestion-data).

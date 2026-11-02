@@ -1,0 +1,30 @@
+---
+title: TV mode
+description: Leave only the TV on, with its sound, and put everything back afterwards.
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+import Btn from "../../../components/Btn.astro";
+
+TV mode is for a PC connected to a monitor and a TV: it leaves only the TV on, as the main screen, and sends the sound to it. Turning it off puts the screens and the sound back as they were.
+
+<Steps>
+
+1. In **Settings › TV mode**, choose **TV screen** (the screen that stays on).
+
+2. Optionally choose **Sound in TV mode**, the sound output to use, such as the TV's speakers. **No change** (the default) leaves the sound where it is.
+
+3. Turn on **TV mode**. The app asks **Does the TV look right?** Press <Btn b="A" /> **Keep it** to keep it.
+
+</Steps>
+
+If you can't see the question because the TV shows nothing, just wait: with no answer in 15 seconds, everything goes back by itself. <Btn b="B" /> goes back right away.
+
+## Turning it off
+
+- Turn **TV mode** off in Settings, or
+- open the [control center](../game-mode/#control-center), press <Btn b="Menu" /> and choose **Turn off TV mode**.
+
+<Aside title="If the app closed while TV mode was on">
+TV mode doesn't change the screen layout Windows keeps saved, so Windows + P (or a restart) brings the usual one back. Opening Console UI again also puts the screens and the sound back as they were.
+</Aside>

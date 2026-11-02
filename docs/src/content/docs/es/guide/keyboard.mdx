@@ -1,0 +1,56 @@
+---
+title: Teclado y sugerencias
+description: El teclado en pantalla, sus dos distribuciones, tildes, símbolos y sugerencias de palabras.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+import Btn from "../../../../components/Btn.astro";
+
+## Abrirlo y cerrarlo
+
+- Presiona <Btn b="Y" /> con el puntero, o haz clic (<Btn b="A" />) en un campo de texto: el teclado se abre ahí.
+- Presiona <Btn b="B" /> para cerrarlo.
+- El [menú rápido](../quick-menu/) y el menú de la bandeja (**Abrir teclado**) también lo abren.
+
+El teclado flota sobre cualquier app sin quitarle el foco, así que lo que escribes va a la ventana en la que estabas. Se abre en el monitor donde está el puntero y pasa a la parte de arriba de la pantalla cuando taparía el texto que escribes.
+
+## Escribir
+
+| Control | Hace |
+|---|---|
+| Palanca izquierda, <Btn b="dpad" /> | Mover lo resaltado |
+| <Btn b="A" /> | Escribir la tecla resaltada. Mantenlo en una vocal para la letra con tilde (á é í ó ú), en ? para ¿ y en ! para ¡ |
+| <Btn b="X" /> | Borrar (se repite al mantenerlo) |
+| <Btn b="Y" /> | Espacio |
+| <Btn b="LB" /> | Mayúscula, para la siguiente letra |
+| <Btn b="RB" /> | Símbolos y números |
+| <Btn b="Menu" />, o <Btn b="RT" /> en la distribución Todo junto | Intro |
+| <Btn b="View" /> | Tomar la primera sugerencia |
+| <Btn b="L3" /> | Menú de idiomas |
+| Palanca derecha | Mover el cursor del texto (en la distribución Todo junto) |
+
+## Distribuciones
+
+**Ajustes › Teclado › Forma del teclado** elige entre:
+
+- **Todo junto** (la de entrada): una cuadrícula QWERTY con ñ y un solo resaltado.
+- **Dos mitades**: las teclas partidas en una mitad izquierda y una derecha, cada una con su propio resaltado. La palanca izquierda y <Btn b="LT" /> mueven y escriben en la mitad izquierda; la palanca derecha y <Btn b="RT" />, en la derecha.
+
+## Sugerencias
+
+Sobre las teclas hay una franja con tres palabras. <Btn b="View" /> toma la primera; en la distribución Todo junto, sube desde la fila de arriba y presiona <Btn b="A" /> para tomar otra. Al tomar una sugerencia, reemplaza la palabra que estabas escribiendo y agrega un espacio.
+
+- **Pone las tildes.** Escribe sin tildes y se ofrece la palabra con tilde: *esta* → *está*, *cancion* → *canción*, *ano* → *año*.
+- **Contexto.** La palabra anterior decide qué palabras van primero.
+- **Siguiente palabra.** Después de un espacio, sin nada escrito todavía, la franja predice la siguiente palabra.
+- **Aprende de ti.** Las palabras que escribes seguido, y las que suelen venir después de ellas, suben; también aprende nombres y expresiones que no están en el diccionario.
+
+Las sugerencias están en español de entrada. <Btn b="L3" /> abre el menú de idiomas, donde se puede agregar inglés (pueden estar los dos). **Ajustes › Teclado** tiene las mismas opciones: **Sugerir palabras**, **Recordar mis palabras**, **Idiomas del teclado** y **Borrar palabras recordadas**.
+
+<Aside title="Lo que nunca aprende">
+En los campos de contraseña no aprende ni sugiere nada. Tampoco aprende nunca lo que se escribe en consolas (Símbolo del sistema, PowerShell, Terminal de Windows) ni en escritorios remotos. Las palabras aprendidas se guardan cifradas solo para tu usuario de Windows; mira [Privacidad y seguridad](../../how-it-works/privacy-security/#palabras-aprendidas).
+</Aside>
+
+## Olvidar las palabras aprendidas
+
+En el menú de idiomas (<Btn b="L3" />), **Olvidar palabras aprendidas** pide una segunda pulsación y luego borra todo lo que el teclado aprendió. **Ajustes › Teclado › Borrar palabras recordadas** hace lo mismo.

@@ -1,0 +1,71 @@
+---
+title: Project structure
+description: How the repository is organised and what each part does.
+---
+
+Console UI is a Rust workspace (edition 2024) with a desktop app built on Tauri 2. The interface pages are plain HTML, CSS and JavaScript with no build step.
+
+| Path | What |
+|---|---|
+| `crates/padcore` | The input core: XInput reading, stick curves, `SendInput` injection, the UI Automation probe and the mode engine |
+| `crates/padd` | A console host for the core alone (`padd.exe`), useful to try the core without the app |
+| `app` | The Tauri 2 app: tray, windows, settings, learned words, Home's data and the installer |
+| `labs` | Experiments with their data and notes (see [Labs](../labs/)) |
+| `tools` | Data builders (the keyboard's suggestion data) |
+| `scripts` | `release.py` (see [Releases](../releases/)) |
+| `docs` | This site (Astro + Starlight) |
+
+## The input core (`crates/padcore`)
+
+| File | What |
+|---|---|
+| `xinput.rs` | XInput backend; empty slots are polled once per second |
+| `pad.rs` | Backend-neutral controller state (XInput button bits) |
+| `curve.rs` | Stick to pointer speed; built-in profiles (`asistido` is the one the app uses) |
+| `engine.rs` | The mode engine: pointer, keyboard, Home, control center and off; holds, taps, remapping and the quick menu |
+| `ui.rs` | Controller to four-way navigation events with key-like repeat |
+| `inject.rs` | Mouse and keyboard input through `SendInput`, absolute coordinates, sub-pixel accumulation |
+| `hover.rs` | UI Automation probe: clickable element under the pointer, nearest element for jumps, focused text field, caret, password fields |
+
+## The app (`app`)
+
+| Path | What |
+|---|---|
+| `src/main.rs` | Startup, flags, tray, the engine loop, game mode following, notices |
+| `src/store.rs` | `settings.json` and the DPAPI-encrypted `learned.bin` |
+| `src/i18n.rs` | The interface language on the Rust side: tray menu, window titles, battery and background names, errors shown in Home |
+| `src/prefs.rs` | The settings commands: allowed names and values, engine tuning, start with Windows, reset |
+| `src/home.rs` | Home's window, data commands and the `cui` protocol that serves art, icons, covers, backgrounds and trailers |
+| `src/library.rs`, `src/sources/` | Games (Steam, Epic), Start menu apps, backgrounds (built-in, Wallpaper Engine, folders) and Steam trailers |
+| `src/guide.rs`, `src/switcher.rs` | The control center: open windows, pictures, switching, game detection, power |
+| `src/overlay.rs` | The keyboard window and the notice window |
+| `src/radial.rs` | The quick menu |
+| `src/media.rs`, `src/songinfo.rs`, `src/audio.rs` | What is playing, online covers and lyrics, system volume |
+| `src/tv.rs` | TV mode |
+| `src/guard.rs` | HidHide integration and its watchdog |
+| `src/admin.rs` | Administrator windows (UIPI) |
+| `src/welcome.rs` | The welcome practice |
+| `src/events.rs` | The diagnostic log |
+| `ui/` | The pages: `home`, `guide`, `keyboard`, `radial`, `welcome`, `notice`, `lab`, plus `theme.css`, `prefs.js`, `icons.js`, `previews.js`, `backgrounds.js`, `suggest.js`, `i18n.js` and the language catalogues in `i18n/`, the fonts and the suggestion data |
+| `nsis/` | Installer hooks (`hooks.nsh`) and the HidHide download script (`hidhide.ps1`) |
+| `tauri.conf.json` | App and installer configuration |
+
+## Interface languages
+
+Every page loads `ui/i18n.js` first. It loads one catalogue per language from `ui/i18n/` (`es.js` is the reference) and gives `t("key", { name })`; a missing text shows in Spanish. Texts keep the buttons as `{A}` or `{View}`. Rust has its own short catalogue in `src/i18n.rs`. To add a language:
+
+1. Copy `app/ui/i18n/es.js` to `app/ui/i18n/<code>.js` and translate it (the second argument is the language's name in itself).
+2. Add the code to `LANGUAGES` in `app/ui/i18n.js`.
+3. Add its table and its line in `CATALOGUES` in `app/src/i18n.rs`.
+
+`cargo test` checks that every catalogue has the same keys as Spanish, that no text is empty and that every key the pages use exists.
+
+## Suggestion data
+
+`app/ui/data/` holds, per language, `words-<lang>.txt` (one word per line, most frequent first) and `pairs-<lang>.tsv` (which word follows which, with counts). They are committed, so the app never downloads anything. To rebuild them:
+
+```sh
+python -I tools/build_language_data.py
+```
+
+The script downloads its sources and checks their SHA-256: word lists from FrequencyWords by Hermit Dave at a pinned commit (OpenSubtitles 2018 counts, CC BY-SA 4.0) and word pairs from Tatoeba sentences (CC BY 2.0 FR). Tatoeba only serves its latest weekly export, so a new snapshot fails the hash check on purpose: review it and update `TATOEBA_SHA`. Credits and changes are in `app/ui/data/LICENSE-data.txt`.

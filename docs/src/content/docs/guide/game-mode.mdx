@@ -1,0 +1,36 @@
+---
+title: Game mode and control center
+description: How games get the controller, and the control center you open over anything.
+---
+
+import Btn from "../../../components/Btn.astro";
+
+## Game mode
+
+When a game comes to the front, from Home, from Steam or from anywhere else, the controller becomes the game's: Console UI stops moving the pointer and leaves every button to the game. The controller gives two short rumbles and a short notice says so. When that game closes, the pointer comes back.
+
+- **Turn it off** with **Settings › Games › Give the controller to the game you open**. Games then don't take the controller by themselves; pick one in the control center or use the tray instead.
+- **From the tray**, **Give the controller to games** hands the controller to games, and the same item, now **Use the controller in Windows again**, takes it back. A game you take it back from this way is left alone: it doesn't get the controller again while it stays in front.
+- **Rumble** can be turned off with **Settings › General › Vibrate when the mode changes**.
+
+How Console UI tells a game from any other window is explained in [Game detection](../../how-it-works/game-detection/).
+
+## Control center
+
+Hold <Btn b="View+Menu" /> to open the **Control center** over whatever is in front, a game included. On the desktop, a tap on <Btn b="View" /> opens it too. It never takes the focus, so the game stays in front until you choose another window.
+
+- The first card is **Home**: it opens the home screen and leaves the game open behind it, ready to **Resume**.
+- Then come your open windows, the same ones Alt+Tab lists, each with a picture of what it shows (taken when the control center opens and kept in memory only).
+- <Btn b="A" /> switches to the focused window. A game gets the controller; anything else gets the pointer.
+- <Btn b="Y" /> closes the focused window.
+- If music is playing: <Btn b="X" /> plays or pauses, <Btn b="LT" /> / <Btn b="RT" /> change the song.
+- The controller's battery shows next to the clock.
+- <Btn b="B" /> closes the control center and goes back to where you were.
+
+### Power
+
+<Btn b="Menu" /> in the control center opens the power menu: **Sleep**, **Restart**, **Shut down** and **Sign out**. The last three need <Btn b="A" /> held for a second, so they can't happen by accident.
+
+### With one hand
+
+With a one-hand layout (see [Accessibility](../accessibility/#one-hand-layouts)), holding <Btn b="View" /> alone (left hand) or <Btn b="Menu" /> alone (right hand) opens the control center in a game, since one hand can't hold both.

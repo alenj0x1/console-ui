@@ -1,0 +1,36 @@
+---
+title: Modo juego y centro de control
+description: Cómo los juegos reciben el control, y el centro de control que abres sobre cualquier cosa.
+---
+
+import Btn from "../../../../components/Btn.astro";
+
+## Modo juego
+
+Cuando un juego pasa al frente, desde Inicio, desde Steam o desde cualquier otro lado, el control pasa a ser del juego: Console UI deja de mover el puntero y le deja todos los botones al juego. El control vibra dos veces brevemente y un aviso corto lo dice. Cuando ese juego se cierra, el puntero vuelve.
+
+- **Para apagarlo**, usa **Ajustes › Juegos › Dejar el control al juego que abras**. Así los juegos ya no toman el control por su cuenta; elige uno en el centro de control o usa la bandeja.
+- **Desde la bandeja**, **Dejar el control a los juegos** le pasa el control a los juegos, y la misma opción, que entonces dice **Volver a usar el control en Windows**, lo recupera. Al juego del que lo recuperas así se lo deja tranquilo: no vuelve a recibir el control mientras siga al frente.
+- **La vibración** se apaga con **Ajustes › General › Vibrar al cambiar de modo**.
+
+Cómo distingue Console UI un juego de cualquier otra ventana se explica en [Detección de juegos](../../how-it-works/game-detection/).
+
+## Centro de control
+
+Mantén <Btn b="View+Menu" /> para abrir el **Centro de control** sobre lo que esté al frente, incluso un juego. En el escritorio, un toque de <Btn b="View" /> también lo abre. Nunca toma el foco, así que el juego sigue al frente hasta que eliges otra ventana.
+
+- La primera tarjeta es **Inicio**: abre la pantalla de inicio y deja el juego abierto detrás, listo para **Reanudar**.
+- Después vienen tus ventanas abiertas, las mismas que muestra Alt+Tab, cada una con una imagen de lo que muestra (tomada al abrir el centro de control y guardada solo en memoria).
+- <Btn b="A" /> cambia a la ventana elegida. Un juego recibe el control; lo demás, el puntero.
+- <Btn b="Y" /> cierra la ventana elegida.
+- Si suena música: <Btn b="X" /> reproduce o pausa, <Btn b="LT" /> / <Btn b="RT" /> cambian de canción.
+- La batería del control aparece junto a la hora.
+- <Btn b="B" /> cierra el centro de control y vuelve a donde estabas.
+
+### Apagado
+
+<Btn b="Menu" /> en el centro de control abre el menú de apagado: **Suspender**, **Reiniciar**, **Apagar** y **Cerrar sesión**. Las tres últimas piden mantener <Btn b="A" /> un segundo, para que no pasen por accidente.
+
+### Con una mano
+
+Con una distribución para una mano (mira [Accesibilidad](../accessibility/#distribuciones-para-una-mano)), mantener solo <Btn b="View" /> (mano izquierda) o solo <Btn b="Menu" /> (mano derecha) abre el centro de control en un juego, ya que con una mano no se pueden mantener los dos.

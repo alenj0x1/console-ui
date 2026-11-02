@@ -1,0 +1,20 @@
+---
+title: Menú rápido
+description: El menú redondo que abres manteniendo View con el puntero.
+---
+
+import Btn from "../../../../components/Btn.astro";
+
+Con el puntero, mantén <Btn b="View" /> para mostrar un menú redondo en el centro de la pantalla en la que estás. Apunta a una porción con la palanca derecha y suelta <Btn b="View" /> para elegirla. Con la palanca de vuelta en el centro, soltar no hace nada.
+
+| Porción | Qué hace |
+|---|---|
+| **Teclado** | Abre el [teclado](../keyboard/) en pantalla |
+| **Captura** | Empieza un recorte de pantalla de Windows (como Windows + Shift + S) |
+| **Escritorio** | Muestra el escritorio (como Windows + D) |
+| **Cerrar ventana** | Cierra la ventana que está al frente. Nunca cierra el escritorio, la barra de tareas ni una ventana de Console UI |
+| **Inicio** | Abre [Inicio](../home/) |
+
+El menú nunca toma el foco y deja pasar los clics, así que cada acción funciona sobre la app que estaba al frente cuando lo abriste.
+
+Un toque rápido de <Btn b="View" /> abre el [centro de control](../game-mode/#centro-de-control) en su lugar.

@@ -1,0 +1,62 @@
+---
+title: Controles
+description: Qué hace cada botón con el puntero, el teclado, Inicio y el centro de control.
+---
+
+import Btn from "../../../../components/Btn.astro";
+
+Console UI usa los nombres impresos en un control tipo Xbox: <Btn b="A" /> <Btn b="B" /> <Btn b="X" /> <Btn b="Y" />, los botones superiores <Btn b="LB" /> <Btn b="RB" />, los gatillos <Btn b="LT" /> <Btn b="RT" />, el clic de las palancas <Btn b="L3" /> <Btn b="R3" />, la cruceta <Btn b="dpad" /> y los dos botones pequeños del centro: **View** <Btn b="View" /> (dos cuadrados) y **Menu** <Btn b="Menu" /> (tres líneas). En toda la app, las indicaciones dibujan los botones igual.
+
+Estos son los controles habituales. Muchos se pueden cambiar: en [Accesibilidad](../accessibility/) están las distribuciones para una mano y los botones personalizados, y en [Ajustes](../settings/#botones), aceptar con B y el puntero con la palanca derecha.
+
+## Puntero y teclado
+
+| Control | Puntero | Teclado |
+|---|---|---|
+| Palanca izquierda, <Btn b="dpad" /> | Mover el puntero / flechas | Mover lo resaltado |
+| Palanca derecha | Desplazar | Mover el cursor del texto |
+| <Btn b="A" /> | Clic izquierdo (mantener para arrastrar) | Escribir (mantener para la letra con tilde) |
+| <Btn b="X" /> | Clic derecho | Borrar |
+| <Btn b="L3" /> | Clic central | Menú de idiomas |
+| <Btn b="B" /> | Esc | Cerrar el teclado |
+| <Btn b="Y" /> | Abrir el teclado (también con un clic en un campo de texto) | Espacio |
+| <Btn b="LB" /> / <Btn b="RB" /> | Atrás / adelante | Mayúscula / símbolos |
+| <Btn b="LT" /> | Mantener: puntero lento. Con la cruceta: saltar al botón más cercano en esa dirección | |
+| <Btn b="RT" /> | Toque: Intro. Mantener con la cruceta: subir/bajar volumen, canción anterior/siguiente | Intro |
+| <Btn b="R3" /> | Intro | |
+| <Btn b="View" /> | Toque: centro de control. Mantener: [menú rápido](../quick-menu/) | Tomar la primera sugerencia |
+| <Btn b="Menu" /> | Toque: menú Inicio de Windows. Mantener: [Inicio](../home/) | Intro |
+| Mantener <Btn b="View+Menu" /> | [Centro de control](../game-mode/#centro-de-control), también en un juego | |
+
+El teclado en dos mitades escribe con <Btn b="LT" /> (mitad izquierda) y <Btn b="RT" /> (mitad derecha) en lugar de <Btn b="A" />; mira [Teclado](../keyboard/#distribuciones).
+
+## Inicio
+
+| Control | Qué hace |
+|---|---|
+| Palanca izquierda, <Btn b="dpad" /> | Moverse entre las tarjetas. En las formas Anchas y Portadas, arriba y abajo cambian el volumen del sistema |
+| <Btn b="LB" /> / <Btn b="RB" /> | Pestaña anterior / siguiente |
+| <Btn b="A" /> | Abrir, reproducir o elegir |
+| <Btn b="B" /> | Volver; desde una pestaña, cerrar Inicio y volver al puntero |
+| <Btn b="Y" /> | En Juegos: buscar. En lo demás: silenciar |
+| <Btn b="X" /> | Reproducir / pausar la música. Sobre un tráiler que se está viendo: activar o quitar su sonido |
+| <Btn b="LT" /> / <Btn b="RT" /> | Canción anterior / siguiente |
+| <Btn b="RT+updown" /> | Volumen, en todas las formas |
+| <Btn b="R3" /> | En la tarjeta de lo que suena en Multimedia: letra o carátula |
+| <Btn b="Menu" /> | En Juegos, Apps o Multimedia: el panel [Personalizar](../personalize/). Mantener: cerrar Inicio |
+
+## Centro de control
+
+| Control | Qué hace |
+|---|---|
+| <Btn b="dpad" /> | Moverse entre Inicio y las ventanas abiertas |
+| <Btn b="A" /> | Abrir Inicio o cambiar a la ventana |
+| <Btn b="Y" /> | Cerrar la ventana |
+| <Btn b="X" /> | Reproducir / pausar la música |
+| <Btn b="LT" /> / <Btn b="RT" /> | Canción anterior / siguiente |
+| <Btn b="Menu" /> | Menú de apagado: suspender, reiniciar, apagar, cerrar sesión |
+| <Btn b="B" /> | Cerrar el centro de control |
+
+## Mantener y tocar
+
+Mantener es dejar presionado <Btn b="Menu" /> o <Btn b="View+Menu" /> un momento (600 ms de entrada; <Btn b="Menu" /> solo abre Inicio un poco antes). Cualquier pulsación más corta es un toque. Ese tiempo es **Tiempo para mantener presionado** en [Ajustes › Botones](../settings/#botones).

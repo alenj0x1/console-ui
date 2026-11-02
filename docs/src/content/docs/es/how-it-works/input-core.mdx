@@ -1,0 +1,49 @@
+---
+title: Núcleo de entrada
+description: Cómo el control se convierte en puntero, teclas y navegación.
+---
+
+import Diagram from "../../../../components/Diagram.astro";
+import { inputCore } from "../../../../diagrams";
+
+Todo lo que Console UI hace con el control pasa por un núcleo pequeño que corre en segundo plano, dentro de la app. Lee el control, decide qué significa cada entrada en el modo actual y, o bien mueve el puntero y presiona teclas en Windows, o bien pasa la navegación a las pantallas propias de Console UI.
+
+<Diagram {...inputCore("es")} />
+
+## Lectura del control
+
+El núcleo lee controles compatibles con Xbox (XInput), lo que funciona con Console UI en segundo plano y no necesita instalar nada más. Lee cada 4 ms mientras usas el control, cada 16 ms cuando lleva un rato sin usarse y cada medio segundo mientras no hay ningún control conectado. Las ranuras de control vacías se revisan solo una vez por segundo, porque consultar una ranura vacía es lento.
+
+## Modos
+
+El núcleo siempre está en uno de cinco modos:
+
+| Modo | El control… |
+|---|---|
+| Puntero | mueve el mouse y presiona algunas teclas en Windows |
+| Teclado | maneja el teclado en pantalla |
+| Inicio | maneja la pantalla de inicio |
+| Centro de control | maneja el centro de control, encima de lo que esté al frente |
+| Juego | queda intacto para el juego |
+
+Mantener y tocar botones cambia entre ellos: <kbd>Y</kbd> abre el teclado y <kbd>B</kbd> lo cierra, mantener <kbd>Menu</kbd> abre y cierra Inicio, y mantener <kbd>View</kbd> + <kbd>Menu</kbd> abre el centro de control desde cualquier modo. En el teclado, Inicio y el centro de control, View y Menu solo cuentan como toques, así que presionarlos juntos nunca dispara además la acción de un solo botón.
+
+## Puntero
+
+- **Curva.** El recorrido de la palanca más allá del centro ignorado se eleva al cuadrado, así que los empujes pequeños son finos y los completos, rápidos. Pasados unos dos tercios del recorrido, un impulso crece de forma suave durante 0,85 s hasta el doble de la velocidad máxima, y se desvanece cuando aflojas. Soltar la palanca lo reinicia.
+- **Igual en cualquier pantalla.** Las velocidades se miden en altos de pantalla por segundo, así que una pantalla 1080p y una 4K se sienten igual.
+- **Posiciones exactas.** El puntero se ubica en coordenadas absolutas sobre todo el escritorio, y el movimiento de menos de un píxel se acumula entre pasos. Por eso la opción «Mejorar la precisión del puntero» de Windows no deforma la curva.
+- **Ayuda para apuntar.** Un hilo aparte le pregunta a la interfaz de accesibilidad de Windows (la que usan los lectores de pantalla) si el elemento bajo el puntero se puede pulsar: botones, enlaces, pestañas, casillas, elementos de menú y de lista, campos de texto, deslizadores y similares, si están habilitados y ocupan menos de una quinta parte de la pantalla. Sobre uno de ellos, el puntero frena, pero solo mientras apuntas, no mientras cruza la pantalla a toda velocidad. Solo pregunta si la palanca se movió en el último segundo, y solo lee: nunca cambia ni pulsa nada. La misma interfaz responde a los saltos con <kbd>LT</kbd> + cruceta y encuentra los campos de texto para el teclado.
+- **Clics estables.** Durante 90 ms después de <kbd>A</kbd> o <kbd>X</kbd>, la palanca no mueve el puntero.
+
+## Navegación en las pantallas de Console UI
+
+En el teclado, Inicio y el centro de control, las palancas y la cruceta se convierten en movimientos en cuatro direcciones que se repiten como una tecla mantenida: la primera vez a los 260 ms y luego cada 110 a 60 ms según cuánto empujes la palanca (80 ms con la cruceta). Los botones llegan como pulsaciones y liberaciones.
+
+## Ventanas que nunca toman el foco
+
+El teclado, el centro de control y el menú rápido siempre están encima, pero nunca toman el foco. Así el teclado escribe en la ventana que estabas usando y un juego sigue al frente mientras el centro de control está abierto. Las letras se envían como caracteres Unicode, así que la ñ, las tildes y los símbolos llegan tal cual, sin importar la distribución de teclado que tenga Windows.
+
+## Botones reasignados
+
+Las distribuciones para una mano, tus propios cambios de botones y **Aceptar con B** los aplica el núcleo mismo, antes de que cualquier otra parte lea el control. Por eso funcionan igual en el puntero, el teclado, Inicio y el centro de control.

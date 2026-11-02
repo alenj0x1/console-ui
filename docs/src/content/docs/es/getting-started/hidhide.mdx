@@ -1,0 +1,33 @@
+---
+title: HidHide
+description: Por qué Console UI ofrece HidHide, cómo lo agrega el instalador y qué cambia.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+Algunas apps de Windows leen el control por su cuenta: el menú Inicio, Configuración, la Store y otras apps de ese tipo mueven su propia selección con la palanca izquierda. Mientras Console UI mueve el puntero con esa misma palanca, esas apps también se mueven, y una lista que acabas de desplazar salta de vuelta.
+
+[HidHide](https://github.com/nefarius/HidHide) (de Nefarius, licencia MIT) lo resuelve: deja que una app elegida vea el control y lo esconde del resto. Con HidHide instalado, Console UI esconde el control de las demás apps mientras maneja Windows (puntero, teclado, Inicio) y lo vuelve a mostrar en el [modo juego](../../guide/game-mode/), así los juegos lo ven como siempre. Sin HidHide, Console UI funciona igual, solo que sin esa protección.
+
+## Cómo lo agrega el instalador
+
+La casilla **Instalar también HidHide** de la primera página del instalador (marcada de entrada y visible solo cuando falta HidHide) hace que el instalador:
+
+1. Descargue HidHide v1.5.230 desde su versión oficial en GitHub.
+2. Compruebe que el SHA-256 del archivo es el esperado y que tiene una firma válida de Nefarius Software Solutions. Si alguna de las dos comprobaciones falla, el archivo se borra y nunca se ejecuta.
+3. Ejecute el instalador propio de HidHide, que pide permiso de administrador (instala un controlador firmado).
+
+Si algo falla (sin internet, un archivo distinto, el permiso de administrador rechazado), el instalador dice por qué y Console UI se instala igual. Puedes agregar HidHide después desde su [página de versiones](https://github.com/nefarius/HidHide/releases). Puede que HidHide pida reiniciar Windows para terminar.
+
+## Qué cambia
+
+- Console UI se agrega como la única app que puede ver el control y esconde todos los controles conectados del resto, cada vez que se conecta un control.
+- En el modo juego, y cuando Console UI se cierra, el control vuelve a estar visible.
+- Si Console UI termina de forma inesperada con el control escondido, un pequeño vigilante que se inicia con la app vuelve a mostrarlo, así los juegos nunca se quedan sin él.
+- Al desinstalar Console UI, el control vuelve a mostrarse y Console UI sale de la lista de HidHide.
+
+<Aside type="caution" title="Una vez por sesión">
+HidHide solo impide que las apps abran el control a partir de ese momento. Si un componente de Windows ya lo abrió cuando iniciaste sesión, el menú Inicio puede seguir reaccionando hasta que desconectes y vuelvas a conectar el control (o lo apagues y lo prendas). Mira [Solución de problemas](../../troubleshooting/#el-menú-inicio-sigue-moviéndose-con-la-palanca).
+</Aside>
+
+Más detalles en [Privacidad y seguridad](../../how-it-works/privacy-security/#hidhide).

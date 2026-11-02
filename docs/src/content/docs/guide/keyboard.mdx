@@ -1,0 +1,56 @@
+---
+title: Keyboard and suggestions
+description: The on-screen keyboard, its two layouts, accents, symbols and word suggestions.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+import Btn from "../../../components/Btn.astro";
+
+## Open and close it
+
+- Press <Btn b="Y" /> with the pointer, or click (<Btn b="A" />) on a text field: the keyboard opens there.
+- Press <Btn b="B" /> to close it.
+- The [quick menu](../quick-menu/) and the tray menu (**Open keyboard**) open it too.
+
+The keyboard floats over any app without taking its focus, so whatever you type goes to the window you were in. It opens on the monitor under the pointer and moves to the top of the screen when it would cover the text being typed.
+
+## Typing
+
+| Control | Does |
+|---|---|
+| Left stick, <Btn b="dpad" /> | Move the highlight |
+| <Btn b="A" /> | Type the highlighted key. Hold it on a vowel for the accented one (á é í ó ú), on ? for ¿ and on ! for ¡ |
+| <Btn b="X" /> | Backspace (repeats while held) |
+| <Btn b="Y" /> | Space |
+| <Btn b="LB" /> | Shift, for the next letter |
+| <Btn b="RB" /> | Symbols and numbers |
+| <Btn b="Menu" />, or <Btn b="RT" /> in the grid layout | Enter |
+| <Btn b="View" /> | Take the first suggestion |
+| <Btn b="L3" /> | Languages menu |
+| Right stick | Move the text caret (in the grid layout) |
+
+## Layouts
+
+**Settings › Keyboard › Keyboard layout** chooses between:
+
+- **Together** (the default): a QWERTY grid with ñ and one highlight.
+- **Two halves**: the keys split in a left and a right half, each with its own highlight. The left stick and <Btn b="LT" /> move and type on the left half; the right stick and <Btn b="RT" /> on the right one.
+
+## Suggestions
+
+A strip of three words sits above the keys. <Btn b="View" /> takes the first one; in the grid layout, go up from the top row and press <Btn b="A" /> to take another. Taking a suggestion replaces the word you were typing and adds a space.
+
+- **Accents restored.** Type without accents and the accented word is offered: *esta* → *está*, *cancion* → *canción*, *ano* → *año*.
+- **Context.** The previous word decides which words come first.
+- **Next word.** After a space, with nothing typed yet, the strip predicts the next word.
+- **It learns from you.** Words you type often, and the words that tend to follow them, move up; names and slang that aren't in the dictionary are learned too.
+
+Suggestions are in Spanish by default. <Btn b="L3" /> opens the languages menu, where English can be added (both can be on). **Settings › Keyboard** has the same options: **Suggest words**, **Remember my words**, **Keyboard languages** and **Delete remembered words**.
+
+<Aside title="What it never learns">
+Nothing is learned or suggested in password fields. Words typed in consoles (Command Prompt, PowerShell, Windows Terminal) and remote desktops are never learned either. Learned words are stored encrypted for your Windows user only; see [Privacy and security](../../how-it-works/privacy-security/#learned-words).
+</Aside>
+
+## Forget learned words
+
+In the languages menu (<Btn b="L3" />), **Forget learned words** asks for a second press and then deletes everything the keyboard learned. **Settings › Keyboard › Delete remembered words** does the same.

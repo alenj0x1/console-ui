@@ -1,0 +1,63 @@
+---
+title: Privacidad y seguridad
+description: Qué guarda Console UI, qué envía y qué no hace.
+---
+
+Console UI funciona en tu computadora. No necesita cuenta, no guarda registro de lo que escribes y solo se conecta a internet para lo que aparece en esta página.
+
+## Palabras aprendidas
+
+El teclado aprende las palabras que usas (y qué palabra suele seguir a cuál) para sugerirlas primero. Como eso puede incluir texto privado, se trata con cuidado:
+
+- **Cifradas para tu usuario de Windows.** Las palabras aprendidas se guardan en `learned.bin`, cifradas con la protección de datos de Windows (DPAPI) solo para el usuario actual de Windows: otro usuario de la computadora, o alguien que copie el archivo a otro lado, no puede leerlas.
+- **Nunca en campos de contraseña.** Las sugerencias se apagan y no se aprende nada mientras un campo de contraseña tiene el foco. Esto se revisa al abrir el teclado, después de Intro y otra vez antes de guardar cada palabra; si la revisión falla, el campo se trata como contraseña.
+- **Nunca en consolas ni escritorios remotos.** El Símbolo del sistema, PowerShell, Windows Terminal y las ventanas de escritorio remoto no marcan sus pedidos de contraseña, así que no se aprende nada de lo que escribas en ellos.
+- **Solo palabras.** Solo se aprenden palabras hechas de letras, de hasta 32 caracteres, y la lista tiene un tope (20.000 palabras y 60.000 pares de palabras).
+- **Guardado seguro.** El archivo se escribe cada 15 segundos y al cerrar la app, mediante un archivo temporal que reemplaza al anterior, así que un cierre inesperado nunca lo deja a medio escribir.
+- **Tú decides.** **Ajustes › Teclado › Recordar mis palabras** deja de aprender, y **Borrar palabras recordadas** (u **Olvidar palabras aprendidas** en el teclado) borra el archivo.
+
+## Carátulas y letras de internet
+
+Windows solo da una carátula pequeña y ninguna letra de lo que suena, así que Console UI las busca por el título y el artista de la canción:
+
+| Qué | Dónde |
+|---|---|
+| Carátula en alta resolución | Primero la búsqueda de Deezer, luego la de Apple (iTunes) |
+| Letra sincronizada | LRCLIB |
+
+- Solo se contacta a estos servicios, por HTTPS, sin seguir redirecciones y con límites de tiempo y tamaño. Las imágenes de las carátulas solo se descargan de los servidores de imágenes propios de Deezer y Apple.
+- Un resultado se usa solo cuando su título y su artista coinciden con la canción.
+- Las carátulas se guardan en la carpeta de datos de la app, así que cada una se descarga una sola vez. Las letras se guardan solo en memoria, nunca en el disco.
+- Ninguno de estos servicios necesita cuenta.
+
+**Ajustes › General › Carátulas y letras de internet** apaga todo esto: entonces el título y el artista de la canción no se envían a ningún lado, y Multimedia muestra la carátula que da Windows.
+
+## Tráileres de los juegos
+
+Los tráileres de los juegos de Steam vienen de la tienda de Steam: solo se contacta a los servidores propios de Steam, por HTTPS, sin redirecciones y con límites de tiempo y tamaño. Cada tráiler se descarga una vez y se guarda en la carpeta de datos de la app.
+
+## Ventanas de administrador
+
+Windows impide que una app normal envíe entradas a una ventana que corre como administrador (una protección llamada UIPI). Sobre una ventana así, el puntero, los clics y las teclas del control no hacen nada. Console UI no pide permisos de administrador para saltarse eso. En cambio, cuando una ventana de administrador está al frente, un aviso explica por qué el control no responde, y <kbd>B</kbd> le pasa el foco a la siguiente ventana normal para que puedas seguir. Para la ventana de administrador en sí, usa un mouse o un teclado.
+
+## HidHide
+
+Con [HidHide](../../getting-started/hidhide/) instalado, Console UI oculta el control a las demás apps mientras maneja Windows:
+
+- Cambia la configuración de HidHide con la herramienta de línea de comandos del propio HidHide, que no necesita permisos de administrador, y solo para sí misma: agrega su propio programa a la lista de permitidos y oculta los controles de juego conectados.
+- Los juegos vuelven a ver el control en el modo juego y cuando Console UI se cierra. Un pequeño proceso vigilante, que arranca con la app, espera a que Console UI termine y luego vuelve a mostrar el control, así que nunca queda oculto, ni siquiera después de un cierre inesperado.
+- El instalador solo instala HidHide si se lo pides, desde su versión oficial, después de comprobar el SHA-256 del archivo y su firma de Nefarius. El instalador de HidHide pide permisos de administrador; el de Console UI, nunca.
+
+## Dentro de la app
+
+- **Cada pantalla solo hace lo suyo.** Los comandos que escriben, abren programas, leen las palabras aprendidas o apagan la computadora solo responden a las ventanas que los usan.
+- **Solo lo que se encontró.** Inicio abre juegos y apps, y reproduce fondos, por un identificador del último escaneo, nunca por una ruta, así que no se puede abrir ni servir nada más a través de él.
+- **Sin carpetas de red como fondos.** Solo se pueden agregar carpetas de las unidades propias de esta computadora.
+- **Las imágenes de las ventanas quedan en memoria.** Las imágenes de las ventanas abiertas en el centro de control se toman al abrirlo y nunca se guardan.
+- **La música viene de Windows.** Lo que suena se lee de los controles multimedia propios de Windows; no hace falta cuenta, clave ni complemento del reproductor.
+
+## El registro de diagnóstico
+
+`events.log`, en la carpeta de datos de la app, registra lo que hizo la app para ayudar a encontrar problemas: cambios de modo, programas abiertos y en qué programa escribió el teclado. Nunca el texto en sí. Se recorta para que nunca pase de un par de miles de líneas.
+
+Dónde está cada uno de estos archivos: [Ubicación de los archivos](../../reference/files/).

@@ -1,0 +1,63 @@
+---
+title: Privacy and security
+description: What Console UI stores, what it sends, and what it does not do.
+---
+
+Console UI works on your PC. It needs no account, keeps no record of what you type and only goes online for the things listed on this page.
+
+## Learned words
+
+The keyboard learns the words you use (and which word tends to follow which) to suggest them first. Since that can include private text, it is handled carefully:
+
+- **Encrypted for your Windows user.** Learned words are saved in `learned.bin`, encrypted with Windows' data protection (DPAPI) for the current Windows user only: another user of the PC, or someone who copies the file elsewhere, can't read it.
+- **Never in password fields.** Suggestions are off and nothing is learned while a password field has the focus. This is checked when the keyboard opens, after Enter and again before each word is saved; if the check fails, the field is treated as a password.
+- **Never in consoles or remote desktops.** Command Prompt, PowerShell, Windows Terminal and remote desktop windows don't mark their password prompts, so nothing typed in them is learned.
+- **Only words.** Only words made of letters, up to 32 characters, are learned, and the list is capped (20,000 words and 60,000 word pairs).
+- **Saved safely.** The file is written every 15 seconds and when the app closes, through a temporary file that replaces the old one, so a crash never leaves it half written.
+- **Yours to turn off.** **Settings › Keyboard › Remember my words** stops learning, and **Delete remembered words** (or **Forget learned words** on the keyboard) deletes the file.
+
+## Covers and lyrics from the internet
+
+Windows only gives a small cover and no lyrics for what is playing, so Console UI looks them up by the song's title and artist:
+
+| What | Where |
+|---|---|
+| High-resolution cover | Deezer's search first, then Apple's (iTunes) |
+| Synced lyrics | LRCLIB |
+
+- Only these services are contacted, over HTTPS, without following redirects, with time and size limits. Cover pictures are only downloaded from Deezer's and Apple's own image hosts.
+- A result is used only when both its title and artist match the song.
+- Covers are saved in the app data folder so each one is downloaded once. Lyrics are kept in memory only, never written to disk.
+- None of these services needs an account.
+
+**Settings › General › Covers and lyrics from the internet** turns all of this off: then the song's title and artist are not sent anywhere, and Media shows the cover Windows provides.
+
+## Game trailers
+
+Trailers for Steam games come from the Steam store: only Steam's own hosts are contacted, over HTTPS, without redirects and with time and size limits. Each trailer is downloaded once and kept in the app data folder.
+
+## Administrator windows
+
+Windows blocks a normal app from sending input to a window that runs as administrator (a protection called UIPI). Over such a window, the pointer, clicks and keys from the controller do nothing. Console UI doesn't ask for administrator rights to get around it. Instead, when an administrator window is in front, a notice says why the controller doesn't respond, and <kbd>B</kbd> hands the focus to the next normal window so you can carry on. Use a mouse or keyboard for the administrator window itself.
+
+## HidHide
+
+With [HidHide](../../getting-started/hidhide/) installed, Console UI hides the controller from other apps while it drives Windows:
+
+- It changes HidHide's settings through HidHide's own command-line tool, which doesn't need administrator rights, and only for itself: it adds its own program to the allowed list and hides the connected game controllers.
+- Games see the controller again in game mode and when Console UI closes. A tiny watchdog process, started with the app, waits for Console UI to end and then shows the controller again, so it is never left hidden, even after a crash.
+- The installer only installs HidHide when you ask for it, from its official release, after checking the file's SHA-256 and its Nefarius signature. HidHide's own installer asks for administrator rights; Console UI's never does.
+
+## Inside the app
+
+- **Each screen can only do its own job.** Commands that type, start programs, read learned words or power off the PC answer only the windows that use them.
+- **Only what was found.** Home starts games and apps, and plays backgrounds, by an id from the last scan, never by a path, so nothing else can be launched or served through it.
+- **No network folders as backgrounds.** Only folders on this PC's own drives can be added.
+- **Window pictures stay in memory.** The pictures of open windows in the control center are taken when it opens and never saved.
+- **The music comes from Windows.** What is playing is read from Windows' own media controls; no account, key or player add-on is needed.
+
+## The diagnostic log
+
+`events.log` in the app data folder records what the app did, to help find problems: mode changes, launches and which program the keyboard typed into. Never the text itself. It is trimmed so it never grows past a couple of thousand lines.
+
+Where all these files live: [File locations](../../reference/files/).

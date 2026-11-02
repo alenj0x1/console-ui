@@ -1,0 +1,23 @@
+---
+title: Línea de comandos
+description: Las opciones de la app y del instalador.
+---
+
+## La app
+
+`console-ui.exe` (instalada en `%LOCALAPPDATA%\Console UI`):
+
+| Comando | Qué hace |
+|---|---|
+| `console-ui.exe` | Inicia la app y abre [Inicio](../../guide/home/). Si la app ya está abierta, muestra su Inicio en lugar de abrir una segunda copia |
+| `console-ui.exe --background` | Inicia la app en silencio, solo en la bandeja. Si ya está abierta, no hace nada. Es lo que usa **Iniciar con Windows** |
+| `console-ui.exe --guard <pid>` | Lo usa la propia app: el vigilante que vuelve a mostrar el control a los juegos cuando la app termina (solo con [HidHide](../../getting-started/hidhide/)). No está pensado para ejecutarse a mano |
+
+## El instalador
+
+`Console UI_X.Y.Z_x64-setup.exe`:
+
+| Opción | Qué hace |
+|---|---|
+| `/S` | Instala en silencio, sin ninguna página |
+| `/HIDHIDE` | Con `/S`, también instala HidHide (ver [Instalar](../../getting-started/install/#instalación-silenciosa)) |

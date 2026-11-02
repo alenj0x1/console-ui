@@ -1,0 +1,66 @@
+---
+title: Releases
+description: How a version is numbered and released with scripts/release.py.
+---
+
+import { Steps } from "@astrojs/starlight/components";
+
+Console UI uses [semantic versioning](https://semver.org/): `major.minor.patch`. The version lives in `Cargo.toml` (`[workspace.package]`) and `app/tauri.conf.json`; `scripts/release.py` changes both together. Each version is an annotated `vX.Y.Z` tag.
+
+| Bumps | When, since the last version, there is… |
+|---|---|
+| Major (minor while at 0.x) | an incompatible change (`!` or `BREAKING CHANGE`) |
+| Minor | at least one `feat` |
+| Patch | anything else (fixes, polish…) |
+
+## Release
+
+<Steps>
+
+1. Check that **Unreleased** in `CHANGELOG.md` and **Sin publicar** in `CHANGELOG.es.md` cover everything that changed, in both languages. The working tree must be clean.
+
+2. See which number comes next, from the commits since the last tag (with no tag yet, it suggests the current version):
+
+   ```sh
+   python scripts/release.py --next
+   ```
+
+3. Try it, then release:
+
+   ```sh
+   python scripts/release.py 0.1.0 --dry-run
+   python scripts/release.py 0.1.0
+   ```
+
+   `--dry-run` only prints the change and the notes. The real run:
+
+   - sets the version in `Cargo.toml` and `app/tauri.conf.json` and updates `Cargo.lock`;
+   - turns **Unreleased** and **Sin publicar** into `## [0.1.0] - <date>` in both changelogs and adds the version's link (a compare link from the previous version, or the tag for the first one);
+   - commits `chore(release): 0.1.0` and creates the annotated tag `v0.1.0`, whose message is the notes in English followed by the Spanish ones.
+
+   It doesn't push.
+
+4. Publish the commit and the tag:
+
+   ```sh
+   git push --follow-tags
+   ```
+
+5. Build the installer (see [Build from source](../../getting-started/from-source/)) and attach `target/release/bundle/nsis/Console UI_0.1.0_x64-setup.exe` to the version's release on [GitHub](https://github.com/alenj0x1/console-ui/releases), with the tag's notes.
+
+</Steps>
+
+## The changelog on this site
+
+The [Changelog](../../changelog/) page is copied from `CHANGELOG.md` and `CHANGELOG.es.md` every time the site is built or served (`scripts/sync-changelog.mjs`, on `predev` and `prebuild`). It shows released versions only: the **Unreleased** / **Sin publicar** section and the line that explains it stay on GitHub.
+
+## This site
+
+```sh
+cd docs
+npm ci
+npm run dev      # http://localhost:4321
+npm run build    # into docs/dist, failing on any broken link
+```
+
+For GitHub Pages, build with `BASE=/console-ui/docs`: the landing page lives at the root of `https://alenj0x1.github.io/console-ui/` and the docs under `/docs`.

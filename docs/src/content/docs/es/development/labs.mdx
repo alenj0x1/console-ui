@@ -1,0 +1,109 @@
+---
+title: Laboratorios
+description: Los experimentos detrás del puntero, el teclado y el ocultamiento del control, con sus resultados.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+Las decisiones de diseño que cambian cómo se siente Console UI se midieron con una persona real y un control antes de adoptarlas. Cada laboratorio vive en `labs/` con sus notas (`NOTES.md`) y sus resultados sin procesar (`results/*.json`).
+
+| Laboratorio | Pregunta | Cómo ejecutarlo |
+|---|---|---|
+| [Laboratorio del cursor](#laboratorio-del-cursor) | ¿Qué perfil de palanca a puntero es el más rápido y se siente mejor? | `target/release/cursor-lab.exe` |
+| [Laboratorio del teclado](#laboratorio-del-teclado) | ¿Qué distribución de teclado escribe más rápido, y ayudan las sugerencias? | `target/release/console-ui.exe --lab` (`--exp=suggest` para la comparación de sugerencias) |
+| [Laboratorio de HidHide](#laboratorio-de-hidhide) | ¿Ocultar el control evita que las apps de Windows peleen con el puntero? | Comprobaciones automáticas más una prueba con el control |
+
+Todas las pruebas fueron el 2026-11-01, con un control compatible con Xbox.
+
+## Laboratorio del cursor
+
+`labs/cursor-lab` es un programa pequeño propio. Muestra objetivos para hacer clic de tres tamaños (radio de 14, 24 y 40 px, separados de 250 a 900 px) y mide, por objetivo, el tiempo de movimiento, el rendimiento de Fitts (bits por segundo), los fallos y la eficiencia del recorrido, además de una calificación de 1 a 5 por bloque. El orden de los perfiles se mezcla y se oculta detrás de un número.
+
+**Comprobaciones de base** (i5-12400, Windows 10 19045). El posicionamiento absoluto falló 0 de 4 puntos; la acumulación de menos de un píxel quedó dentro de ±1 px; `padd` en reposo con un control usó menos de 0,2 % de un núcleo y 8,3 MB. El bucle corrió cada 5,0 ms (p50) y 5,08 ms (p99), con un paso que costó 8 µs (p50).
+
+### Prueba 1: tres curvas
+
+| Perfil | Media | Rendimiento | Fallos/objetivo | Eficiencia del recorrido | Calificación |
+|---|---|---|---|---|---|
+| `lineal` | 4056 ms | 1,32 b/s | 0,71 | 50 % | 3,5 |
+| `curva` | 3908 ms | 1,40 b/s | 0,21 | 46 % | 2,5 |
+| `curva-turbo` | 4543 ms | 1,15 b/s | 0,21 | 43 % | 2,5 |
+
+Sin ganador: las diferencias quedaron dentro del ruido, todos los perfiles se pasaban cerca del objetivo y la velocidad se sentía impredecible («a veces era más lento, a veces más rápido»).
+
+### Prueba 2: `curva` contra `asistido`
+
+De la prueba 1 salió `asistido`: una aceleración predecible que crece de forma pareja y se reinicia al soltar, un freno sobre elementos pulsables (UI Automation, solo mientras el impulso está por debajo de la mitad) y una pausa de 90 ms después de un clic. La consulta de UI Automation tardó 1,4 ms en promedio, y hacerla solo cuando la palanca se movió en el último segundo bajó `padd` en reposo de 0,47 % a menos de 0,1 % de un núcleo.
+
+| Perfil | Media | Mediana | Rendimiento | Fallos/objetivo | Eficiencia del recorrido | Calificación |
+|---|---|---|---|---|---|---|
+| `curva` | 6580 ms | 3750 ms | 1,26 b/s | 0,60 | 41 % | 1,0 |
+| `asistido` | 1820 ms | 1583 ms | 2,25 b/s | 0,02 | 63 % | 3,3 |
+
+Por tamaño de objetivo (media): 28 px 11,1 s → 2,5 s, 48 px 5,4 s → 1,7 s, 80 px 2,1 s → 1,4 s. `asistido` ganó todos los bloques puntuados y todas las calificaciones. **Decisión:** `asistido` es el perfil que usa la app.
+
+**Ajuste en el escritorio.** En el escritorio real el impulso (×2,4 desde 55 % de inclinación en 0,7 s) se sentía demasiado rápido, porque los objetivos del laboratorio estaban cerca y casi nunca lo activaban. Quedó en ×2,0 desde 65 % de inclinación en 0,85 s (velocidad máxima de 1,6 altos de pantalla por segundo); la velocidad base, la curva, el freno y la pausa al hacer clic quedaron como se midieron. Este ajuste todavía no se volvió a medir en el laboratorio.
+
+## Laboratorio del teclado
+
+`console-ui.exe --lab` abre una prueba de escritura: la ventana real del teclado escribe en la ventana del laboratorio, que mantiene el foco. Se mezclan 24 frases en español; cada distribución tiene un bloque de calentamiento y luego bloques puntuados en orden ABBA. Por frase: palabras por minuto, tasa de errores (distancia de edición), pulsaciones o acciones del control por carácter, y una calificación de 1 a 5 por bloque.
+
+### Prueba 1: cuadrícula contra dos mitades
+
+| Distribución | PPM | Tasa de errores | Pulsaciones/carácter | Calificación |
+|---|---|---|---|---|
+| Cuadrícula | 11,2 | 2,2 % | 1,09 | 4,0 |
+| Dos mitades | 8,2 | 2,1 % | 1,10 | 3,5 |
+
+La cuadrícula fue un 36 % más rápida con la misma precisión. Casi todos los errores fueron tildes que faltaban: mantener para poner tilde casi no se usó. **Decisión:** la cuadrícula es la distribución por defecto y dos mitades queda como opción; el siguiente paso fueron sugerencias que devuelven las tildes.
+
+### Prueba 2: sin y con sugerencias (`--exp=suggest`)
+
+| Variante | PPM | Tasa de errores | Acciones/letra | Calificación |
+|---|---|---|---|---|
+| Sin | 10,9 | 2,4 % | 5,0 | 1,5 |
+| Con | 12,8 | 0 % | 4,0 | 4,0 |
+
+Sugerencias: +17 % de velocidad, −19 % de acciones del control y ninguna tilde faltante. Los comentarios pidieron mejores palabras e inglés solo cuando se elige.
+
+### Calidad de las sugerencias sin conexión
+
+`node labs/keyboard-lab/suggest_eval.js es` escribe 30 frases nuevas sin tildes y toma la palabra buscada en cuanto aparece entre las 3 primeras.
+
+| Diccionario y orden | Ahorro de pulsaciones | Buscada primera |
+|---|---|---|
+| Español + inglés ×0,2, solo frecuencia | 30,2 % | 51,8 % |
+| Solo español, 50 mil palabras | 30,8 % | 51,8 % |
+| + contexto de la palabra anterior (pares de Tatoeba) | 43,0 % | 55,0 % |
+| + predicción de la siguiente palabra tras un espacio | 45,6 % | 46,1 % |
+
+El tamaño del diccionario casi no importó; el contexto fue la gran palanca. Eso llevó a las sugerencias actuales: datos por idioma, orden por 0,95 × P(palabra | anterior) + 0,05 × frecuencia, aprendizaje de la persona y solo español por defecto.
+
+| Sugerencias actuales, español | Ahorro |
+|---|---|
+| Sin nada aprendido | 42,2 % |
+| Aprendiendo durante la misma pasada | 41,9 % |
+| Después de haber escrito las frases una vez | 71,9 % |
+
+La sugerencia más lenta tardó 2,6 ms (español) y 10,8 ms (español + inglés).
+
+## Laboratorio de HidHide
+
+**Problema.** El menú Inicio, Configuración y otras apps de Windows leen el control y mueven su propio foco con la palanca izquierda mientras el puntero también se mueve, así que una lista desplazada vuelve a saltar.
+
+**Hipótesis.** Ocultar el control a todas las apps menos Console UI mientras maneja el escritorio, y volver a mostrarlo en el modo juego, elimina el conflicto y mantiene funcionando los juegos.
+
+### Prueba 1: comprobaciones automáticas
+
+- Hay que ocultar tanto el dispositivo HID del control como su contenedor USB, porque XInput abre el contenedor.
+- Una copia permitida del programa lee XInput con el control oculto; una copia idéntica que no está permitida recibe «no conectado». Volver a mostrarlo restaura las dos.
+- Ocultar y mostrar tardan 21 y 22 ms, incluido el propio proceso de la herramienta de línea de comandos.
+- Al matar la app de golpe, el vigilante volvió a mostrar el control en menos de 2 s.
+
+### Prueba 2: con un control
+
+Ocultarlo no detuvo al menú Inicio al principio: un componente de Windows había abierto el control al iniciar sesión, antes de que se ocultara, y HidHide solo bloquea las aperturas nuevas. Desconectar y volver a conectar el control lo arregló, una vez por inicio de sesión. Reiniciar el dispositivo automáticamente necesitaría permisos de administrador.
+
+<Aside>
+El instalador de HidHide usado en el laboratorio (`labs/hidhide-lab/installer/`) no está en el repositorio; su tamaño, SHA-256 y firmante están en las notas del laboratorio, y los mismos valores están fijados en `app/nsis/hidhide.ps1`.
+</Aside>

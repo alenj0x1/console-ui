@@ -1,0 +1,53 @@
+---
+title: Ajustes
+description: La pestaña de ajustes de Inicio, manejada con el control.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+import Btn from "../../../../components/Btn.astro";
+
+**Ajustes** es la última pestaña de [Inicio](../home/). Cada opción tiene un nombre en palabras de todos los días y una línea que dice qué cambia, y las opciones de Puntero y Botones muestran una vista previa animada al lado, con el valor anterior atenuado para comparar. Los cambios se aplican al instante, en todas las ventanas; no hay nada que guardar.
+
+- **Las opciones de sí o no** se cambian con <Btn b="A" />.
+- **Las cantidades** (velocidades, tamaños, tiempos) son deslizadores: izquierda y derecha en la cruceta. Al mantener, el deslizador se detiene un momento en los niveles habituales, así es fácil caer en ellos, y nunca se queda trabado ahí.
+- <Btn b="B" /> vuelve atrás.
+
+La lista completa con cada valor y su valor de entrada está en la [referencia de ajustes](../../reference/settings/). Estas son las categorías:
+
+## Apariencia
+
+**Color principal**, **Alto contraste**, **Tamaño de letra**, **Marco de selección más grueso**, **Fondo**, **Mostrar la letra de la canción**, **Imágenes de los juegos** y **Forma de Inicio**. Mira [Accesibilidad](../accessibility/) y [Personalizar](../personalize/).
+
+## Botones
+
+**Distribución** (dos manos, mano izquierda o mano derecha), **Personalizar botones**, **Color del control**, **Aceptar con B** (aceptar con <Btn b="B" /> y volver con <Btn b="A" />), **Puntero con la palanca derecha** (la palanca derecha mueve el puntero y la izquierda desplaza) y **Tiempo para mantener presionado** (cuánto se mantienen <Btn b="Menu" /> y <Btn b="View+Menu" />). Mira [Accesibilidad](../accessibility/#distribuciones-para-una-mano).
+
+<Aside title="Cambios que preguntan antes">
+Activar **Aceptar con B**, **Puntero con la palanca derecha** o una distribución para una mano cambia cómo respondes, así que la app pregunta si dejas el cambio. Sin respuesta en 10 segundos, vuelve sola a como estaba.
+</Aside>
+
+## Puntero
+
+**Velocidad del puntero**, **Ayuda para apuntar**, **Ignorar movimientos pequeños**, **Velocidad al desplazar** y **Desplazar al revés**. Mira [Puntero](../cursor/).
+
+## Teclado
+
+**Forma del teclado**, **Sugerir palabras**, **Recordar mis palabras**, **Idiomas del teclado** y **Borrar palabras recordadas** (pide una segunda pulsación). Mira [Teclado](../keyboard/).
+
+## Juegos
+
+**Tráileres con sonido** y **Dejar el control al juego que abras** (el juego que abres recibe el control; mira [Modo juego](../game-mode/)).
+
+## Modo TV
+
+**Modo TV**, **Pantalla de la TV** y **Sonido en Modo TV**. Mira [Modo TV](../tv-mode/).
+
+## General
+
+- **Idioma**: el idioma de la interfaz, **Español** o **English**. Empieza en el de Windows (inglés si Windows está en inglés, si no español) y cambia al instante en todas las ventanas, también en el menú de la bandeja. Los idiomas de las sugerencias del teclado son otra opción (**Idiomas del teclado**).
+- **Iniciar con Windows**: abre Console UI en silencio en la bandeja cuando inicias sesión.
+- **Carátulas y letras de internet**: carátulas en alta resolución y letras; mira [Privacidad y seguridad](../../how-it-works/privacy-security/#carátulas-y-letras-de-internet).
+- **Vibrar al cambiar de modo**: el control vibra cuando pasa a un juego y cuando vuelve el puntero.
+- **Forma de este menú**: Ajustes como **Lista** o como **Cuadros** (una categoría a la vez, en cuadros grandes).
+- **Practicar con el control**: repite la [bienvenida](../../getting-started/first-run/#la-bienvenida).
+- **Dejar todo como venía**: vuelve todas las opciones a como venían, tras una segunda pulsación. Las apps fijadas, la pestaña Multimedia, las carpetas de fondos y las palabras aprendidas se quedan; **Iniciar con Windows** se apaga.

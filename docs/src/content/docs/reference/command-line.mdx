@@ -1,0 +1,23 @@
+---
+title: Command line
+description: The flags of the app and of the installer.
+---
+
+## The app
+
+`console-ui.exe` (installed in `%LOCALAPPDATA%\Console UI`):
+
+| Command | What it does |
+|---|---|
+| `console-ui.exe` | Starts the app and opens [Home](../../guide/home/). If the app is already running, brings up its Home instead of starting a second copy |
+| `console-ui.exe --background` | Starts the app quietly, in the tray only. If it is already running, does nothing. This is what **Start with Windows** uses |
+| `console-ui.exe --guard <pid>` | Used by the app itself: the watchdog that shows the controller to games again when the app ends (only with [HidHide](../../getting-started/hidhide/)). Not meant to be run by hand |
+
+## The installer
+
+`Console UI_X.Y.Z_x64-setup.exe`:
+
+| Flag | What it does |
+|---|---|
+| `/S` | Installs silently, without any page |
+| `/HIDHIDE` | With `/S`, also installs HidHide (see [Install](../../getting-started/install/#silent-install)) |

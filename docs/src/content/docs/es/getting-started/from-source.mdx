@@ -1,0 +1,45 @@
+---
+title: Compilar desde el código
+description: Compila tú mismo la app y el instalador de Windows.
+---
+
+import { Steps } from "@astrojs/starlight/components";
+
+## Qué necesitas
+
+- Windows 10 u 11 de 64 bits.
+- [Rust](https://rustup.rs) con una versión que admita la edición 2024, y las herramientas de compilación de C++ de Visual Studio que Rust usa en Windows.
+- [Node.js](https://nodejs.org), solo para compilar el instalador.
+- [Git](https://git-scm.com).
+
+## Compilar
+
+<Steps>
+
+1. Descarga el código:
+
+   ```sh
+   git clone https://github.com/alenj0x1/console-ui.git
+   cd console-ui
+   ```
+
+2. Compila la app:
+
+   ```sh
+   cargo build --release
+   ```
+
+   Esto deja `target/release/console-ui.exe`, la app, que abre Inicio. En las [opciones de línea de comandos](../../reference/command-line/) están las otras formas de iniciarla.
+
+3. Compila el instalador:
+
+   ```sh
+   npm --prefix app ci
+   npm --prefix app run build
+   ```
+
+   El instalador queda en `target/release/bundle/nsis/Console UI_X.Y.Z_x64-setup.exe`. Instálalo como en [Instalación](../install/).
+
+</Steps>
+
+Los datos de sugerencias que usa el teclado (`app/ui/data/`) ya están en el repositorio, así que compilar nunca los descarga. Cómo se vuelven a generar está en [Estructura del proyecto](../../development/structure/#datos-de-las-sugerencias).

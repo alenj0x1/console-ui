@@ -1,0 +1,52 @@
+---
+title: Accessibility
+description: High contrast, text size, one-hand layouts and buttons you can reassign.
+---
+
+import Btn from "../../../components/Btn.astro";
+
+## Seeing it from the couch
+
+All in **Settings › Appearance**:
+
+- **High contrast**: a plain black background behind everything, white text and lines, and a thick yellow frame on what is selected. It turns on by itself when Windows uses a high contrast theme, and you can still turn it on or off here.
+- **Text size**: from 100 to 150 %, for Home and the control center. Pictures, covers and tiles keep their size when the text grows, so every tab still fits at 150 %.
+- **Thicker selection frame**: a wider frame around what is selected.
+- **Main color**: the colour of the selection frame and the main buttons, if blue isn't the easiest for you to see.
+
+With Windows' **Show animations** turned off, Console UI keeps backgrounds and previews still and doesn't play trailers.
+
+## One-hand layouts
+
+**Settings › Buttons › Layout** has a layout for both hands (the default) and one for each hand. With one hand, everything moves to that side:
+
+| Action | Left hand | Right hand |
+|---|---|---|
+| Move the pointer | Left stick | Right stick |
+| Click | <Btn b="LB" /> | <Btn b="RB" /> |
+| Right click | <Btn b="LT" /> | <Btn b="RT" /> |
+| Go back (<Btn b="B" />) | <Btn b="L3" /> | <Btn b="R3" /> |
+| Scroll up / down | <Btn b="up" /> / <Btn b="down" /> | <Btn b="Y" /> / <Btn b="A" /> |
+| Back / forward | <Btn b="left" /> / <Btn b="right" /> | <Btn b="X" /> / <Btn b="B" /> |
+| Control center in a game | Hold <Btn b="View" /> | Hold <Btn b="Menu" /> |
+
+The layout applies everywhere: the pointer, Home and the keyboard. The button hints across the app show the button that does each action now. Choosing a layout asks you to confirm it, and goes back by itself after 10 seconds without an answer.
+
+## Your own buttons
+
+**Settings › Buttons › Customize buttons** shows a drawing of the controller with every button you can reassign around it and what it does. The focused one lights up and a line joins it to its row. Choose one to see its actions next to the drawing, with its original action marked.
+
+- You can reassign <Btn b="A" /> <Btn b="B" /> <Btn b="X" /> <Btn b="Y" />, <Btn b="LB" /> <Btn b="RB" />, <Btn b="LT" /> <Btn b="RT" />, <Btn b="L3" /> <Btn b="R3" /> and the four directions of the d-pad.
+- Each can do what any of those does, scroll the page up or down, or nothing.
+- <Btn b="View" /> and <Btn b="Menu" /> stay as they are: they open Home and the control center, the way back from anything.
+- Your changes sit on top of the chosen layout; picking a layout again starts clean.
+
+**Controller color** changes the colours of that drawing: twelve dark colours, some with a fine texture (dots, lines, grid, stripes, honeycomb, carbon fibre, rings), or **Random**, a random combination, with **Another mix** and **Previous mix** a press away.
+
+## Other button options
+
+- **Accept with B**: <Btn b="B" /> confirms and <Btn b="A" /> goes back. To undo it, come back to this option and press <Btn b="B" />.
+- **Pointer on the right stick**: the right stick moves the pointer and the left one scrolls.
+- **Hold time**: how long a hold lasts, from 300 to 1200 ms.
+
+Like the one-hand layouts, the first two ask you to confirm and undo themselves after 10 seconds without an answer.

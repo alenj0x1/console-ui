@@ -1,0 +1,53 @@
+---
+title: Settings
+description: The settings tab on Home, driven with the controller.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+import Btn from "../../../components/Btn.astro";
+
+**Settings** is the last tab of [Home](../home/). Every option has an everyday name and a line that says what it changes, and the Pointer and Buttons options show an animated preview next to them, with the previous value faded in for comparison. Changes apply at once, in every window; there is nothing to save.
+
+- **On / off options** switch with <Btn b="A" />.
+- **Amounts** (speeds, sizes, times) are sliders: left and right on the d-pad. Held, the slider rests a moment on the usual levels, so they are easy to land on, and never stops there for good.
+- <Btn b="B" /> goes back.
+
+The full list with every value and default is in the [settings reference](../../reference/settings/). These are the categories:
+
+## Appearance
+
+**Main color**, **High contrast**, **Text size**, **Thicker selection frame**, **Background**, **Show song lyrics**, **Game pictures** and **Home layout**. See [Accessibility](../accessibility/) and [Customize](../personalize/).
+
+## Buttons
+
+**Layout** (both hands, left hand or right hand), **Customize buttons**, **Controller color**, **Accept with B** (confirm with <Btn b="B" /> and go back with <Btn b="A" />), **Pointer on the right stick** (the right stick moves the pointer and the left one scrolls) and **Hold time** (how long <Btn b="Menu" /> and <Btn b="View+Menu" /> are held). See [Accessibility](../accessibility/#one-hand-layouts).
+
+<Aside title="Changes that ask first">
+Turning on **Accept with B**, **Pointer on the right stick** or a one-hand layout changes how you answer, so the app asks whether to keep it. With no answer in 10 seconds it goes back by itself.
+</Aside>
+
+## Pointer
+
+**Pointer speed**, **Aim assist**, **Ignore small movements**, **Scroll speed** and **Reverse scrolling**. See [Pointer](../cursor/).
+
+## Keyboard
+
+**Keyboard layout**, **Suggest words**, **Remember my words**, **Keyboard languages** and **Delete remembered words** (asks for a second press). See [Keyboard](../keyboard/).
+
+## Games
+
+**Trailers with sound** and **Give the controller to the game you open** (a game you open gets the controller; see [Game mode](../game-mode/)).
+
+## TV mode
+
+**TV mode**, **TV screen** and **Sound in TV mode**. See [TV mode](../tv-mode/).
+
+## General
+
+- **Language**: the interface language, **Español** or **English**. It starts in Windows' own (English when Windows is in English, Spanish otherwise) and changes at once in every window, the tray menu included. The keyboard's suggestion languages are a separate option (**Keyboard languages**).
+- **Start with Windows**: starts Console UI quietly in the tray when you sign in.
+- **Covers and lyrics from the internet**: high-resolution covers and lyrics; see [Privacy and security](../../how-it-works/privacy-security/#covers-and-lyrics-from-the-internet).
+- **Vibrate when the mode changes**: the controller rumbles when it passes to a game and when the pointer comes back.
+- **Menu layout**: Settings as a **List** or as **Tiles** (one category at a time, in large tiles).
+- **Practice with the controller**: repeats the [welcome](../../getting-started/first-run/#the-welcome).
+- **Put everything back as it came**: puts every option back as it came, after a second press. Pinned apps, the Media tab, background folders and learned words stay; **Start with Windows** turns off.

@@ -1,0 +1,5 @@
+/* The app's own fonts (app/ui/fonts, SIL Open Font License 1.1): Figtree for text, DM Mono for code. */
+@font-face { font-family: "Figtree"; src: url("../fonts/figtree-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Figtree"; src: url("../fonts/figtree-latin-600-normal.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "Figtree"; src: url("../fonts/figtree-latin-700-normal.woff2") format("woff2"); font-weight: 700 800; font-display: swap; }
+@font-face { font-family: "DM Mono"; src: url("../fonts/dm-mono-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-display: swap; }

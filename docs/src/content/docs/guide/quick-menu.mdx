@@ -1,0 +1,20 @@
+---
+title: Quick menu
+description: The round menu you open by holding View with the pointer.
+---
+
+import Btn from "../../../components/Btn.astro";
+
+With the pointer, hold <Btn b="View" /> to show a round menu in the middle of the screen you are on. Aim at a slice with the right stick and let go of <Btn b="View" /> to pick it. With the stick back in the middle, letting go does nothing.
+
+| Slice | What it does |
+|---|---|
+| **Keyboard** | Opens the on-screen [keyboard](../keyboard/) |
+| **Screenshot** | Starts a Windows screen snip (like Windows + Shift + S) |
+| **Desktop** | Shows the desktop (like Windows + D) |
+| **Close window** | Closes the window in front. It never closes the desktop, the taskbar or a Console UI window |
+| **Home** | Opens [Home](../home/) |
+
+The menu never takes the focus and lets clicks through, so each action works on the app that was in front when you opened it.
+
+A quick tap on <Btn b="View" /> opens the [control center](../game-mode/#control-center) instead.

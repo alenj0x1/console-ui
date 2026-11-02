@@ -1,0 +1,51 @@
+---
+title: Instalación
+description: Requisitos y el instalador para Windows.
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+## Requisitos
+
+- Windows 10 u 11 de 64 bits.
+- Un control compatible con Xbox (XInput). Los controles de PlayStation funcionan con Steam Input o DS4Windows, que los presentan como uno.
+- El entorno WebView2. Las versiones actuales de Windows ya lo traen; si falta, el instalador lo descarga.
+- Opcional: [HidHide](../hidhide/), para que el menú Inicio y otras apps de Windows no reaccionen al control mientras mueve el puntero. El instalador lo ofrece.
+
+## Instalar
+
+<Steps>
+
+1. Descarga `Console UI_X.Y.Z_x64-setup.exe` desde la [página de versiones](https://github.com/alenj0x1/console-ui/releases).
+
+   <Aside>
+   Hasta que se publique la primera versión no hay instalador para descargar: [compílalo desde el código](../from-source/).
+   </Aside>
+
+2. Ábrelo. Se instala solo para tu usuario de Windows, en `%LOCALAPPDATA%\Console UI`, sin permisos de administrador, y agrega un acceso directo en el menú Inicio. El instalador está en español o en inglés, según Windows.
+
+3. En la primera página, deja marcada la casilla **Instalar también HidHide** si lo quieres. La casilla solo aparece cuando HidHide todavía no está instalado; en [HidHide](../hidhide/) se explica qué hace.
+
+4. Abre Console UI desde el menú Inicio. La primera vez empieza una breve [práctica de bienvenida](../first-run/).
+
+</Steps>
+
+Si abres la app otra vez mientras está funcionando, no se inicia una segunda copia: aparece Inicio (la pantalla de inicio) de la que ya está abierta.
+
+### Instalación silenciosa
+
+`/S` instala sin preguntar nada. En ese caso HidHide no se agrega, salvo que también pases `/HIDHIDE`:
+
+```sh
+"Console UI_X.Y.Z_x64-setup.exe" /S /HIDHIDE
+```
+
+## Desinstalar
+
+En **Configuración › Aplicaciones** de Windows, elige Console UI y desinstálalo. El desinstalador:
+
+- quita la app y su entrada para iniciar con Windows;
+- vuelve a mostrar el control a los juegos y saca a Console UI de la lista de apps permitidas de HidHide;
+- borra tus ajustes, tus apps fijadas y tus palabras aprendidas solo si marcas la casilla para eliminar los datos de la aplicación.
+
+HidHide sigue instalado; desinstálalo aparte si ya no lo quieres.

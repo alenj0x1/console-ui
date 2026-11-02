@@ -1,0 +1,71 @@
+---
+title: Estructura del proyecto
+description: Cómo está organizado el repositorio y qué hace cada parte.
+---
+
+Console UI es un workspace de Rust (edición 2024) con una app de escritorio hecha con Tauri 2. Las páginas de la interfaz son HTML, CSS y JavaScript simples, sin paso de compilación.
+
+| Ruta | Qué |
+|---|---|
+| `crates/padcore` | El núcleo de entrada: lectura de XInput, curvas de la palanca, inyección con `SendInput`, la consulta de UI Automation y el motor de modos |
+| `crates/padd` | Un host de consola para el núcleo solo (`padd.exe`), útil para probar el núcleo sin la app |
+| `app` | La app de Tauri 2: bandeja, ventanas, ajustes, palabras aprendidas, los datos de Inicio y el instalador |
+| `labs` | Experimentos con sus datos y notas (ver [Laboratorios](../labs/)) |
+| `tools` | Generadores de datos (los datos de las sugerencias del teclado) |
+| `scripts` | `release.py` (ver [Versiones](../releases/)) |
+| `docs` | Este sitio (Astro + Starlight) |
+
+## El núcleo de entrada (`crates/padcore`)
+
+| Archivo | Qué |
+|---|---|
+| `xinput.rs` | Backend de XInput; las ranuras vacías se consultan una vez por segundo |
+| `pad.rs` | Estado del control independiente del backend (bits de botones de XInput) |
+| `curve.rs` | De la palanca a la velocidad del puntero; perfiles incluidos (`asistido` es el que usa la app) |
+| `engine.rs` | El motor de modos: puntero, teclado, Inicio, centro de control y apagado; mantener, tocar, reasignación y el menú rápido |
+| `ui.rs` | Del control a eventos de navegación en cuatro direcciones con repetición como de tecla |
+| `inject.rs` | Entrada de mouse y teclado con `SendInput`, coordenadas absolutas, acumulación de menos de un píxel |
+| `hover.rs` | Consulta de UI Automation: elemento pulsable bajo el puntero, elemento más cercano para los saltos, campo de texto con foco, cursor de texto, campos de contraseña |
+
+## La app (`app`)
+
+| Ruta | Qué |
+|---|---|
+| `src/main.rs` | Arranque, opciones, bandeja, el bucle del motor, el seguimiento del modo juego, avisos |
+| `src/store.rs` | `settings.json` y `learned.bin`, cifrado con DPAPI |
+| `src/i18n.rs` | El idioma de la interfaz del lado de Rust: menú de la bandeja, títulos de ventana, nombres de batería y fondos, errores que muestra Inicio |
+| `src/prefs.rs` | Los comandos de los ajustes: nombres y valores permitidos, ajuste del motor, inicio con Windows, restablecer |
+| `src/home.rs` | La ventana de Inicio, sus comandos de datos y el protocolo `cui` que sirve arte, íconos, carátulas, fondos y tráileres |
+| `src/library.rs`, `src/sources/` | Juegos (Steam, Epic), apps del menú Inicio, fondos (propios, Wallpaper Engine, carpetas) y tráileres de Steam |
+| `src/guide.rs`, `src/switcher.rs` | El centro de control: ventanas abiertas, imágenes, cambio de ventana, detección de juegos, apagado |
+| `src/overlay.rs` | La ventana del teclado y la de los avisos |
+| `src/radial.rs` | El menú rápido |
+| `src/media.rs`, `src/songinfo.rs`, `src/audio.rs` | Lo que suena, carátulas y letras de internet, volumen del sistema |
+| `src/tv.rs` | Modo TV |
+| `src/guard.rs` | Integración con HidHide y su vigilante |
+| `src/admin.rs` | Ventanas de administrador (UIPI) |
+| `src/welcome.rs` | La práctica de bienvenida |
+| `src/events.rs` | El registro de diagnóstico |
+| `ui/` | Las páginas: `home`, `guide`, `keyboard`, `radial`, `welcome`, `notice`, `lab`, más `theme.css`, `prefs.js`, `icons.js`, `previews.js`, `backgrounds.js`, `suggest.js`, `i18n.js` y los catálogos de idiomas en `i18n/`, las fuentes y los datos de las sugerencias |
+| `nsis/` | Los hooks del instalador (`hooks.nsh`) y el script que descarga HidHide (`hidhide.ps1`) |
+| `tauri.conf.json` | Configuración de la app y del instalador |
+
+## Idiomas de la interfaz
+
+Cada página carga primero `ui/i18n.js`. Este carga un catálogo por idioma desde `ui/i18n/` (`es.js` es la referencia) y da `t("clave", { nombre })`; un texto que falta se muestra en español. Los textos mantienen los botones como `{A}` o `{View}`. Rust tiene su propio catálogo corto en `src/i18n.rs`. Para agregar un idioma:
+
+1. Copia `app/ui/i18n/es.js` a `app/ui/i18n/<código>.js` y tradúcelo (el segundo argumento es el nombre del idioma en ese idioma).
+2. Agrega el código a `LANGUAGES` en `app/ui/i18n.js`.
+3. Agrega su tabla y su línea en `CATALOGUES` en `app/src/i18n.rs`.
+
+`cargo test` comprueba que cada catálogo tenga las mismas claves que el español, que ningún texto esté vacío y que exista cada clave que usan las páginas.
+
+## Datos de las sugerencias
+
+`app/ui/data/` tiene, por idioma, `words-<lang>.txt` (una palabra por línea, las más frecuentes primero) y `pairs-<lang>.tsv` (qué palabra sigue a cuál, con conteos). Están en el repositorio, así que la app nunca descarga nada. Para regenerarlos:
+
+```sh
+python -I tools/build_language_data.py
+```
+
+El script descarga sus fuentes y comprueba su SHA-256: listas de palabras de FrequencyWords de Hermit Dave en un commit fijo (conteos de OpenSubtitles 2018, CC BY-SA 4.0) y pares de palabras de oraciones de Tatoeba (CC BY 2.0 FR). Tatoeba solo ofrece su última exportación semanal, así que una instantánea nueva falla la comprobación del hash a propósito: revísala y actualiza `TATOEBA_SHA`. Los créditos y los cambios están en `app/ui/data/LICENSE-data.txt`.

@@ -1,0 +1,33 @@
+---
+title: First run
+description: The welcome practice, the tray icon and how the app starts.
+---
+
+import Btn from "../../../components/Btn.astro";
+
+## The welcome
+
+The first time Console UI opens, a short practice starts. Each step is finished by doing it with the controller, in a normal window that the pointer drives like any other:
+
+| Step | What you do |
+|---|---|
+| **Hello** | Move the pointer with the left stick and press <Btn b="A" /> on each of three circles. |
+| **How the pointer feels** | Pick the pointer speed (**Slow**, **Normal**, **Fast**) and how much stick movement to ignore (**A little**, **Normal**, **A lot**). Each choice applies at once, so you can try it. |
+| **The keyboard** | Press <Btn b="Y" /> to open the keyboard, type *hello*, press <Btn b="RT" /> to send it and <Btn b="B" /> to close the keyboard. |
+| **Home** | Hold <Btn b="Menu" /> to open Home, then <Btn b="B" /> to come back. |
+| **Control center** | Press <Btn b="View" /> to open the control center, then <Btn b="B" /> to come back. |
+| **All set** | A few more things worth knowing: <Btn b="LT" /> with the d-pad jumps between buttons, holding <Btn b="View" /> opens the quick menu, <Btn b="View+Menu" /> held opens the control center in a game, and everything can be changed in Settings. |
+
+**Skip** ends it at any time. To repeat it later, open **Settings › General › Practice with the controller** in Home.
+
+## How the app starts
+
+- Opening Console UI shows [Home](../../guide/home/). Opening it again while it runs brings that same Home back instead of a second copy.
+- With **Start with Windows** on (Settings › General), it starts quietly in the tray when you sign in.
+- The app lives in the notification area (tray). Clicking its icon opens Home; its menu has **Open Home**, **Open keyboard**, **Give the controller to games** (it then reads **Use the controller in Windows again**, to take it back) and **Quit**.
+
+## Notices
+
+Small notices show when the controller connects (with its battery level), disconnects or runs low on battery, when a game takes the controller, and when an [administrator window](../../troubleshooting/#the-controller-does-nothing-over-a-window) blocks it.
+
+Next: the [controls](../../guide/controls/).

@@ -1,0 +1,54 @@
+---
+title: Console UI
+description: Usa todo Windows desde el sillón con un control de videojuegos.
+template: splash
+editUrl: false
+lastUpdated: false
+hero:
+  title: Console UI
+  tagline: Usa todo Windows desde el sillón con un control de videojuegos. Un puntero asistido, un teclado en pantalla que sugiere palabras y una pantalla de inicio tipo consola para tus juegos, apps y música.
+  image:
+    file: ../../../assets/mark.svg
+  actions:
+    - text: Instalar
+      link: getting-started/install/
+      icon: right-arrow
+      variant: primary
+    - text: Controles
+      link: guide/controls/
+      variant: minimal
+    - text: GitHub
+      link: https://github.com/alenj0x1/console-ui
+      icon: github
+      variant: minimal
+---
+
+import { Card, CardGrid } from "@astrojs/starlight/components";
+
+<CardGrid>
+  <Card title="Un puntero que te ayuda a apuntar" icon="approve-check-circle">
+    La palanca izquierda mueve el puntero con una aceleración suave y predecible. Va más lento sobre botones y enlaces, y se queda quieto un instante cuando haces clic.
+  </Card>
+  <Card title="Un teclado para escribir menos" icon="pencil">
+    Se abre sobre cualquier app sin quitarle el foco. Las sugerencias completan la palabra, ponen las tildes y predicen la siguiente, y aprenden de ti.
+  </Card>
+  <Card title="Inicio" icon="rocket">
+    Mantén Menu para ver en pantalla completa tus juegos de Steam y Epic, tus apps fijadas y lo que está sonando, sobre un fondo animado o tus propios videos.
+  </Card>
+  <Card title="El control es del juego" icon="star">
+    Cuando un juego pasa al frente, el control es solo suyo; el puntero vuelve cuando se cierra. Mantén View + Menu, incluso en un juego, para el centro de control.
+  </Card>
+  <Card title="Modo TV" icon="laptop">
+    Deja encendida solo la TV, como pantalla principal, y manda el sonido a ella. Al apagarlo, todo vuelve como estaba.
+  </Card>
+  <Card title="Pensado para el sillón" icon="heart">
+    Alto contraste, letra hasta 150 %, un marco de selección más grueso, distribuciones para una mano y botones que puedes reasignar.
+  </Card>
+</CardGrid>
+
+## Por dónde seguir
+
+- [Instálalo](getting-started/install/) con el instalador de Windows, o [compílalo desde el código](getting-started/from-source/).
+- Aprende los [controles](guide/controls/) y lo que te enseña el [primer uso](getting-started/first-run/).
+- Encuentra cada opción en la [referencia de ajustes](reference/settings/).
+- Mira qué cambió en cada versión en los [cambios](changelog/).

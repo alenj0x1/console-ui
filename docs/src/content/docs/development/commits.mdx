@@ -1,0 +1,52 @@
+---
+title: Commits
+description: How commit messages are written.
+---
+
+Commits follow [Conventional Commits 1.0](https://www.conventionalcommits.org/en/v1.0.0/), in English: a short imperative summary, then a body that lists every change grouped by area. The history reads by itself, and `scripts/release.py --next` works out the next version from it (see [Releases](../releases/)).
+
+```
+type(scope): imperative summary in lowercase, no trailing period
+
+Area:
+- what changed and why, one bullet per change
+- …
+```
+
+Keep the first line short (72 characters at most). The body says what changed and why, never "various fixes". Names the user sees in the app are written as the English interface shows them (`Customize`, `Resume`…).
+
+## Types
+
+| Type | For |
+|---|---|
+| `feat` | Something new people can use |
+| `fix` | A bug fix |
+| `perf` | Faster or lighter, same behaviour |
+| `style` | Visual polish of the interface, or code formatting |
+| `refactor` | Code reorganised without changing behaviour |
+| `docs` | Documentation only |
+| `test` | Tests |
+| `build` | Dependencies and packaging |
+| `chore` | Maintenance, including `chore(release)` |
+
+A `feat` since the last version bumps the minor version; anything else, the patch. A `!` before the colon (`feat(core)!: …`) or a `BREAKING CHANGE:` line marks an incompatible change and bumps the major version (the minor one while the version is 0.x).
+
+## Scopes
+
+Optional, lowercase: the part of the project that changes. The ones used so far:
+
+`core` · `app` · `home` · `guide` · `keyboard` · `settings` · `ui` · `installer`
+
+## Examples
+
+From the history:
+
+```
+feat(home): Customize panel and sliders for amounts
+feat(guide): open Inicio from the control center
+fix(core): aim the quick menu with the right stick
+fix(installer): run HidHide's setup from its own folder, locked
+style(ui): clearer button hints and Customize panel
+```
+
+Every change that users can notice also gets a line under **Unreleased** in `CHANGELOG.md` and **Sin publicar** in `CHANGELOG.es.md`.

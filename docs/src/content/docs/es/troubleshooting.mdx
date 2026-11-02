@@ -1,0 +1,60 @@
+---
+title: Solución de problemas
+description: Arreglos para los problemas más comunes.
+---
+
+import Btn from "../../../components/Btn.astro";
+
+## El control no hace nada
+
+- Console UI lee controles compatibles con Xbox (XInput). Un control de PlayStation necesita Steam Input o DS4Windows para aparecer como uno.
+- Cuando el control se conecta, aparece un aviso con su nivel de batería. Si nunca aparece, Windows no está viendo el control como uno compatible con Xbox.
+- Si había un juego al frente, puede que el control todavía sea suyo ([modo juego](../guide/game-mode/)). Mantén <Btn b="View+Menu" /> para abrir el centro de control y elige otra ventana, o usa **Volver a usar el control en Windows** en el menú de la bandeja.
+
+## El control no hace nada sobre una ventana
+
+Esa ventana corre como administrador. Windows no deja que una app normal le envíe entradas, así que Console UI muestra un aviso que lo explica. Presiona <Btn b="B" /> para pasarle el foco a la siguiente ventana normal, y usa un mouse o un teclado para la ventana de administrador. Console UI no eleva sus propios permisos para saltarse esto; ver [Privacidad y seguridad](../how-it-works/privacy-security/#ventanas-de-administrador).
+
+## El menú Inicio sigue moviéndose con la palanca
+
+El menú Inicio y otras apps de Windows leen el control por su cuenta.
+
+- Instala [HidHide](../getting-started/hidhide/) para que Console UI pueda ocultarles el control.
+- Si HidHide está instalado y el menú Inicio sigue reaccionando, un componente de Windows abrió el control antes de que Console UI pudiera ocultarlo, al iniciar sesión. Desconecta el control y vuelve a conectarlo (o apágalo y préndelo). Hace falta una vez por inicio de sesión.
+
+## Un juego no ve el control
+
+Los juegos solo reciben el control en el modo juego. Si el juego pasó al frente y el puntero sigue activo:
+
+- revisa que **Ajustes › Juegos › Dejar el control al juego que abras** esté activado;
+- puede que el juego no le parezca un juego a Console UI (por ejemplo, un juego en ventana instalado fuera de Steam y Epic). Abre el centro de control y elige su ventana: <Btn b="A" /> sobre un juego le da el control. [Detección de juegos](../how-it-works/game-detection/) explica qué cuenta como juego.
+
+Si Console UI se cerró de golpe mientras ocultaba el control, su vigilante lo vuelve a mostrar. Si aun así un juego no lo ve, abre Console UI y ciérralo desde la bandeja (**Salir**), o desactiva el ocultamiento en la app de configuración del propio HidHide.
+
+## Un programa se toma por juego
+
+Una ventana sin bordes que cubre toda la pantalla cuenta como juego. Mantén <Btn b="View+Menu" /> y cambia a cualquier otra ventana para recuperar el puntero, o desactiva **Dejar el control al juego que abras**.
+
+## El puntero se mueve solo o se siente raro
+
+- Se mueve solo: sube **Ajustes › Puntero › Ignorar movimientos pequeños**.
+- Demasiado rápido o lento: cambia **Velocidad del puntero**. Mantén <Btn b="LT" /> para un puntero más lento al apuntar a algo pequeño.
+- Se pasa de los botones pequeños: sube **Ayuda para apuntar**. Solo funciona donde la app expone sus botones a las herramientas de accesibilidad.
+
+## El teclado tapa lo que escribo
+
+Pasa a la parte de arriba de la pantalla cuando taparía el campo de texto. Si una app no informa dónde está su campo de texto o su cursor de texto, el teclado no puede saberlo: mueve la ventana, o cierra el teclado con <Btn b="B" /> para mirar.
+
+## No hay carátula ni letra en Multimedia
+
+- **Ajustes › General › Carátulas y letras de internet** tiene que estar activado, y la computadora conectada a internet.
+- Las carátulas y las letras se usan solo cuando su título y su artista coinciden con lo que informa el reproductor, así que algunas canciones no tienen.
+- El reproductor tiene que informarle a Windows lo que reproduce (la misma información que muestra el control de volumen de Windows).
+
+## Las pantallas quedaron apagadas después del Modo TV
+
+Presiona Windows + P para volver a elegir las pantallas, o reinicia. Abrir Console UI otra vez también deja las pantallas y el sonido como estaban.
+
+## Enviar un reporte de error útil
+
+Adjunta `events.log` de `%APPDATA%\dev.alejandro.consoleui` a un [issue en GitHub](https://github.com/alenj0x1/console-ui/issues). Registra lo que hizo la app, nunca lo que escribiste.

@@ -1,0 +1,26 @@
+---
+title: Detección de juegos
+description: Cómo Console UI distingue un juego de cualquier otra ventana y cuándo vuelve el puntero.
+---
+
+Con el puntero activo, Console UI vigila la ventana que está al frente. Cuando esa ventana es un juego, empieza el [modo juego](../../guide/game-mode/): el control queda para el juego.
+
+## Qué cuenta como juego
+
+Una ventana al frente cuenta como juego cuando su programa:
+
+1. **está instalado como juego**: dentro de una carpeta de instalación de Steam o Epic Games, o en una carpeta cuya ruta contiene `\steamapps\common\` o `\XboxGames\`. Esto se revisa primero, así que un juego en ventana también cuenta; o
+2. **corre en pantalla completa exclusiva**, según lo informa Windows; o
+3. **corre en pantalla completa sin bordes**: una ventana sin barra de título que cubre todo su monitor.
+
+Las dos últimas reconocen juegos de cualquier lanzador, o de ninguno. Algunos programas que suelen ir a pantalla completa nunca se toman por juegos: los navegadores comunes (Chrome, Edge, Firefox, Brave, Opera, Vivaldi), los reproductores de video (VLC, MPC-HC, MPC-BE, PotPlayer), el Explorador de archivos, PowerPoint y el propio Console UI.
+
+## Cuándo vuelve el puntero
+
+Console UI recuerda la ventana a la que le dejó el control. Cuando esa ventana se cierra, el puntero vuelve solo. Si abres el centro de control y cambias a una ventana que no es un juego, el puntero también vuelve.
+
+Mientras el control es de los juegos, Console UI también nota cuando otro juego pasa al frente, para que **Reanudar** en Inicio y el orden de «jugado por última vez» sigan siendo correctos.
+
+## Desactivarlo
+
+**Ajustes › Juegos › Dejar el control al juego que abras** desactiva el modo juego automático. Y desde la bandeja, recuperar el control del juego que está al frente (**Volver a usar el control en Windows**) deja tranquilo a ese juego mientras siga al frente.

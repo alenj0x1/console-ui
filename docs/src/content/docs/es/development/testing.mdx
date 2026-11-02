@@ -1,0 +1,65 @@
+---
+title: Pruebas
+description: Pruebas unitarias, pruebas que leen esta computadora y cómo probar cambios en la app real.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+## Pruebas unitarias
+
+```sh
+cargo test
+```
+
+Ejecuta las pruebas de todo el workspace. Cubren, entre otras cosas:
+
+| Área | Qué se comprueba |
+|---|---|
+| `padcore::curve` | La zona muerta queda quieta; el impulso crece de forma suave, nunca baja mientras se mantiene y se reinicia al soltar; el frenado sobre elementos pulsables solo se aplica al apuntar |
+| `padcore::engine` | Intercambiar A/B y las palancas; reasignar botones, gatillos y desplazamiento; mantener View abre el menú rápido y la palanca apunta en él; el menú rápido se cancela con un cambio de modo o con la palanca en reposo; el ajuste da forma al perfil |
+| `padcore::hover` | Los saltos prefieren los elementos que están justo enfrente |
+| `app::i18n` | Cada idioma tiene las mismas claves que el español, en Rust y en los catálogos de las páginas, sin textos vacíos; existe cada clave que usan las páginas |
+| `app::store` | Ida y vuelta con DPAPI; las palabras aprendidas persisten cifradas; los ajustes guardados por versiones anteriores (niveles con nombre como `"fast"`) se leen como números |
+| `app::songinfo` | Coincidencia entre servicios, lectura de letras sincronizadas y aceptar solo los servidores de imágenes esperados (`https://cdn-images.dzcdn.net@evil.example/…` se rechaza) |
+| `app::sources` | Las rutas quedan dentro de su carpeta sin importar mayúsculas o barras; los archivos de bibliotecas de Steam anidados y con escapes; los archivos de Wallpaper Engine quedan dentro de su carpeta |
+| `app::sources::trailers` | Elegir el video 1080p y el sonido; solo se aceptan ids de Steam |
+
+## Pruebas que necesitan esta computadora o internet
+
+Algunas pruebas están marcadas con `#[ignore]` porque leen esta computadora (reproductores, ventanas, apps instaladas) o se conectan a internet. Ejecútalas a propósito, con salida:
+
+```sh
+cargo test -p console-ui-app admin -- --ignored --nocapture
+cargo test -p console-ui-app switcher -- --ignored --nocapture
+```
+
+| Prueba | Necesita |
+|---|---|
+| `admin` | Un proceso elevado en ejecución, para comprobar que se detecta |
+| `switcher` | Ventanas abiertas, para listarlas |
+| `library` | Las apps del menú Inicio de esta computadora |
+| `media` | Un reproductor que esté sonando |
+| `sources` | Los juegos y fondos de esta computadora |
+| `songinfo` | Internet |
+| `sources::trailers` | Internet (descarga de la tienda de Steam) |
+
+## Calidad de las sugerencias
+
+```sh
+node labs/keyboard-lab/suggest_eval.js es
+```
+
+Simula escribir las frases de `labs/keyboard-lab/eval-phrases.txt` sin tildes e informa el ahorro de pulsaciones y cuántas veces la palabra buscada sale primera. Ejecútalo después de cambiar `app/ui/suggest.js` o los datos. Ver [Laboratorios](../labs/#laboratorio-del-teclado).
+
+## En la app real
+
+```sh
+cargo build --release
+target/release/console-ui.exe
+```
+
+<Aside>
+Revisa los cambios en la app real, con el control, antes de hacer commit: también con un tamaño de letra mayor (Ajustes › Apariencia › Tamaño de letra), porque cada pestaña tiene que seguir cabiendo al 150 %.
+</Aside>
+
+`target/release/padd.exe` ejecuta el núcleo de entrada solo, en una consola, sin la app.

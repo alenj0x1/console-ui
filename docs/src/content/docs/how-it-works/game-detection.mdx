@@ -1,0 +1,26 @@
+---
+title: Game detection
+description: How Console UI tells a game from any other window, and when the pointer comes back.
+---
+
+With the pointer active, Console UI keeps an eye on the window in front. When that window is a game, [game mode](../../guide/game-mode/) starts: the controller is left to the game.
+
+## What counts as a game
+
+A window in front counts as a game when its program:
+
+1. **is installed as a game**: inside a Steam or Epic Games install folder, or in a folder whose path contains `\steamapps\common\` or `\XboxGames\`. This is checked first, so a windowed game counts too; or
+2. **runs in exclusive full screen**, as Windows reports it; or
+3. **runs in borderless full screen**: a window with no title bar that covers its whole monitor.
+
+The last two catch games from any launcher, or none. Some programs that often go full screen are never taken for a game: the common browsers (Chrome, Edge, Firefox, Brave, Opera, Vivaldi), video players (VLC, MPC-HC, MPC-BE, PotPlayer), File Explorer, PowerPoint and Console UI itself.
+
+## When the pointer comes back
+
+Console UI remembers the window it handed the controller to. When that window closes, the pointer comes back by itself. If you open the control center and switch to a window that isn't a game, the pointer comes back too.
+
+While the controller belongs to games, Console UI also notices when another game comes to the front, so **Resume** in Home and the "last played" order stay right.
+
+## Turning it off
+
+**Settings › Games › Give the controller to the game you open** turns automatic game mode off. And from the tray, taking the controller back from the game in front (**Use the controller in Windows again**) leaves that game alone while it stays in front.

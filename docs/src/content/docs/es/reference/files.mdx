@@ -1,0 +1,31 @@
+---
+title: Ubicación de los archivos
+description: Dónde se instala Console UI y dónde guarda tus ajustes y datos.
+---
+
+## La app
+
+| Ruta | Qué |
+|---|---|
+| `%LOCALAPPDATA%\Console UI` | La app instalada, solo para tu usuario de Windows |
+
+## Tus datos
+
+Todo lo que Console UI guarda está en `%APPDATA%\dev.alejandro.consoleui`:
+
+| Archivo o carpeta | Qué |
+|---|---|
+| `settings.json` | Tus opciones, apps fijadas, la pestaña Multimedia, las carpetas de fondos y lo elegido para el Modo TV, en texto plano. Ver la [referencia de ajustes](../settings/) |
+| `learned.bin` | Las palabras aprendidas, cifradas para tu usuario de Windows (ver [Privacidad y seguridad](../../how-it-works/privacy-security/#palabras-aprendidas)) |
+| `events.log` | El registro de diagnóstico: cambios de modo, programas abiertos y en qué programa escribió el teclado, nunca el texto |
+| `icons\` | Íconos de las apps para Inicio, guardados una vez |
+| `covers\` | Carátulas de canciones en alta resolución, cada una guardada una vez |
+| `trailers\` | Tráileres de juegos y su sonido, cada uno guardado una vez |
+
+Al desinstalar Console UI, esta carpeta se borra solo si marcas la casilla para borrar los datos de la aplicación.
+
+## En otras partes de Windows
+
+| Dónde | Qué |
+|---|---|
+| `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run`, valor `Console UI` | Existe mientras **Iniciar con Windows** está activado |

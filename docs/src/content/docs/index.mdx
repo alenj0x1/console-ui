@@ -1,0 +1,54 @@
+---
+title: Console UI
+description: Use all of Windows from the couch with a game controller.
+template: splash
+editUrl: false
+lastUpdated: false
+hero:
+  title: Console UI
+  tagline: Use all of Windows from the couch with a game controller. An assisted pointer, an on-screen keyboard that suggests words, and a console-style home screen for your games, apps and music.
+  image:
+    file: ../../assets/mark.svg
+  actions:
+    - text: Install
+      link: getting-started/install/
+      icon: right-arrow
+      variant: primary
+    - text: Controls
+      link: guide/controls/
+      variant: minimal
+    - text: GitHub
+      link: https://github.com/alenj0x1/console-ui
+      icon: github
+      variant: minimal
+---
+
+import { Card, CardGrid } from "@astrojs/starlight/components";
+
+<CardGrid>
+  <Card title="A pointer that helps you aim" icon="approve-check-circle">
+    The left stick moves the pointer with a steady, predictable speed-up. It slows down over buttons and links and holds still for a moment when you click.
+  </Card>
+  <Card title="A keyboard that types less" icon="pencil">
+    Opens over any app without taking its focus. Suggestions complete the word, restore accents and predict the next one, and they learn from you.
+  </Card>
+  <Card title="Home" icon="rocket">
+    Hold Menu for a full-screen home with your Steam and Epic games, your pinned apps and what is playing, over an animated background or your own videos.
+  </Card>
+  <Card title="Games get the controller" icon="star">
+    A game coming to the front gets the controller to itself; the pointer comes back when it closes. Hold View + Menu, even in a game, for the control center.
+  </Card>
+  <Card title="TV mode" icon="laptop">
+    Leaves only the TV on, as the main screen, and sends the sound to it. Turning it off puts everything back.
+  </Card>
+  <Card title="Made for the couch" icon="heart">
+    High contrast, text up to 150 %, a thicker selection frame, one-hand layouts and buttons you can reassign.
+  </Card>
+</CardGrid>
+
+## Where to go next
+
+- [Install it](getting-started/install/) with the Windows installer, or [build it from source](getting-started/from-source/).
+- Learn the [controls](guide/controls/) and what the [first run](getting-started/first-run/) teaches you.
+- Find every option in the [settings reference](reference/settings/).
+- See what changed in each version in the [changelog](changelog/).

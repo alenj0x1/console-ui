@@ -1,0 +1,33 @@
+---
+title: HidHide
+description: Why Console UI offers HidHide, how the installer adds it and what it changes.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+Some Windows apps read the controller themselves: the Start menu, Settings, the Store and other apps of that kind move their own selection with the left stick. While Console UI moves the pointer with that same stick, those apps move too, and a list you just scrolled jumps back.
+
+[HidHide](https://github.com/nefarius/HidHide) (by Nefarius, MIT license) solves it: it lets a chosen app see the controller and hides it from the rest. With it installed, Console UI hides the controller from other apps while it drives Windows (pointer, keyboard, Home) and shows it again in [game mode](../../guide/game-mode/), so games see it as usual. Without HidHide, Console UI works the same, minus that protection.
+
+## How the installer adds it
+
+The **Also install HidHide** box on the installer's first page (checked by default, shown only when HidHide is missing) makes the installer:
+
+1. Download HidHide v1.5.230 from its official GitHub release.
+2. Check that the file's SHA-256 is the expected one and that it carries a valid signature from Nefarius Software Solutions. If either check fails, the file is deleted and never run.
+3. Run HidHide's own installer, which asks for administrator rights (it installs a signed driver).
+
+If anything fails (no internet, a wrong file, the administrator prompt declined), the installer says why and Console UI still installs. You can add HidHide later from its [releases page](https://github.com/nefarius/HidHide/releases). HidHide may ask you to restart Windows to finish.
+
+## What changes
+
+- Console UI adds itself as the only app allowed to see the controller and hides every connected controller from the rest, each time a controller connects.
+- In game mode, and when Console UI closes, the controller is visible again.
+- If Console UI ends unexpectedly while the controller is hidden, a small watchdog started with it shows the controller again, so games are never left without it.
+- Uninstalling Console UI shows the controller again and removes Console UI from HidHide's list.
+
+<Aside type="caution" title="Once per sign-in">
+HidHide only stops apps from opening the controller from that moment on. If a Windows component already opened it when you signed in, the Start menu can keep reacting until you unplug and plug the controller back in (or turn it off and on). See [Troubleshooting](../../troubleshooting/#the-start-menu-still-moves-with-the-stick).
+</Aside>
+
+More detail in [Privacy and security](../../how-it-works/privacy-security/#hidhide).

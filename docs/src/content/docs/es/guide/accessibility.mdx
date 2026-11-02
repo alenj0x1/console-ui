@@ -1,0 +1,52 @@
+---
+title: Accesibilidad
+description: Alto contraste, tamaño de letra, distribuciones para una mano y botones que puedes reasignar.
+---
+
+import Btn from "../../../../components/Btn.astro";
+
+## Para ver bien desde el sillón
+
+Todo en **Ajustes › Apariencia**:
+
+- **Alto contraste**: fondo negro liso detrás de todo, letras y líneas blancas y un marco amarillo grueso en lo que tienes elegido. Se enciende solo cuando Windows usa un tema de alto contraste, y aun así puedes activarlo o apagarlo aquí.
+- **Tamaño de letra**: de 100 a 150 %, para Inicio y el centro de control. Las imágenes, portadas y tarjetas mantienen su tamaño cuando crece la letra, así que cada pestaña sigue cabiendo al 150 %.
+- **Marco de selección más grueso**: un marco más ancho alrededor de lo que tienes elegido.
+- **Color principal**: el color del marco de selección y de los botones principales, si el azul no es el que mejor ves.
+
+Con la opción **Mostrar animaciones** de Windows apagada, Console UI deja quietos los fondos y las vistas previas y no reproduce tráileres.
+
+## Distribuciones para una mano
+
+**Ajustes › Botones › Distribución** tiene una distribución para las dos manos (la de entrada) y una para cada mano. Con una mano, todo pasa a ese lado:
+
+| Acción | Mano izquierda | Mano derecha |
+|---|---|---|
+| Mover el puntero | Palanca izquierda | Palanca derecha |
+| Clic | <Btn b="LB" /> | <Btn b="RB" /> |
+| Clic derecho | <Btn b="LT" /> | <Btn b="RT" /> |
+| Volver (<Btn b="B" />) | <Btn b="L3" /> | <Btn b="R3" /> |
+| Subir / bajar la página | <Btn b="up" /> / <Btn b="down" /> | <Btn b="Y" /> / <Btn b="A" /> |
+| Atrás / adelante | <Btn b="left" /> / <Btn b="right" /> | <Btn b="X" /> / <Btn b="B" /> |
+| Centro de control en un juego | Mantener <Btn b="View" /> | Mantener <Btn b="Menu" /> |
+
+La distribución vale en todas partes: el puntero, Inicio y el teclado. Las indicaciones de toda la app muestran el botón que hace cada acción en ese momento. Elegir una distribución pide confirmarla, y vuelve sola a como estaba a los 10 segundos sin respuesta.
+
+## Tus propios botones
+
+**Ajustes › Botones › Personalizar botones** muestra un dibujo del control con cada botón que puedes reasignar alrededor y lo que hace. El elegido se ilumina y una línea lo une a su fila. Elige uno para ver sus acciones junto al dibujo, con su acción original marcada.
+
+- Puedes reasignar <Btn b="A" /> <Btn b="B" /> <Btn b="X" /> <Btn b="Y" />, <Btn b="LB" /> <Btn b="RB" />, <Btn b="LT" /> <Btn b="RT" />, <Btn b="L3" /> <Btn b="R3" /> y las cuatro direcciones de la cruceta.
+- Cada uno puede hacer lo que hace cualquiera de esos, subir o bajar la página, o nada.
+- <Btn b="View" /> y <Btn b="Menu" /> se quedan como están: abren Inicio y el centro de control, el camino de vuelta desde cualquier lado.
+- Tus cambios van encima de la distribución elegida; volver a elegir una distribución empieza de cero.
+
+**Color del control** cambia los colores de ese dibujo: doce colores oscuros, algunos con una textura fina (puntos, líneas, cuadrícula, rayas, panal, fibra de carbono, anillos), o **Al azar**, una combinación aleatoria, con **Otra combinación** y **Combinación anterior** a un botón de distancia.
+
+## Otras opciones de botones
+
+- **Aceptar con B**: <Btn b="B" /> acepta y <Btn b="A" /> vuelve atrás. Para deshacerlo, vuelve a esta opción y presiona <Btn b="B" />.
+- **Puntero con la palanca derecha**: la palanca derecha mueve el puntero y la izquierda desplaza.
+- **Tiempo para mantener presionado**: cuánto dura mantener, de 300 a 1200 ms.
+
+Igual que las distribuciones para una mano, las dos primeras piden confirmación y se deshacen solas a los 10 segundos sin respuesta.

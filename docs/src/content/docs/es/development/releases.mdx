@@ -1,0 +1,66 @@
+---
+title: Versiones
+description: Cómo se numera y se publica una versión con scripts/release.py.
+---
+
+import { Steps } from "@astrojs/starlight/components";
+
+Console UI usa [versionado semántico](https://semver.org/lang/es/): `mayor.menor.parche`. La versión vive en `Cargo.toml` (`[workspace.package]`) y en `app/tauri.conf.json`; `scripts/release.py` cambia las dos a la vez. Cada versión es una etiqueta anotada `vX.Y.Z`.
+
+| Sube | Cuando, desde la última versión, hay… |
+|---|---|
+| Mayor (menor mientras sea 0.x) | un cambio incompatible (`!` o `BREAKING CHANGE`) |
+| Menor | al menos un `feat` |
+| Parche | cualquier otra cosa (arreglos, pulido…) |
+
+## Publicar
+
+<Steps>
+
+1. Revisa que **Unreleased** en `CHANGELOG.md` y **Sin publicar** en `CHANGELOG.es.md` cubran todo lo que cambió, en los dos idiomas. El árbol de trabajo tiene que estar limpio.
+
+2. Mira qué número sigue, a partir de los commits desde la última etiqueta (si todavía no hay ninguna, sugiere la versión actual):
+
+   ```sh
+   python scripts/release.py --next
+   ```
+
+3. Pruébalo y luego publica:
+
+   ```sh
+   python scripts/release.py 0.1.0 --dry-run
+   python scripts/release.py 0.1.0
+   ```
+
+   `--dry-run` solo muestra el cambio y las notas. La ejecución real:
+
+   - pone la versión en `Cargo.toml` y `app/tauri.conf.json` y actualiza `Cargo.lock`;
+   - convierte **Unreleased** y **Sin publicar** en `## [0.1.0] - <fecha>` en los dos registros de cambios y agrega el enlace de la versión (una comparación con la versión anterior, o la etiqueta para la primera);
+   - hace el commit `chore(release): 0.1.0` y crea la etiqueta anotada `v0.1.0`, cuyo mensaje son las notas en inglés seguidas de las en español.
+
+   No hace push.
+
+4. Publica el commit y la etiqueta:
+
+   ```sh
+   git push --follow-tags
+   ```
+
+5. Compila el instalador (ver [Compilar desde el código](../../getting-started/from-source/)) y adjunta `target/release/bundle/nsis/Console UI_0.1.0_x64-setup.exe` a la publicación de la versión en [GitHub](https://github.com/alenj0x1/console-ui/releases), con las notas de la etiqueta.
+
+</Steps>
+
+## Los cambios en este sitio
+
+La página [Cambios](../../changelog/) se copia de `CHANGELOG.md` y `CHANGELOG.es.md` cada vez que el sitio se compila o se sirve (`scripts/sync-changelog.mjs`, en `predev` y `prebuild`). Solo muestra versiones publicadas: la sección **Unreleased** / **Sin publicar** y la línea que la explica quedan en GitHub.
+
+## Este sitio
+
+```sh
+cd docs
+npm ci
+npm run dev      # http://localhost:4321
+npm run build    # en docs/dist, falla ante cualquier enlace roto
+```
+
+Para GitHub Pages, compila con `BASE=/console-ui/docs`: la página principal vive en la raíz de `https://alenj0x1.github.io/console-ui/` y la documentación en `/docs`.

@@ -1,0 +1,270 @@
+/* Console UI in Starlight: the app's tokens (app/ui/theme.css). Graphite dark by default, a warm light
+   theme as the alternative, surfaces set apart by tone and thin 1px rings; no shadows, no blur. */
+
+:root {
+  --sl-font: "Figtree", "Segoe UI", system-ui, sans-serif;
+  --sl-font-mono: "DM Mono", Consolas, ui-monospace, monospace;
+  --sl-text-h1: 2rem;
+  --sl-text-h2: 1.5rem;
+  --sl-text-h3: 1.2rem;
+  --sl-line-height: 1.65;
+  --sl-content-width: 46rem;
+
+  /* the app's default accent (blue) */
+  --sl-color-accent-low: #1c2a45;
+  --sl-color-accent: #4c8dff;
+  --sl-color-accent-high: #b8d0ff;
+
+  /* graphite: --bg #1e1f22, --surface #2a2b2f, --text #ece8df, --muted #b0ada6 */
+  --sl-color-white: #ece8df;
+  --sl-color-gray-1: #dcd8cf;
+  --sl-color-gray-2: #b0ada6;
+  --sl-color-gray-3: #8e8b85;
+  --sl-color-gray-4: #5d5c59;
+  --sl-color-gray-5: #3a3c41;
+  --sl-color-gray-6: #2a2b2f;
+  --sl-color-black: #1e1f22;
+  --sl-color-bg-nav: #1e1f22;
+  --sl-color-bg-sidebar: #1e1f22;
+  --sl-color-hairline-light: rgba(255, 255, 255, .06);
+  --sl-color-hairline: rgba(255, 255, 255, .06);
+  --sl-color-hairline-shade: rgba(255, 255, 255, .06);
+
+  --c-surface: #2a2b2f;
+  --c-surface-2: #35373c;
+  --c-ring: rgba(255, 255, 255, .06);
+  --c-ring-strong: #3a3c41;
+  --c-radius: 10px;
+}
+
+:root[data-theme="light"] {
+  --sl-color-accent-low: #dce7ff;
+  --sl-color-accent: #4c8dff;
+  --sl-color-accent-high: #1d4fae;
+  /* links on the light background: the same blue, one step darker so it reads */
+  --sl-color-text-accent: #2a63d4;
+
+  --sl-color-white: #1e1f22;
+  --sl-color-gray-1: #2c2d30;
+  --sl-color-gray-2: #46464a;
+  --sl-color-gray-3: #66655f;
+  --sl-color-gray-4: #a09d95;
+  --sl-color-gray-5: #ddd9cf;
+  --sl-color-gray-6: #ebe8e0;
+  --sl-color-gray-7: #f2efe8;
+  --sl-color-black: #f8f6f1;
+  --sl-color-bg-nav: #f8f6f1;
+  --sl-color-bg-sidebar: #f8f6f1;
+  --sl-color-hairline-light: rgba(30, 31, 34, .08);
+  --sl-color-hairline: rgba(30, 31, 34, .1);
+  --sl-color-hairline-shade: rgba(30, 31, 34, .1);
+
+  --c-surface: #efece5;
+  --c-surface-2: #e6e2d9;
+  --c-ring: rgba(30, 31, 34, .1);
+  --c-ring-strong: #d3cfc4;
+}
+
+/* no flash between pages: the canvas already has the theme's colour before painting */
+:root { color-scheme: dark; background-color: var(--sl-color-black); }
+:root[data-theme="light"] { color-scheme: light; }
+body { background: var(--sl-color-black); }
+@view-transition { navigation: auto; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .12s; }
+@media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
+
+/* no shadows or blur anywhere: Starlight's own shadow tokens (Previous/Next,
+   link cards, search, mobile menu) go flat too */
+:root, :root[data-theme] { --sl-shadow-sm: none; --sl-shadow-md: none; --sl-shadow-lg: none; }
+header.header { box-shadow: none; backdrop-filter: none; }
+
+/* headings with the app's weight */
+.sl-markdown-content :is(h1, h2, h3, h4) { font-weight: 700; letter-spacing: -.01em; }
+h1#_top { font-weight: 700; letter-spacing: -.02em; }
+
+/* code: surfaces with a thin ring and the app's corners */
+.sl-markdown-content .expressive-code .frame,
+.sl-markdown-content .expressive-code pre { border-radius: var(--c-radius); }
+.sl-markdown-content .expressive-code .frame { box-shadow: none; }
+/* with a header (terminal or title) the code joins it: no top corners */
+.sl-markdown-content .expressive-code .frame:is(.is-terminal, .has-title) pre { border-start-start-radius: 0; border-start-end-radius: 0; }
+.sl-markdown-content .expressive-code .frame:is(.is-terminal, .has-title) .header { border-start-start-radius: var(--c-radius); border-start-end-radius: var(--c-radius); }
+.sl-markdown-content :not(pre) > code {
+  border-radius: 6px;
+  padding: .1em .38em;
+  background: var(--c-surface);
+  border: 1px solid var(--c-ring);
+  overflow-wrap: anywhere;
+}
+.sl-markdown-content kbd {
+  font-family: var(--sl-font);
+  font-weight: 700;
+  font-size: .85em;
+  padding: .05em .45em;
+  border-radius: 6px;
+  border: 1px solid var(--c-ring-strong);
+  background: var(--c-surface);
+  box-shadow: none;
+}
+
+/* tables: one surface with a thin ring, rows split by hairlines; the box is as wide as the table, so the
+   hairlines always reach both edges */
+.sl-markdown-content table {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  border-radius: var(--c-radius);
+  background: var(--c-surface);
+  border: 1px solid var(--c-ring);
+}
+.sl-markdown-content :is(th, td) { border: 0; border-top: 1px solid var(--sl-color-hairline); padding: .55rem .8rem; vertical-align: top; }
+.sl-markdown-content thead th { border-top: 0; font-weight: 700; background: transparent; }
+/* two-column tables without titles: no empty row on top and no line on the first row */
+.sl-markdown-content thead:not(:has(th:not(:empty))) { display: none; }
+.sl-markdown-content table:has(thead:not(:has(th:not(:empty)))) tbody tr:first-child > * { border-top: 0; }
+.sl-markdown-content tr:nth-child(2n) { background: transparent; }
+
+/* asides: tone and a thin ring, no coloured side bar */
+.starlight-aside { border: 1px solid var(--c-ring); border-radius: var(--c-radius); }
+
+/* home cards: surface and a thin ring, no shadow */
+.card { border: 1px solid var(--c-ring) !important; border-radius: var(--c-radius); background: var(--c-surface); box-shadow: none; }
+/* one icon colour for every card: the accent, not Starlight's rotating palette */
+.card { --sl-card-border: var(--sl-color-accent); --sl-card-bg: var(--sl-color-accent-low); }
+.card .icon { border-radius: 8px; }
+
+/* hero buttons: the primary one is the accent, like Jugar in the app */
+.sl-link-button { border-radius: var(--c-radius); font-weight: 700; box-shadow: none; }
+.sl-link-button.primary { background: var(--sl-color-accent); border-color: var(--sl-color-accent); color: #ffffff; }
+.sl-link-button.primary:hover { background: color-mix(in srgb, var(--sl-color-accent) 85%, black); border-color: color-mix(in srgb, var(--sl-color-accent) 85%, black); color: #ffffff; }
+.hero { padding-block: 3rem 1rem; }
+.hero h1 { font-weight: 700; letter-spacing: -.03em; }
+.hero img { width: min(9rem, 40vw); }
+
+/* sidebar: the current page is marked by tone, not colour */
+.sidebar-content a { border-radius: 8px; }
+.sidebar-content a[aria-current="page"] {
+  background: var(--c-surface);
+  color: var(--sl-color-white);
+  font-weight: 700;
+  outline: 1px solid var(--c-ring);
+  outline-offset: -1px;
+}
+
+/* sidebar and table of contents scroll without a visible bar */
+.sidebar-pane, .right-sidebar { scrollbar-width: none; }
+.sidebar-pane::-webkit-scrollbar, .right-sidebar::-webkit-scrollbar { display: none; }
+
+/* the site name in the text colour, with the app's mark next to it */
+.site-title { color: var(--sl-color-white); font-weight: 700; letter-spacing: -.01em; }
+.site-title img { width: 26px; height: 26px; }
+
+/* Starlight's menu button (phone): theme colours and the icon right in the middle */
+button.sl-menu-button {
+  place-items: center; padding: 0;
+  background-color: var(--sl-color-gray-6); color: var(--sl-color-white);
+  border: 1px solid var(--sl-color-gray-5); box-shadow: none;
+}
+/* only on phones (from 50rem there is a sidebar): its own display beat md:sl-hidden */
+@media (max-width: 49.99rem) { button.sl-menu-button { display: grid; } }
+button.sl-menu-button svg { grid-area: 1 / 1; }
+/* one icon at a time: three lines when closed, the X when open */
+button.sl-menu-button:not(:has(~ :popover-open)) .close-menu,
+button.sl-menu-button:has(~ :popover-open) .open-menu { display: none; }
+button.sl-menu-button:has(~ :popover-open) { background-color: var(--sl-color-gray-5); }
+/* room between the language picker and the menu button */
+@media (max-width: 49.99rem) {
+  [data-has-sidebar] .header { padding-inline-end: calc(var(--sl-nav-gap) * 1.5 + var(--sl-nav-pad-x) + var(--sl-menu-button-size)); }
+}
+
+/* table of contents on the right: as wide as its content needs, not half the free space */
+@media (min-width: 72rem) {
+  .right-sidebar-container { width: 16rem; }
+  .right-sidebar { width: 16rem; }
+}
+
+/* Controller buttons (components/Btn.astro), drawn as in the app (app/ui/theme.css .btn): round face
+   buttons, bumpers flat on top, triggers round on top, View and Menu with their symbols. */
+.pad {
+  display: inline-grid;
+  place-items: center;
+  box-sizing: border-box;
+  /* a letter sits on the sentence's baseline; a symbol is centred on its capitals */
+  vertical-align: baseline;
+  height: 1.6em;
+  min-width: 1.6em;
+  margin: 0 .08em;
+  border: max(1.5px, .1em) solid currentColor;
+  font-family: var(--sl-font);
+  font-weight: 700;
+  font-size: .82em;
+  line-height: 1;
+  color: var(--sl-color-gray-1);
+  white-space: nowrap;
+  /* the letter centred on its capitals, not on the font's line box (as in the app) */
+  text-box: trim-both cap alphabetic;
+}
+.pad-face { border-radius: 50%; }
+.pad-face.pad-wide { font-size: .66em; height: 2em; min-width: 2em; letter-spacing: -.02em; }
+.pad-bumper { padding: 0 .4em; border-radius: .22em .22em .55em .55em; }
+.pad-trigger { padding: 0 .4em; height: 1.75em; border-radius: .8em .8em .22em .22em; }
+.pad-dpad { border: 0; min-width: 1.5em; height: 1.5em; }
+.pad:has(svg) { vertical-align: -.22em; }
+.pad svg { display: block; width: 1.05em; height: 1.05em; }
+.pad-dpad svg { width: 1.5em; height: 1.5em; }
+.pad-dpad .arm-on { fill: currentColor; }
+.pad-combo { white-space: nowrap; }
+.pad-plus { margin: 0 .3em; color: var(--sl-color-gray-3); font-weight: 400; }
+
+/* Diagrams (components/Diagram.astro): dashed groups, neutral boxes and grey arrows. */
+:root {
+  --dd-card: #2a2b2f;
+  --dd-line: #3a3c41;
+  --dd-group: #75787f;
+  --dd-ink: #c4c2bc;
+  --dd-muted: #a3a5ab;
+  --dd-text: #ece8df;
+}
+:root[data-theme="light"] {
+  --dd-card: #ffffff;
+  --dd-line: #e3dfd5;
+  --dd-group: #9a9ca2;
+  --dd-ink: #45484e;
+  --dd-muted: #6b6e75;
+  --dd-text: #23252a;
+}
+.dd { margin: 2rem auto; }
+.dd svg { display: block; width: 100%; height: auto; font-family: var(--__sl-font); }
+.dd-group { fill: none; stroke: var(--dd-group); stroke-width: 1.2; stroke-dasharray: 6 5; }
+.dd-tab { fill: var(--sl-color-bg); }
+.dd-group-icon, .dd-icon { fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.dd-group-icon { stroke: var(--dd-muted); }
+.dd-icon { stroke: var(--dd-ink); }
+.dd-group-title { fill: var(--dd-text); font-size: 13px; font-weight: 600; }
+.dd-node { fill: var(--dd-card); stroke: var(--dd-line); stroke-width: 1.2; }
+.dd-node-label { fill: var(--dd-text); font-size: 12.5px; }
+.dd-edge { fill: none; stroke: var(--dd-ink); stroke-width: 1.6; stroke-linejoin: round; }
+.dd-edge.dd-dashed { stroke: var(--dd-muted); stroke-width: 1.4; stroke-dasharray: 4 4; }
+.dd-head { fill: var(--dd-ink); }
+.dd-head-muted { fill: var(--dd-muted); }
+.dd-pill { fill: var(--dd-card); stroke: var(--dd-line); }
+.dd-edge-label { fill: var(--dd-text); font-size: 11.5px; }
+
+/* Tables: a short name in the first column never splits (events.log); only
+   long paths still wrap. */
+.sl-markdown-content td:first-child { min-width: 10rem; }
+
+/* Asides (Note, Tip, Caution, Danger): the surface and thin ring of every other
+   card; only the title and its icon take the colour, never the background or a
+   side bar. */
+.starlight-aside { background: var(--c-surface); border: 1px solid var(--c-ring); border-radius: var(--c-radius); color: var(--sl-color-white); }
+.starlight-aside--note { --sl-color-asides-text-accent: #7eaaff; }
+.starlight-aside--tip { --sl-color-asides-text-accent: #a998f2; }
+.starlight-aside--caution { --sl-color-asides-text-accent: #f0b35a; }
+.starlight-aside--danger { --sl-color-asides-text-accent: #f08a7d; }
+:root[data-theme="light"] .starlight-aside--note { --sl-color-asides-text-accent: #2a63d4; }
+:root[data-theme="light"] .starlight-aside--tip { --sl-color-asides-text-accent: #6a52c9; }
+:root[data-theme="light"] .starlight-aside--caution { --sl-color-asides-text-accent: #a5650b; }
+:root[data-theme="light"] .starlight-aside--danger { --sl-color-asides-text-accent: #c0412f; }

@@ -1,0 +1,109 @@
+---
+title: Labs
+description: The experiments behind the pointer, the keyboard and the controller hiding, with their results.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+Design choices that change how Console UI feels were measured with a real person and a controller before being adopted. Each lab lives in `labs/` with its notes (`NOTES.md`) and its raw results (`results/*.json`).
+
+| Lab | Question | How to run it |
+|---|---|---|
+| [Cursor lab](#cursor-lab) | Which stick-to-pointer profile is fastest and feels best? | `target/release/cursor-lab.exe` |
+| [Keyboard lab](#keyboard-lab) | Which keyboard layout types faster, and do suggestions help? | `target/release/console-ui.exe --lab` (`--exp=suggest` for the suggestions comparison) |
+| [HidHide lab](#hidhide-lab) | Does hiding the controller stop Windows apps fighting the pointer? | Automated checks plus a run with the controller |
+
+All runs were on 2026-11-01, with an Xbox-compatible controller.
+
+## Cursor lab
+
+`labs/cursor-lab` is its own small program. It shows click targets of three sizes (radius 14, 24 and 40 px, 250 to 900 px apart) and measures, per target, the movement time, Fitts throughput (bits per second), misses and path efficiency, plus a 1 to 5 rating per block. Profile order is shuffled and hidden behind a number.
+
+**Baseline checks** (i5-12400, Windows 10 19045). Absolute positioning missed 0 of 4 points; sub-pixel accumulation landed within ±1 px; `padd` idle with a controller used under 0.2 % of one core and 8.3 MB. The loop ticked at 5.0 ms (p50) and 5.08 ms (p99), with a step costing 8 µs (p50).
+
+### Run 1: three curves
+
+| Profile | Mean | Throughput | Misses/target | Path efficiency | Rating |
+|---|---|---|---|---|---|
+| `lineal` | 4056 ms | 1.32 b/s | 0.71 | 50 % | 3.5 |
+| `curva` | 3908 ms | 1.40 b/s | 0.21 | 46 % | 2.5 |
+| `curva-turbo` | 4543 ms | 1.15 b/s | 0.21 | 43 % | 2.5 |
+
+No winner: the differences were within noise, every profile overshot near the target, and the speed felt unpredictable ("sometimes it was slower, sometimes faster").
+
+### Run 2: `curva` against `asistido`
+
+From run 1 came `asistido`: a predictable speed-up that builds steadily and resets on release, a brake over clickable elements (UI Automation, only while the boost is below half) and a 90 ms freeze after a click. The UI Automation query took 1.4 ms on average, and running it only while the stick moved in the last second took idle `padd` from 0.47 % to under 0.1 % of one core.
+
+| Profile | Mean | Median | Throughput | Misses/target | Path efficiency | Rating |
+|---|---|---|---|---|---|---|
+| `curva` | 6580 ms | 3750 ms | 1.26 b/s | 0.60 | 41 % | 1.0 |
+| `asistido` | 1820 ms | 1583 ms | 2.25 b/s | 0.02 | 63 % | 3.3 |
+
+By target size (mean): 28 px 11.1 s → 2.5 s, 48 px 5.4 s → 1.7 s, 80 px 2.1 s → 1.4 s. `asistido` won every scored block and every rating. **Decision:** `asistido` is the profile the app uses.
+
+**Desktop tuning.** On the real desktop the boost (×2.4 from 55 % tilt over 0.7 s) felt too fast, since lab targets were close and rarely triggered it. It settled at ×2.0 from 65 % tilt over 0.85 s (top speed 1.6 screen heights per second); base speed, curve, brake and click freeze stayed as measured. This tuning has not been re-measured in the lab.
+
+## Keyboard lab
+
+`console-ui.exe --lab` opens a typing test: the real keyboard window types into the lab window, which keeps the focus. 24 Spanish phrases are shuffled; each layout gets a warm-up block and then scored blocks in ABBA order. Per phrase: words per minute, error rate (edit distance), keystrokes or controller actions per character, and a 1 to 5 rating per block.
+
+### Run 1: grid against two halves
+
+| Layout | WPM | Error rate | Keystrokes/char | Rating |
+|---|---|---|---|---|
+| Grid | 11.2 | 2.2 % | 1.09 | 4.0 |
+| Two halves | 8.2 | 2.1 % | 1.10 | 3.5 |
+
+The grid was 36 % faster with the same accuracy. Almost every error was a missing accent: hold-for-accent was rarely used. **Decision:** the grid is the default and two halves stays as an option; the next step was suggestions that restore accents.
+
+### Run 2: without and with suggestions (`--exp=suggest`)
+
+| Variant | WPM | Error rate | Actions/letter | Rating |
+|---|---|---|---|---|
+| Without | 10.9 | 2.4 % | 5.0 | 1.5 |
+| With | 12.8 | 0 % | 4.0 | 4.0 |
+
+Suggestions: +17 % speed, −19 % controller actions and every missing accent gone. The feedback asked for better words and for English only when chosen.
+
+### Offline suggestion quality
+
+`node labs/keyboard-lab/suggest_eval.js es` types 30 unseen phrases without accents and takes the target as soon as it is in the top 3.
+
+| Dictionary and ranking | Keystroke saving | Target first |
+|---|---|---|
+| Spanish + English ×0.2, frequency only | 30.2 % | 51.8 % |
+| Spanish only, 50k words | 30.8 % | 51.8 % |
+| + previous-word context (Tatoeba pairs) | 43.0 % | 55.0 % |
+| + next-word prediction after a space | 45.6 % | 46.1 % |
+
+Dictionary size barely mattered; context was the big lever. That led to the current suggestions: per-language data, ranking by 0.95 × P(word | previous) + 0.05 × frequency, learning from the user, and Spanish only by default.
+
+| Current suggestions, Spanish | Saving |
+|---|---|
+| Nothing learned | 42.2 % |
+| Learning during the same pass | 41.9 % |
+| After having typed the phrases once | 71.9 % |
+
+The slowest suggestion took 2.6 ms (Spanish) and 10.8 ms (Spanish + English).
+
+## HidHide lab
+
+**Problem.** The Start menu, Settings and other Windows apps read the controller and move their own focus with the left stick while the pointer moves too, so a scrolled list jumps back.
+
+**Hypothesis.** Hiding the controller from every app except Console UI while it drives the desktop, and showing it again in game mode, removes the conflict and keeps games working.
+
+### Run 1: automated checks
+
+- Both the controller's HID device and its USB container must be hidden, since XInput opens the container.
+- An allowed copy of the program reads XInput with the controller hidden; an identical copy that isn't allowed gets "not connected". Showing it again restores both.
+- Hiding and showing take 21 and 22 ms, including the command-line tool's own process.
+- Killing the app hard: the watchdog showed the controller again within 2 s.
+
+### Run 2: with a controller
+
+Hiding alone didn't stop the Start menu at first: a Windows component had opened the controller at sign-in, before it was hidden, and HidHide only blocks new opens. Unplugging and plugging the controller back in fixed it, once per sign-in. Restarting the device automatically would need administrator rights.
+
+<Aside>
+The HidHide installer used in the lab (`labs/hidhide-lab/installer/`) is not committed; its size, SHA-256 and signer are in the lab notes, and the same values are pinned in `app/nsis/hidhide.ps1`.
+</Aside>

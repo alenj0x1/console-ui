@@ -1,0 +1,51 @@
+---
+title: Install
+description: Requirements and the Windows installer.
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+## Requirements
+
+- Windows 10 or 11, 64-bit.
+- An Xbox-compatible (XInput) controller. PlayStation controllers work through Steam Input or DS4Windows, which present them as one.
+- The WebView2 runtime. Current Windows versions already have it; the installer downloads it if it is missing.
+- Optional: [HidHide](../hidhide/), so the Start menu and other Windows apps don't react to the controller while it moves the pointer. The installer offers it.
+
+## Install
+
+<Steps>
+
+1. Get `Console UI_X.Y.Z_x64-setup.exe` from the [releases page](https://github.com/alenj0x1/console-ui/releases).
+
+   <Aside>
+   Until the first version is published there is no installer to download: [build it from source](../from-source/).
+   </Aside>
+
+2. Run it. It installs for your Windows user only, in `%LOCALAPPDATA%\Console UI`, without administrator rights, and adds a Start menu shortcut. The installer is in Spanish or English, following Windows.
+
+3. On the first page, leave **Also install HidHide** checked if you want it. The box only shows when HidHide is not installed yet; see [HidHide](../hidhide/) for what it does.
+
+4. Open Console UI from the Start menu. The first time, a short [welcome practice](../first-run/) starts.
+
+</Steps>
+
+Opening the app again while it is running doesn't start a second copy: it brings up the Home screen of the one already running.
+
+### Silent install
+
+`/S` installs without asking anything. HidHide is not added in that case unless you also pass `/HIDHIDE`:
+
+```sh
+"Console UI_X.Y.Z_x64-setup.exe" /S /HIDHIDE
+```
+
+## Uninstall
+
+From Windows **Settings › Apps**, choose Console UI and uninstall it. The uninstaller:
+
+- removes the app and its "start with Windows" entry;
+- shows the controller to games again and takes Console UI off HidHide's list of allowed apps;
+- deletes your settings, pinned apps and learned words only if you check **Delete the application data**.
+
+HidHide itself stays installed; remove it separately if you no longer want it.

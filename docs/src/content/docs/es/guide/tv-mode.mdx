@@ -1,0 +1,30 @@
+---
+title: Modo TV
+description: Deja encendida solo la TV, con su sonido, y vuelve todo a como estaba después.
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+import Btn from "../../../../components/Btn.astro";
+
+El Modo TV es para una computadora conectada a un monitor y a una TV: deja encendida solo la TV, como pantalla principal, y manda el sonido a ella. Al apagarlo, las pantallas y el sonido vuelven a como estaban.
+
+<Steps>
+
+1. En **Ajustes › Modo TV**, elige **Pantalla de la TV** (la pantalla que queda encendida).
+
+2. Si quieres, elige **Sonido en Modo TV**, la salida de sonido que se usa, por ejemplo los parlantes de la TV. **Sin cambiar** (la de entrada) deja el sonido donde está.
+
+3. Activa **Modo TV**. La app pregunta **¿Se ve bien la TV?**. Presiona <Btn b="A" /> **Dejar así** para quedarte con él.
+
+</Steps>
+
+Si no ves la pregunta porque la TV no muestra nada, solo espera: sin respuesta en 15 segundos, todo vuelve solo a como estaba. <Btn b="B" /> lo deshace al momento.
+
+## Apagarlo
+
+- Apaga **Modo TV** en Ajustes, o
+- abre el [centro de control](../game-mode/#centro-de-control), presiona <Btn b="Menu" /> y elige **Apagar Modo TV**.
+
+<Aside title="Si la app se cerró con el Modo TV activado">
+El Modo TV no cambia la distribución de pantallas que Windows tiene guardada, así que Windows + P (o reiniciar) trae la de siempre. Abrir Console UI otra vez también deja las pantallas y el sonido como estaban.
+</Aside>
