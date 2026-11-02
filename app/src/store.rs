@@ -126,6 +126,15 @@ pub struct Settings {
     /// The welcome was finished or skipped (it opens by itself until then).
     #[serde(default)]
     pub welcomed: bool,
+    /// Look up high-resolution covers and lyrics on the internet (songinfo).
+    #[serde(default = "yes")]
+    pub music_online: bool,
+    /// The music tab shows the lyrics in place of the cover.
+    #[serde(default)]
+    pub music_lyrics: bool,
+    /// The game played last (a library id), first on the games tab.
+    #[serde(default)]
+    pub last_game: Option<String>,
 }
 
 fn yes() -> bool {

@@ -95,6 +95,11 @@ fn games_in(root: &Path) -> Vec<Game> {
                 art: ART_FILES.iter().map(|(k, _)| *k).filter(|k| art_files.contains_key(k)).collect(),
                 art_files,
                 launch: format!("steam://rungameid/{appid}"),
+                dir: doc
+                    .get(&["AppState", "installdir"])
+                    .and_then(vdf::Node::as_str)
+                    .filter(|d| !d.is_empty() && !d.contains(".."))
+                    .map(|d| lib.join("steamapps").join("common").join(d)),
             });
         }
     }

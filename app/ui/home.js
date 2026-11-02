@@ -491,8 +491,89 @@ function coverUrl() {
   return "";
 }
 
+// ---------- lyrics ----------
+// Synced lyrics of what plays (LRCLIB, through the app). While the player's
+// card has the focus, R3 shows them in place of the cover (which goes small
+// next to the title) and back; the choice is kept (also in Ajustes).
+// The line being sung is lit and kept in the middle; songs without synced
+// lyrics show none.
+const lyricsBox = document.getElementById("lyrics");
+const lyrics = { song: "", lines: [], at: -1, tries: 0, timer: 0 };
+const lyricsWanted = () => !!Prefs.get()?.music_lyrics;
+const LYRICS_RETRY_MS = 20000;
+const LYRICS_TRIES = 3;
+
+function songKey(m) {
+  return m.title ? `${m.artist}
+${m.title}` : "";
+}
+
+function loadLyrics() {
+  const m = state.media;
+  const song = songKey(m);
+  if (song === lyrics.song) return;
+  clearTimeout(lyrics.timer);
+  Object.assign(lyrics, { song, lines: [], at: -1, tries: 0 });
+  drawLyrics();
+  if (song && Prefs.get()?.music_online !== false) fetchLyrics(song);
+}
+
+function fetchLyrics(song) {
+  lyrics.tries++;
+  invoke("lyrics")
+    .then((l) => {
+      if (lyrics.song !== song || !l || songKey(l) !== song) return;
+      lyrics.lines = l.lines.filter((x, i, all) => x.text || (i > 0 && all[i - 1].text));
+      drawLyrics();
+      render(); // its Y hint
+    })
+    // The service can be busy for a moment: a few more tries, then none.
+    .catch(() => {
+      if (lyrics.song === song && lyrics.tries < LYRICS_TRIES) lyrics.timer = setTimeout(() => fetchLyrics(song), LYRICS_RETRY_MS);
+    });
+}
+
+function drawLyrics() {
+  const box = lyricsBox.querySelector(".lines");
+  box.replaceChildren(...lyrics.lines.map((l) => el("p", { className: l.text ? "line" : "line gap", textContent: l.text || "•••" })));
+  lyrics.at = -1;
+  document.body.classList.toggle("has-lyrics", lyrics.lines.length > 0);
+  followLyrics();
+}
+
+function toggleLyrics() {
+  lyrics.at = -1;
+  setPref("music_lyrics", !lyricsWanted());
+}
+
+// Lights the line being sung and centres it.
+function followLyrics() {
+  if (!document.body.classList.contains("lyrics-view")) return;
+  const p = position() + LYRICS_LEAD_MS;
+  let at = -1;
+  while (at + 1 < lyrics.lines.length && lyrics.lines[at + 1].ms <= p) at++;
+  if (at === lyrics.at) return;
+  lyrics.at = at;
+  const box = lyricsBox.querySelector(".lines");
+  [...box.children].forEach((line, i) => {
+    line.classList.toggle("now", i === at);
+    line.classList.toggle("past", i < at);
+  });
+  const line = box.children[Math.max(at, 0)];
+  const middle = lyricsBox.clientHeight / 2 - (line.offsetTop + line.offsetHeight / 2);
+  box.style.transform = `translateY(${middle}px)`;
+}
+// A line lights a moment early, as the singer takes a breath.
+const LYRICS_LEAD_MS = 250;
+setInterval(followLyrics, 200);
+
 function setStage(on) {
   document.body.classList.toggle("music-stage", on);
+  document.body.classList.toggle("lyrics-view", on && lyricsWanted() && lyrics.lines.length > 0);
+  if (on) {
+    lyrics.at = -1;
+    requestAnimationFrame(followLyrics);
+  }
   if (!on) return;
   const src = coverUrl();
   if (!src || stageCover.dataset.src === src) return;
@@ -541,8 +622,11 @@ const coversView = () => {
   return (v === "covers" || v === "grid") && state.sheet !== "wall" && state.sheet !== "folder";
 };
 
+// The game played last comes first; while it is still open, A brings it back.
 function gameItems() {
-  return state.games.map((g) => ({
+  const last = state.games.find((g) => g.id === state.lastGame);
+  const games = last ? [last, ...state.games.filter((g) => g !== last)] : state.games;
+  return games.map((g) => ({
     key: g.id,
     tile: () => {
       // The name shows in the list, or when there is no picture.
@@ -553,8 +637,8 @@ function gameItems() {
       const head = infoEl({
         lead: g.art.includes("logo") ? el("img", { className: "logo", src: art(g, "logo"), alt: g.name }) : null,
         title: g.name,
-        meta: [playedAgo(g.last_played), SOURCES[g.source]].filter(Boolean).join(" · "),
-        action: ["Jugar", "A"],
+        meta: [g === last && state.running ? "Abierto" : playedAgo(g.last_played), SOURCES[g.source]].filter(Boolean).join(" · "),
+        action: [g === last && state.running ? "Reanudar" : "Jugar", "A"],
       });
       if (state.sheet !== "search") {
         const hints = el("span", { className: "hints" }, el("span", { className: "hint" }, glyph("Y"), "Buscar"));
@@ -710,8 +794,10 @@ function sourceApp(source) {
 // the card has the focus, the player on the left over the cover's colour.
 function playingInfo(app) {
   const m = state.media;
+  // With the lyrics in its place, the cover goes small next to the title.
+  const small = lyricsWanted() && lyrics.lines.length && coverUrl();
   const head = infoEl({
-    lead: app ? img(appIcon(app.id), "lead-icon") : el("p", { className: "source", textContent: playerName(m.source) }),
+    lead: small ? el("img", { className: "lead-cover", src: small, alt: "" }) : app ? img(appIcon(app.id), "lead-icon") : el("p", { className: "source", textContent: playerName(m.source) }),
     title: m.title,
     meta: [m.artist, app?.name ?? ""].filter(Boolean).join(" · "),
     action: app ? ["Abrir", "A"] : null,
@@ -724,6 +810,7 @@ function playingInfo(app) {
   const hints = el("span", { className: "hints" },
     el("span", { className: "hint" }, glyph("X"), m.playing ? "Pausar" : "Reproducir"),
     el("span", { className: "hint" }, glyph("LT RT"), "Canción"));
+  if (lyrics.lines.length) hints.append(el("span", { className: "hint" }, glyph("R3"), lyricsWanted() ? "Carátula" : "Letra"));
   (head.querySelector(".action") ?? head.querySelector(".progress") ?? head.querySelector(".meta")).after(hints);
   return head;
 }
@@ -937,6 +1024,7 @@ const CATEGORIES = [
       { kind: "link", name: "Tamaño de letra", value: textSizeName(state.prefs?.text_size), run: () => openSub("text_size"), desc: "Agranda los textos de Inicio y del centro de control para leerlos de lejos." },
       { kind: "toggle", name: "Marco de selección más grueso", pref: "thick_focus", desc: "Un borde más ancho alrededor de lo que tienes elegido, para verlo mejor desde el sillón." },
       { kind: "link", name: "Fondo", value: state.wallpaper?.title ?? "Color liso", run: openWalls, desc: "Lo que se ve detrás de Inicio, sea una animación, un video o una imagen." },
+      { kind: "toggle", name: "Letra en lugar de la carátula", pref: "music_lyrics", desc: "En Multimedia, lo que suena muestra su letra donde va la carátula, que pasa a verse chica junto al título. También se cambia con {R3}." },
       { kind: "toggle", name: "Imágenes de los juegos", pref: "game_art", desc: "Muestra el arte del juego elegido detrás de la pestaña Juegos." },
       { kind: "choice", name: "Forma de Inicio", pref: "library_view", options: [["banners", "Anchas"], ["covers", "Portadas"], ["grid", "Cuadrícula"], ["list", "Lista"]], desc: "Cómo se ven Juegos, Apps y Multimedia. En Cuadrícula y Lista, arriba y abajo se mueven por ellas y el volumen queda en {RT} + {↕}." },
     ].filter(Boolean),
@@ -1001,6 +1089,7 @@ const CATEGORIES = [
     icon: "settings",
     rows: () => [
       { kind: "toggle", name: "Iniciar con Windows", pref: "start_with_windows", desc: "Se abre sola y en silencio al encender la computadora." },
+      { kind: "toggle", name: "Carátulas y letras de internet", pref: "music_online", desc: "Muestra la carátula en alta calidad y la letra de lo que suena. Para buscarlas, envía el nombre de la canción y del artista a Deezer, Apple y LRCLIB." },
       { kind: "toggle", name: "Vibrar al cambiar de modo", pref: "rumble", desc: "El control vibra cuando pasa a un juego y cuando vuelve al puntero." },
       { kind: "choice", name: "Forma de este menú", pref: "settings_view", options: [["list", "Lista"], ["tiles", "Cuadros"]], desc: "Todo en una lista, o una categoría a la vez en cuadros grandes." },
       { kind: "link", name: "Practicar con el control", value: "", run: () => invoke("welcome_open").catch((e) => failed("No se pudo abrir la práctica.", e)), desc: "La práctica del principio: apuntar, cómo se siente el puntero, el teclado, Inicio y el centro de control." },
@@ -1982,7 +2071,8 @@ function render() {
       : volumeHint(asInfo(list[at].info()));
     const m = state.media;
     const sound = trailer.classList.contains("shown") ? `${trailerFor}:${soundWanted()}` : "";
-    head.dataset.item = editing ? "edit" : [list[at].key, m.title, m.artist, m.playing, m.duration_ms > 0, sound].join("|");
+    const words = list[at]?.playing ? `${lyrics.lines.length > 0}:${lyricsWanted()}:${!!coverArt.url}` : "";
+    head.dataset.item = editing ? "edit" : [list[at].key, m.title, m.artist, m.playing, m.duration_ms > 0, sound, words].join("|");
     return head;
   };
   if (!strip || strip.dataset.key !== key) {
@@ -2288,6 +2378,9 @@ function onPress(button) {
     case "b":
       back();
       break;
+    case "r3":
+      if (document.body.classList.contains("music-stage") && lyrics.lines.length) toggleLyrics();
+      break;
     case "x":
       if (state.tab === "games" && !state.sheet && trailer.classList.contains("shown")) toggleTrailerSound();
       else if (state.media.title) invoke("media_control", { action: "toggle" });
@@ -2338,6 +2431,8 @@ async function load() {
   state.wallpaper = data.wallpaper;
   state.picks = data.media;
   state.gameArt = data.game_art;
+  state.lastGame = data.last_game;
+  state.running = data.running;
   render();
   loadTv();
 }
@@ -2345,6 +2440,7 @@ async function load() {
 listen("library", load);
 listen("media", ({ payload }) => {
   state.media = payload;
+  loadLyrics();
   render();
 });
 listen("mode", ({ payload }) => {
@@ -2372,12 +2468,18 @@ invoke("current_mode").then((m) => (active = m === "home"));
 invoke("volume_get").then((v) => (state.volume = v));
 invoke("media_now").then((m) => {
   state.media = m;
+  loadLyrics();
   render();
 });
 load();
 
 // The settings screen shows the preferences; the background follows game_art.
 Prefs.watch((p) => {
+  // Lyrics come and go with Ajustes > General.
+  if (p.music_online !== state.prefs?.music_online) {
+    lyrics.song = "-";
+    loadLyrics();
+  }
   state.prefs = p;
   state.gameArt = p.game_art;
   loadSound();

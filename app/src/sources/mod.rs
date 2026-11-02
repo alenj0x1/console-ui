@@ -53,6 +53,9 @@ pub struct Game {
     pub art_files: HashMap<&'static str, PathBuf>,
     #[serde(skip)]
     pub launch: String,
+    /// Where it is installed: a program running from there is this game.
+    #[serde(skip)]
+    pub dir: Option<PathBuf>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize)]

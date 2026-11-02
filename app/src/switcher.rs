@@ -224,6 +224,11 @@ pub fn foreground_game(game_dirs: &[PathBuf]) -> Option<(HWND, String, &'static 
     Some((hwnd, program.file_name()?.to_string_lossy().into_owned(), why))
 }
 
+/// The program a window belongs to.
+pub fn program_of(hwnd: HWND) -> Option<PathBuf> {
+    program_path(hwnd)
+}
+
 pub fn foreground() -> HWND {
     unsafe { GetForegroundWindow() }
 }

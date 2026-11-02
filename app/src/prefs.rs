@@ -107,6 +107,8 @@ pub struct Preferences {
     pub settings_view: String,
     pub library_view: String,
     pub trailer_sound: bool,
+    pub music_online: bool,
+    pub music_lyrics: bool,
     pub cursor_speed: String,
     pub deadzone: String,
     pub slowdown: String,
@@ -140,6 +142,8 @@ impl Preferences {
             settings_view: s.settings_view.clone(),
             library_view: s.library_view.clone(),
             trailer_sound: s.trailer_sound,
+            music_online: s.music_online,
+            music_lyrics: s.music_lyrics,
             cursor_speed: s.cursor_speed.clone(),
             deadzone: s.deadzone.clone(),
             slowdown: s.slowdown.clone(),
@@ -224,6 +228,14 @@ pub fn set_preference(app: AppHandle, webview: tauri::Webview, name: String, val
         "trailer_sound" => {
             let v = flag()?;
             store.update(|s| s.trailer_sound = v)?
+        }
+        "music_lyrics" => {
+            let v = flag()?;
+            store.update(|s| s.music_lyrics = v)?
+        }
+        "music_online" => {
+            let v = flag()?;
+            store.update(|s| s.music_online = v)?
         }
         "library_view" => {
             let v = pick(&["banners", "covers", "grid", "list"])?;
@@ -333,7 +345,7 @@ pub fn reset_preferences(app: AppHandle, webview: tauri::Webview) -> Result<Pref
     }
     let store = app.state::<Store>();
     store.update(|s| {
-        let fresh = Settings { pinned: s.pinned.take(), media: s.media.take(), wallpaper_folders: std::mem::take(&mut s.wallpaper_folders), ..Settings::default() };
+        let fresh = Settings { pinned: s.pinned.take(), media: s.media.take(), wallpaper_folders: std::mem::take(&mut s.wallpaper_folders), last_game: s.last_game.take(), ..Settings::default() };
         *s = fresh;
     })?;
     set_start_with_windows(false)?;

@@ -2,12 +2,12 @@
 //! flyout shows): Spotify, browsers, any player that reports itself. No
 //! account or API key needed.
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{LazyLock, Mutex};
 use std::time::Duration;
 
 use serde::Serialize;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager as _};
 use windows::Media::Control::{
     GlobalSystemMediaTransportControlsSessionManager as Manager,
     GlobalSystemMediaTransportControlsSessionPlaybackStatus as Status,
@@ -42,6 +42,8 @@ pub struct Media {
     pub cover: Mutex<Option<Vec<u8>>>,
     manager: Mutex<Option<Manager>>,
     started: AtomicBool,
+    /// Goes up with every new cover (see NowPlaying::cover).
+    revision: AtomicU32,
 }
 
 impl Media {
@@ -55,30 +57,52 @@ impl Media {
             unsafe {
                 let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
             }
-            let mut revision = 0;
+            let covers = app.path().app_data_dir().map(|d| crate::songinfo::cover_dir(&d)).ok();
             loop {
                 let (next, cover) = media.read().unwrap_or_default();
-                let changed = {
+                let (changed, new_track) = {
                     let mut now = media.now.lock().unwrap();
                     let track_changed = (now.title.as_str(), now.artist.as_str()) != (next.title.as_str(), next.artist.as_str());
                     // Players often send the cover a moment after the title:
                     // a late cover counts as a new one.
                     let late_cover = !track_changed && cover.is_some() && media.cover.lock().unwrap().is_none();
                     if track_changed || late_cover {
-                        revision += 1;
+                        media.revision.fetch_add(1, Ordering::Relaxed);
                         *media.cover.lock().unwrap() = cover;
                     }
-                    let next = NowPlaying { cover: revision, ..next };
+                    let next = NowPlaying { cover: media.revision.load(Ordering::Relaxed), ..next };
                     let changed = *now != next;
                     *now = next;
-                    changed
+                    (changed, track_changed.then(|| (now.title.clone(), now.artist.clone())))
                 };
                 if changed {
                     let _ = app.emit("media", media.now.lock().unwrap().clone());
                 }
+                if let (Some((title, artist)), Some(dir)) = (new_track, covers.clone()) {
+                    if app.state::<crate::store::Store>().settings.lock().unwrap().music_online {
+                        let app = app.clone();
+                        std::thread::spawn(move || {
+                            if let Some(hd) = crate::songinfo::cover(&dir, &title, &artist) {
+                                media.set_hd_cover(&app, &title, &artist, hd);
+                            }
+                        });
+                    }
+                }
                 std::thread::sleep(POLL);
             }
         });
+    }
+
+    /// Puts the high-resolution cover in place of Windows' one while the
+    /// same song is still playing.
+    fn set_hd_cover(&self, app: &AppHandle, title: &str, artist: &str, cover: Vec<u8>) {
+        let mut now = self.now.lock().unwrap();
+        if now.title != title || now.artist != artist {
+            return;
+        }
+        *self.cover.lock().unwrap() = Some(cover);
+        now.cover = self.revision.fetch_add(1, Ordering::Relaxed) + 1;
+        let _ = app.emit("media", now.clone());
     }
 
     fn manager(&self) -> windows::core::Result<Manager> {

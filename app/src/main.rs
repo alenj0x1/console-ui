@@ -19,6 +19,7 @@ mod store;
 mod guide;
 mod prefs;
 mod radial;
+mod songinfo;
 mod switcher;
 mod tv;
 mod welcome;
@@ -192,6 +193,9 @@ fn follow_games(app: &AppHandle, engine: &mut Engine, playing: &mut Option<isize
             }
             app.state::<events::Events>().log(&format!("juego al frente: {program} ({why}); el control pasa al juego"));
             *playing = Some(hwnd as isize);
+            if let Some(path) = switcher::program_of(hwnd) {
+                home::game_started(app, hwnd as isize, &path);
+            }
             engine.set_mode(Mode::Off);
             apply_mode(app, Mode::Off);
             overlay::flash_notice(app, "game", "", Duration::from_secs(4));
@@ -205,7 +209,12 @@ fn follow_games(app: &AppHandle, engine: &mut Engine, playing: &mut Option<isize
             }
             Some(_) => {}
             // Game mode from the home screen or the tray: follow the game once it shows up.
-            None => *playing = switcher::foreground_game(&dirs).map(|(h, _, _)| h as isize),
+            None => {
+                *playing = switcher::foreground_game(&dirs).map(|(h, _, _)| h as isize);
+                if let Some(path) = playing.and_then(|h| switcher::program_of(h as _)) {
+                    home::game_started(app, playing.unwrap(), &path);
+                }
+            }
         },
         _ => {}
     }
@@ -643,6 +652,7 @@ fn main() {
             home::launch,
             home::media_control,
             home::media_now,
+            home::lyrics,
             home::volume_get,
             home::volume_step,
             home::volume_mute,

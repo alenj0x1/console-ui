@@ -545,6 +545,40 @@ body.as-list .stage-cover { display: none; }
 body.music-stage .backdrop { background: linear-gradient(120deg, var(--stage, var(--surface)) 15%, var(--stage-2, var(--stage, var(--surface))) 85%); }
 body.music-stage .hero, body.music-stage .wall, body.music-stage .trailer { opacity: 0; }
 body.music-stage .stage-cover.loaded { opacity: 1; }
+/* Lyrics: in the cover's place (Y), the line being sung lit and centred;
+   the rest fade towards the edges. */
+.lyrics {
+  position: absolute;
+  top: calc(8 * var(--u));
+  height: calc(38 * var(--u));
+  left: calc(62 * var(--u));
+  right: calc(4 * var(--u));
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 400ms ease;
+  -webkit-mask-image: linear-gradient(transparent, #000 22%, #000 78%, transparent);
+}
+body.lyrics-view .lyrics { opacity: 1; }
+body.lyrics-view .stage-cover.loaded { opacity: 0; }
+.lyrics .lines { transition: transform 500ms ease; }
+.lyrics .line {
+  margin: 0;
+  padding: calc(1 * var(--u)) 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: calc(3.4 * var(--u));
+  line-height: 1.25;
+  color: color-mix(in srgb, var(--text) 45%, transparent);
+  transition: color 300ms ease;
+}
+.lyrics .line.now { color: var(--text); }
+.lyrics .line.gap { letter-spacing: 0.2em; }
+@media (prefers-reduced-motion: reduce) {
+  .lyrics, .lyrics .lines, .lyrics .line { transition: none; }
+}
+.high-contrast .lyrics .line { color: var(--muted); }
+.high-contrast .lyrics .line.now { color: var(--text); }
+
 /* Settings: the background stays, dimmed, so every label reads over it. */
 body.settings-open .scrim, body.search-open .scrim { background: color-mix(in srgb, var(--bg) 88%, transparent); }
 body.music-stage .scrim {

@@ -45,6 +45,7 @@ fn installed() -> Vec<Game> {
                 art: Vec::new(),
                 art_files: HashMap::new(),
                 launch: format!("com.epicgames.launcher://apps/{ns}%3A{item}%3A{app}?action=launch&silent=true"),
+                dir: m["InstallLocation"].as_str().filter(|d| !d.is_empty()).map(std::path::PathBuf::from),
             })
         })
         .collect()

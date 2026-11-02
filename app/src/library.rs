@@ -50,6 +50,15 @@ impl Library {
         self.games.iter().find(|g| g.id == game)?.art_files.get(kind).map(PathBuf::as_path)
     }
 
+    /// The game a running program belongs to (it runs from its folder).
+    pub fn game_of(&self, program: &Path) -> Option<&Game> {
+        self.games.iter().find(|g| g.dir.as_ref().is_some_and(|d| program.starts_with(d)))
+    }
+
+    pub fn has_game(&self, id: &str) -> bool {
+        self.games.iter().any(|g| g.id == id)
+    }
+
     pub fn has_app(&self, id: &str) -> bool {
         self.apps.iter().any(|a| a.id == id)
     }

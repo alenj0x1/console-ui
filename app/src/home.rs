@@ -53,6 +53,8 @@ pub struct HomeState {
     scanned: Mutex<Option<Instant>>,
     icons: Mutex<HashMap<String, Vec<u8>>>,
     icon_dir: Mutex<Option<PathBuf>>,
+    /// The game being played and its window, while it stays open.
+    running: Mutex<Option<(String, isize)>>,
 }
 
 #[derive(Serialize)]
@@ -64,6 +66,9 @@ pub struct HomeData {
     game_art: bool,
     /// The media tab's picks; None = not chosen yet.
     media: Option<Vec<String>>,
+    /// The game played last, and whether its window is still open.
+    last_game: Option<String>,
+    running: bool,
 }
 
 #[derive(Serialize)]
@@ -156,7 +161,37 @@ pub fn home_data(state: tauri::State<HomeState>, store: tauri::State<Store>) -> 
     let wallpaper = state.wallpaper(&current_wallpaper(&store));
     let settings = store.settings.lock().unwrap().clone();
     let media = settings.media.map(|m| m.into_iter().filter(|id| valid_media(&lib, id)).collect());
-    HomeData { games: lib.games.clone(), apps: lib.apps.clone(), pinned: pinned(&store, &lib), wallpaper, game_art: settings.game_art, media }
+    let last_game = settings.last_game.filter(|id| lib.has_game(id));
+    let running = last_game.as_ref().is_some_and(|id| state.window_of(id).is_some());
+    HomeData { games: lib.games.clone(), apps: lib.apps.clone(), pinned: pinned(&store, &lib), wallpaper, game_art: settings.game_art, media, last_game, running }
+}
+
+impl HomeState {
+    /// The open window of a game being played.
+    fn window_of(&self, id: &str) -> Option<isize> {
+        let mut running = self.running.lock().unwrap();
+        match running.as_ref() {
+            Some((game, hwnd)) if game == id && crate::switcher::alive(*hwnd as _) => Some(*hwnd),
+            Some((_, hwnd)) if !crate::switcher::alive(*hwnd as _) => {
+                *running = None;
+                None
+            }
+            _ => None,
+        }
+    }
+}
+
+/// A game came to the front (game mode found it): if it is one of the
+/// library's, it becomes the last game played and its window is kept for
+/// "Reanudar".
+pub fn game_started(app: &AppHandle, hwnd: isize, program: &Path) {
+    let state = app.state::<HomeState>();
+    let Some(id) = state.library.lock().unwrap().game_of(program).map(|g| g.id.clone()) else { return };
+    *state.running.lock().unwrap() = Some((id.clone(), hwnd));
+    let store = app.state::<Store>();
+    if store.settings.lock().unwrap().last_game.as_deref() != Some(&id) {
+        let _ = store.update(|s| s.last_game = Some(id));
+    }
 }
 
 impl HomeState {
@@ -324,13 +359,35 @@ pub fn launch(webview: tauri::Webview, app: AppHandle, state: tauri::State<HomeS
         events.log(&format!("inicio rechaza abrir {id}: no está en modo Inicio"));
         return Err("la pantalla de Inicio no está activa".into());
     }
+    // A game still open comes back to the front instead of starting again.
+    if let Some(hwnd) = state.window_of(&id) {
+        events.log(&format!("inicio reanuda {id}"));
+        crate::switcher::activate(hwnd as _);
+        return Ok(true);
+    }
     events.log(&format!("inicio abre {id}"));
-    state.library.lock().unwrap().launch(&id)
+    let is_game = state.library.lock().unwrap().launch(&id)?;
+    if is_game {
+        let _ = app.state::<Store>().update(|s| s.last_game = Some(id));
+    }
+    Ok(is_game)
 }
 
 #[tauri::command]
 pub async fn media_control(action: String) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || crate::media::control_blocking(&action)).await.map_err(|e| e.to_string())?
+}
+
+/// The lyrics of what is playing, from the internet (see songinfo). Ok(None)
+/// = none found, or looking them up is turned off.
+#[tauri::command]
+pub async fn lyrics(webview: tauri::Webview, store: tauri::State<'_, Store>) -> Result<Option<crate::songinfo::Lyrics>, String> {
+    crate::only_from(&webview, &[LABEL])?;
+    if !store.settings.lock().unwrap().music_online {
+        return Ok(None);
+    }
+    let now = MEDIA.now.lock().unwrap().clone();
+    tauri::async_runtime::spawn_blocking(move || crate::songinfo::lyrics(&now.title, &now.artist, now.duration_ms)).await.map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
