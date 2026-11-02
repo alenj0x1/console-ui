@@ -3,3 +3,4 @@
 /.claude/
 *.tmp
 /labs/hidhide-lab/installer/
+/app/node_modules/

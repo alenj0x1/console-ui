@@ -1,0 +1,14 @@
+{
+  "name": "console-ui-app",
+  "private": true,
+  "license": "MIT",
+  "description": "Console UI desktop app (Tauri 2): builds the app and its NSIS installer",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.12.4"
+  }
+}

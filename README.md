@@ -34,14 +34,24 @@ Use all of Windows from the couch with a game controller: an assisted cursor, an
 ## Requirements
 
 - Windows 10 or 11 (x64) with an XInput (Xbox-compatible) controller. PlayStation controllers work through Steam Input or DS4Windows.
-- WebView2 runtime (included in current Windows).
-- Optional: [HidHide](https://github.com/nefarius/HidHide) (MIT), so the Start menu and other Store apps don't react to the controller while it moves the cursor.
+- WebView2 runtime (included in current Windows; the installer downloads it if it is missing).
+- Optional: [HidHide](https://github.com/nefarius/HidHide) (MIT), so the Start menu and other Store apps don't react to the controller while it moves the cursor. The installer offers it when it is not installed.
+
+### Installer
+
+`Console UI_X.Y.Z_x64-setup.exe` installs for the current user only (`%LOCALAPPDATA%\Console UI`, no administrator rights), in Spanish or English following Windows, with a Start menu shortcut. Opening the app again while it runs brings up the home screen of the running one.
+
+- **HidHide**: a check box on the first page, shown only when HidHide is missing. It downloads the official release (v1.5.230) from GitHub, checks its SHA-256 and its Nefarius signature, and runs HidHide's own installer, which asks for administrator rights. If anything fails, Console UI still installs. Silent installs add it with `/S /HIDHIDE`.
+- **Uninstall** (Windows Settings › Apps): removes the app and its "start with Windows" entry, shows the controller to games again and takes Console UI off HidHide's list. Settings, pinned apps and learned words (`%APPDATA%\dev.alejandro.consoleui`) are deleted only if "Delete the application data" is checked. HidHide stays installed.
 
 ## Development
 
 ```bash
 cargo build --release
+npm --prefix app ci && npm --prefix app run build   # installer
 ```
+
+- `target/release/bundle/nsis/Console UI_X.Y.Z_x64-setup.exe`: the installer (Tauri CLI; needs Node.js). Hooks and the HidHide step live in `app/nsis/`.
 
 - `target/release/console-ui.exe`: the app; it opens the home screen. `--background` starts it in the tray only, `--lab` opens the keyboard lab (`--exp=suggest` for the suggestions comparison).
 - `target/release/padd.exe`: the input core alone, in a console.

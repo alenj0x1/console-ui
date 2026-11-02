@@ -34,14 +34,24 @@ Usa todo Windows desde el sillón con el control: un cursor asistido, un teclado
 ## Requisitos
 
 - Windows 10 u 11 (x64) con un control XInput (compatible con Xbox). Los de PlayStation funcionan con Steam Input o DS4Windows.
-- WebView2 (incluido en Windows actual).
-- Opcional: [HidHide](https://github.com/nefarius/HidHide) (MIT), para que el menú Inicio y otras apps de la Tienda no reaccionen al control mientras mueve el cursor.
+- WebView2 (incluido en Windows actual; si falta, el instalador lo descarga).
+- Opcional: [HidHide](https://github.com/nefarius/HidHide) (MIT), para que el menú Inicio y otras apps de la Tienda no reaccionen al control mientras mueve el cursor. El instalador lo ofrece si no está instalado.
+
+### Instalador
+
+`Console UI_X.Y.Z_x64-setup.exe` instala solo para el usuario actual (`%LOCALAPPDATA%\Console UI`, sin permisos de administrador), en español o inglés según Windows, con acceso directo en el menú Inicio. Si abres la app otra vez mientras está abierta, aparece la pantalla de Inicio de la que ya corre.
+
+- **HidHide**: una casilla en la primera página, solo si HidHide falta. Descarga la versión oficial (v1.5.230) de GitHub, comprueba su SHA-256 y la firma de Nefarius, y ejecuta el instalador de HidHide, que pide permiso de administrador. Si algo falla, Console UI se instala igual. En una instalación silenciosa se agrega con `/S /HIDHIDE`.
+- **Desinstalar** (Configuración de Windows › Aplicaciones): quita la app y su entrada de «abrir con Windows», vuelve a mostrar el control a los juegos y saca a Console UI de la lista de HidHide. Los ajustes, apps fijadas y palabras aprendidas (`%APPDATA%\dev.alejandro.consoleui`) se borran solo si marcas «Eliminar los datos de aplicación». HidHide sigue instalado.
 
 ## Desarrollo
 
 ```bash
 cargo build --release
+npm --prefix app ci && npm --prefix app run build   # instalador
 ```
+
+- `target/release/bundle/nsis/Console UI_X.Y.Z_x64-setup.exe`: el instalador (Tauri CLI; necesita Node.js). Los hooks y el paso de HidHide están en `app/nsis/`.
 
 - `target/release/console-ui.exe`: la app; abre la pantalla de Inicio. `--background` la inicia solo en la bandeja, `--lab` abre el laboratorio del teclado (`--exp=suggest` para comparar sugerencias).
 - `target/release/padd.exe`: solo el núcleo de entrada, en consola.

@@ -38,3 +38,4 @@ Changes waiting for the next version sit under **Unreleased** at the top (this s
 - Admin windows: Windows blocks a normal app's input there, so a banner says why the controller doesn't respond and B hands the focus back to the next normal window (Console UI does not raise its own rights).
 - Diagnostic event log in the app-data folder (mode changes, launches, which program the keyboard types into; never the text).
 - Cursor and keyboard labs with their data and notes.
+- Windows installer (NSIS, per user, Spanish or English): Start menu shortcut, WebView2 downloaded if missing, and an optional HidHide step that downloads the official release, checks its SHA-256 and signature and runs its installer. Uninstalling removes the "start with Windows" entry, shows the controller to games again and deletes settings only when asked. Opening the app while it runs brings up its home screen instead of a second copy.
