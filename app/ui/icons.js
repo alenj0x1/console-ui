@@ -70,17 +70,21 @@ function doneBy(b) {
   return moved ? ({ up: "↑", down: "↓", left: "←", right: "→" }[moved] ?? moved.toUpperCase()) : wanted;
 }
 
-// The d-pad directions: a cross as big as the LT / LB badges, the arms of
-// those directions filled and the others in outline (↕ = up and down).
-const DPAD_ARM = { "↑": [8.5, 2.5, 7, 10], "↓": [8.5, 11.5, 7, 10], "←": [2.5, 8.5, 10, 7], "→": [11.5, 8.5, 10, 7] };
-// ↕ fills only the two tips, leaving the centre open: either one, not a bar.
-const DPAD_GLYPH = { ...Object.fromEntries(Object.entries(DPAD_ARM).map(([k, a]) => [k, [a]])), "↕": [[8.5, 2.5, 7, 4.5], [8.5, 17, 7, 4.5]] };
+// The d-pad directions: a cross as big as the LT / LB badges, the arm of
+// that direction filled and the others in outline. ↕ (up or down) keeps the
+// cross in outline with a small arrow in each of those two tips.
+const DPAD_GLYPH = {
+  "↑": '<rect class="arm-on" x="8.5" y="2.5" width="7" height="10"/>',
+  "↓": '<rect class="arm-on" x="8.5" y="11.5" width="7" height="10"/>',
+  "←": '<rect class="arm-on" x="2.5" y="8.5" width="10" height="7"/>',
+  "→": '<rect class="arm-on" x="11.5" y="8.5" width="10" height="7"/>',
+  "↕": '<path class="arm-on" d="M12 4.4l2.4 3h-4.8zM12 19.6l2.4-3h-4.8z"/>',
+};
 function buttonShape(b) {
   const s = document.createElement("span");
-  const arms = DPAD_GLYPH[b] ?? DPAD_GLYPH[{ UP: "↑", DOWN: "↓", LEFT: "←", RIGHT: "→" }[b]];
-  if (arms) {
+  const on = DPAD_GLYPH[b] ?? DPAD_GLYPH[{ UP: "↑", DOWN: "↓", LEFT: "←", RIGHT: "→" }[b]];
+  if (on) {
     s.className = "btn btn-dpad";
-    const on = arms.map((a) => `<rect class="arm-on" x="${a[0]}" y="${a[1]}" width="${a[2]}" height="${a[3]}"/>`).join("");
     s.innerHTML = `<svg class="glyph-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round">${on}<path d="M8.5 2.5h7v6h6v7h-6v6h-7v-6h-6v-7h6z"/></svg>`;
     return s;
   }
