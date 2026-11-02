@@ -54,6 +54,17 @@ pub struct Settings {
     pub text_size: u32,
     #[serde(default)]
     pub thick_focus: bool,
+    /// "both", "left" or "right": which hand holds the controller.
+    #[serde(default = "both")]
+    pub hand: String,
+    /// Buttons the user reassigned on top of the hand's layout: button →
+    /// action (prefs::BUTTONS / prefs::ACTIONS).
+    #[serde(default)]
+    pub button_map: std::collections::BTreeMap<String, String>,
+    /// Black and white with a yellow focus; None follows Windows' own
+    /// high contrast setting.
+    #[serde(default)]
+    pub high_contrast: Option<bool>,
     /// "grid" or "split".
     #[serde(default = "grid")]
     pub keyboard_layout: String,
@@ -89,6 +100,10 @@ pub struct Settings {
     /// "short" / "normal" / "long".
     #[serde(default = "normal")]
     pub hold_time: String,
+    /// The colours of the controller drawn in Personalizar botones: a theme
+    /// id (prefs::PAD_THEMES) or "random:<seed>".
+    #[serde(default = "graphite")]
+    pub pad_theme: String,
 }
 
 fn yes() -> bool {
@@ -113,6 +128,14 @@ fn normal() -> String {
 
 fn list() -> String {
     "list".into()
+}
+
+fn both() -> String {
+    "both".into()
+}
+
+fn graphite() -> String {
+    "grafito".into()
 }
 
 fn hundred() -> u32 {

@@ -14,7 +14,7 @@ Usa todo Windows desde el sillón con el control: un cursor asistido, un teclado
 - **Pantalla de Inicio**: mantén Menu para ver a pantalla completa tus juegos de Steam y Epic (con su arte oficial de fondo), tus apps fijadas con sus íconos reales y una pestaña Multimedia (tus apps de música y video y los sitios de streaming que agregues, con lo que suena primero). De fondo, una animación propia, un fondo de video de Wallpaper Engine o tus videos e imágenes. Al abrir un juego, el control pasa a él.
 - **Ajustes**: una pestaña de Inicio para el color de acento, el tamaño del texto, los controles, el cursor, el teclado, el modo juego, abrir con Windows y la vibración.
 - **Modo juego**: cuando un juego pasa al frente (desde Inicio, Steam o cualquier otro lado), el control es suyo (dos vibraciones cortas), y el cursor vuelve cuando se cierra.
-- **Guía**: mantén View + Menu (los dos botones pequeños del centro del control: dos cuadritos y tres rayas), incluso en un juego, para ver tus ventanas abiertas y cambiar a una con A (un juego recibe el control; lo demás, el cursor), cerrar una con Y o manejar la música sin salir del juego; B vuelve. En el escritorio también se abre con un toque de View.
+- **Centro de control**: mantén View + Menu (los dos botones pequeños del centro del control: dos cuadritos y tres rayas), incluso en un juego, para ver tus ventanas abiertas y cambiar a una con A (un juego recibe el control; lo demás, el cursor), cerrar una con Y o manejar la música sin salir del juego; B vuelve. En el escritorio también se abre con un toque de View.
 - **Laboratorios**: cada decisión de diseño se midió con el usuario antes de adoptarla (ver `labs/`).
 
 ## Controles
@@ -28,8 +28,8 @@ Usa todo Windows desde el sillón con el control: un cursor asistido, un teclado
 | Y | Abrir el teclado (también al hacer clic en un campo de texto) | Espacio |
 | LB / RB | Atrás / adelante | Mayúscula / símbolos |
 | RT | Toque: Intro. Mantener + cruceta: volumen, canción anterior/siguiente | Tomar la primera sugerencia |
-| View / Menu | Guía / menú Inicio (mantener: pantalla de Inicio) | – / Intro |
-| Mantener View + Menu | Guía (también en un juego) | |
+| View / Menu | Centro de control / menú Inicio (mantener: pantalla de Inicio) | – / Intro |
+| Mantener View + Menu | Centro de control (también en un juego) | |
 
 ## Requisitos
 

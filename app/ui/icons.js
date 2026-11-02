@@ -18,6 +18,8 @@ const ICONS = {
   download: '<path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 11l5 5l5 -5"/><path d="M12 4l0 12"/>',
   "window-maximize": '<path d="M5 5m0 1a1 1 0 0 1 1 -1h12a1 1 0 0 1 1 1v12a1 1 0 0 1 -1 1h-12a1 1 0 0 1 -1 -1z"/>',
   apps: '<path d="M4 4m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/><path d="M4 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/><path d="M14 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/><path d="M14 7l6 0"/><path d="M17 4l0 6"/>',
+  // Tabler «arrows-shuffle», for «Otra combinación».
+  shuffle: '<path d="M18 4l3 3l-3 3"/><path d="M18 20l3 -3l-3 -3"/><path d="M3 7h3a5 5 0 0 1 5 5a5 5 0 0 0 5 5h5"/><path d="M21 7h-5a4.98 4.98 0 0 0 -3 1m-4 8a4.98 4.98 0 0 1 -3 1h-3"/>',
   // The Xbox controller's View and Menu buttons, as printed on them.
   "btn-view": '<rect x="3" y="4" width="12" height="10" rx="2"/><path d="M9 14v4a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2v-6a2 2 0 0 0 -2 -2h-4"/>',
   "btn-menu": '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>',
@@ -32,18 +34,40 @@ const ICONS = {
 
 // A controller button hint, drawn as the button itself: A, B, X, Y, View and
 // Menu round (View and Menu with their printed symbols), LB / RB as bumpers,
-// LT / RT as triggers. "LT RT" draws both. With A and B swapped in the
-// settings, a hint shows the button that does it now; `literal` keeps the
-// named button (text that talks about the buttons themselves).
+// LT / RT as triggers, the d-pad directions (↑ ↓ ← →) as a cross. "LT RT"
+// draws both. With buttons reassigned in the settings (A and B swapped, one
+// hand, the user's own), a hint shows the button that does it now; `literal`
+// keeps the named button (text that talks about the buttons themselves).
 function setGlyph(span, button, literal = false) {
-  const swap = !literal && typeof Prefs !== "undefined" && Prefs.get()?.swap_ab;
-  span.replaceChildren(...button.split(" ").map((b) => buttonShape(swap ? ({ A: "B", B: "A" }[b] ?? b) : b)));
+  span.replaceChildren(...button.split(" ").map((b) => buttonShape(literal ? b : doneBy(b))));
   span.setAttribute("aria-label", button);
   return span;
 }
 
+// The button that does what `b` usually does: the engine reassigns first,
+// then swaps A and B.
+function doneBy(b) {
+  const p = typeof Prefs !== "undefined" ? Prefs.get() : null;
+  if (!p) return b;
+  const wanted = (p.swap_ab ? { A: "B", B: "A" }[b] : null) ?? b;
+  const map = p.button_map ?? {};
+  const id = wanted.toLowerCase();
+  // Another button moved here (one hand, the user's own) is the one to show.
+  const moved = Object.keys(map).find((k) => k !== id && map[k] === id);
+  return moved ? ({ up: "↑", down: "↓", left: "←", right: "→" }[moved] ?? moved.toUpperCase()) : wanted;
+}
+
+// The d-pad directions: a cross as big as the LT / LB badges, the arm of
+// that direction filled and the others in outline.
+const DPAD_GLYPH = { "↑": [8.5, 2.5, 7, 10], "↓": [8.5, 11.5, 7, 10], "←": [2.5, 8.5, 10, 7], "→": [11.5, 8.5, 10, 7] };
 function buttonShape(b) {
   const s = document.createElement("span");
+  const arm = DPAD_GLYPH[b] ?? DPAD_GLYPH[{ UP: "↑", DOWN: "↓", LEFT: "←", RIGHT: "→" }[b]];
+  if (arm) {
+    s.className = "btn btn-dpad";
+    s.innerHTML = `<svg class="glyph-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><rect class="arm-on" x="${arm[0]}" y="${arm[1]}" width="${arm[2]}" height="${arm[3]}"/><path d="M8.5 2.5h7v6h6v7h-6v6h-7v-6h-6v-7h6z"/></svg>`;
+    return s;
+  }
   const symbol = { View: "btn-view", Menu: "btn-menu" }[b];
   const kind = symbol || /^([ABXY]|[LR]3)$/.test(b) ? "face" : /^[LR]B$/.test(b) ? "bumper" : /^[LR]T$/.test(b) ? "trigger" : "plain";
   s.className = `btn btn-${kind}${kind === "face" && !symbol && b.length > 1 ? " wide" : ""}`;
@@ -53,9 +77,10 @@ function buttonShape(b) {
 }
 
 // Text that names buttons: "{B}" or "{View}" inside it becomes the button.
-function withButtons(text) {
-  return text.split(/\{([A-Za-z]+)\}/).map((part, i) =>
-    i % 2 ? setGlyph(Object.assign(document.createElement("span"), { className: "glyph inline" }), part, true) : document.createTextNode(part),
+// `literal` false shows the button that does it now instead.
+function withButtons(text, literal = true) {
+  return text.split(/\{([A-Za-z0-9]+)\}/).map((part, i) =>
+    i % 2 ? setGlyph(Object.assign(document.createElement("span"), { className: "glyph inline" }), part, literal) : document.createTextNode(part),
   );
 }
 

@@ -32,10 +32,12 @@ const SHOT_WIDTH: i32 = 480;
 /// PW_RENDERFULLCONTENT: also captures windows drawn by the GPU.
 const RENDER_FULL: PRINT_WINDOW_FLAGS = 2;
 
-/// Programs that fill the screen without being games (videos, slides).
-const NOT_GAMES: [&str; 12] = [
+/// Programs that fill the screen without being games (videos, slides, and
+/// another copy of this app's home screen).
+const NOT_GAMES: [&str; 13] = [
     "chrome.exe", "msedge.exe", "firefox.exe", "brave.exe", "opera.exe", "vivaldi.exe",
     "vlc.exe", "mpc-hc64.exe", "mpc-be64.exe", "potplayermini64.exe", "explorer.exe", "powerpnt.exe",
+    "console-ui.exe",
 ];
 
 #[derive(Clone, Serialize)]

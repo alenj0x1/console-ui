@@ -19,6 +19,8 @@
   --on-accent-muted: color-mix(in srgb, var(--on-accent) 70%, transparent);
   --danger: #e06c5f;
   --radius: 10px;
+  /* Width of the thin outlines (cards, panels). */
+  --line: 1px;
   /* Focus ring width on the home screen and the guide (rem: scales with them). */
   --focus: 0.1875rem;
   --font-display: "Fredoka", "Segoe UI", sans-serif;
@@ -28,6 +30,22 @@
 
 /* Settings: a thicker focus ring. */
 :root.thick-focus { --focus: 0.3125rem; }
+
+/* Settings: high contrast. Black, white text and lines, and a thick yellow
+   focus (the accent, set in prefs.js). Our own colours, not Windows' forced ones. */
+:root { forced-color-adjust: none; }
+:root.high-contrast {
+  --bg: #000000;
+  --surface: #000000;
+  --surface-hover: #1c1c1c;
+  --ring: #ffffff;
+  --ring-strong: #ffffff;
+  --text: #ffffff;
+  --muted: #e6e6e6;
+  --danger: #ff8a7a;
+  --focus: 0.3125rem;
+  --line: 2px;
+}
 
 * { box-sizing: border-box; }
 

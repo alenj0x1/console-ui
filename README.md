@@ -14,7 +14,7 @@ Use all of Windows from the couch with a game controller: an assisted cursor, an
 - **Home screen**: hold Menu for a full-screen view of your Steam and Epic games (official art as the background), pinned apps with their real icons and a media tab (your media apps and the streaming sites you add, with what is playing first), over a built-in animation, a Wallpaper Engine video wallpaper or your own videos and pictures. Launching a game hands the controller to it.
 - **Settings**: a tab on the home screen for the accent colour, text size, controls, cursor, keyboard, game mode, starting with Windows and vibration.
 - **Game mode**: a game coming to the front (from the home screen, Steam or anywhere else) gets the controller (two short rumbles), and the cursor comes back when it closes.
-- **Guide**: hold View + Menu (the two small buttons in the middle of the controller: two squares and three lines), even in a game, to see your open windows and switch to one with A (a game gets the controller, anything else the cursor), close one with Y, or control the music without leaving the game; B goes back. In the desktop, a tap on View opens it too.
+- **Control center**: hold View + Menu (the two small buttons in the middle of the controller: two squares and three lines), even in a game, to see your open windows and switch to one with A (a game gets the controller, anything else the cursor), close one with Y, or control the music without leaving the game; B goes back. In the desktop, a tap on View opens it too.
 - **Labs**: every design choice was measured with the user before adopting it (see `labs/`).
 
 ## Controls
@@ -28,8 +28,8 @@ Use all of Windows from the couch with a game controller: an assisted cursor, an
 | Y | Open the keyboard (also by clicking a text field) | Space |
 | LB / RB | Back / forward | Shift / symbols |
 | RT | Tap: Enter. Hold + d-pad: volume, previous/next track | Take the first suggestion |
-| View / Menu | Guide / Start menu (hold: home screen) | – / Enter |
-| Hold View + Menu | Guide (also in a game) | |
+| View / Menu | Control center / Start menu (hold: home screen) | – / Enter |
+| Hold View + Menu | Control center (also in a game) | |
 
 ## Requirements
 

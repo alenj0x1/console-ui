@@ -15,11 +15,10 @@
       padding: 14px 16px 14px 22px;
       border-radius: 14px;
       background: var(--bg);
-      box-shadow: inset 0 0 0 1px var(--ring-strong);
+      box-shadow: inset 0 0 0 var(--line) var(--ring-strong);
     }
     .text { min-width: 0; font-size: 15px; line-height: 1.4; }
     .text b { font-weight: 600; }
-    .text .glyph { display: inline-grid; vertical-align: -0.2em; color: var(--text); font-size: 15px; }
     .text span { color: var(--muted); }
     .back { flex: none; display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 16px; border-radius: 10px; background: var(--surface); font-weight: 600; font-size: 15px; }
     .back .key { font-weight: 700; color: var(--muted); }
@@ -31,10 +30,11 @@
 <body>
   <div class="notice" data-kind="admin">
     <div class="text admin"><b id="name">Esta ventana</b> se ejecuta como administrador. <span>Windows no deja que el control la maneje.</span></div>
-    <div class="text game"><b>El control es del juego.</b> <span>Mantén <span class="glyph" aria-label="View"><svg class="glyph-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="12" height="10" rx="2"/><path d="M9 14v4a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2v-6a2 2 0 0 0 -2 -2h-4"/></svg></span> y <span class="glyph" aria-label="Menu"><svg class="glyph-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg></span> para abrir la guía.</span></div>
+    <div class="text game"><b>El control es del juego.</b> <span id="game-hint">Mantén {View} y {Menu} para abrir el centro de control.</span></div>
     <div class="back">Volver al escritorio <span class="key">B</span></div>
   </div>
   <script src="prefs.js"></script>
+  <script src="icons.js"></script>
   <script src="notice.js"></script>
 </body>
 </html>

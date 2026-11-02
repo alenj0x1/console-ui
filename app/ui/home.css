@@ -1,6 +1,9 @@
 /* Sizes are in rem and the root scales with the screen height, so the home
    screen looks the same at 720p, 1080p and 4K (16 px at 1080p). */
 html { font-size: calc(100vh / 67.5 * var(--text-scale, 1)); }
+/* The same unit without the text size: pictures, covers and tiles keep their
+   size when only the text grows, so every tab still fits on screen. */
+:root { --u: calc(100vh / 67.5); }
 html, body { height: 100%; overflow: hidden; background: var(--bg); user-select: none; cursor: default; }
 body { position: relative; }
 
@@ -46,14 +49,14 @@ body { position: relative; }
 /* ---------- every tab: info on the left, a row of tiles at the bottom ---------- */
 .view { position: absolute; inset: 7rem 0 7.5rem; z-index: 1; display: flex; flex-direction: column; }
 
-.info { padding: 3rem 4rem 0; max-width: 50rem; }
-.lead { height: 11rem; display: flex; align-items: flex-end; }
-.logo { max-width: 32rem; max-height: 11rem; object-fit: contain; object-position: left bottom; display: block; }
-.lead-icon { width: 7rem; height: 7rem; object-fit: contain; }
-.lead-cover { width: 11rem; height: 11rem; border-radius: 0.75rem; object-fit: cover; background: var(--surface); }
-.lead-symbol { width: 7rem; height: 7rem; border-radius: 1rem; background: var(--surface); display: grid; place-items: center; color: var(--muted); }
-.lead-symbol .icon { width: 3.5rem; height: 3.5rem; }
-.title { margin: 1.5rem 0 0; font-family: var(--font-display); font-weight: 500; font-size: 3.5rem; line-height: 1.1; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.info { flex: 0 1 auto; min-height: 0; overflow: hidden; margin-bottom: calc(1.25 * var(--u)); padding: calc(3 * var(--u) / var(--text-scale, 1)) 4rem 0; max-width: 50rem; }
+.lead { height: calc(11 * var(--u) / var(--text-scale, 1)); display: flex; align-items: flex-end; }
+.logo { max-width: calc(32 * var(--u)); max-height: calc(11 * var(--u) / var(--text-scale, 1)); object-fit: contain; object-position: left bottom; display: block; }
+.lead-icon { width: calc(7 * var(--u)); height: calc(7 * var(--u)); object-fit: contain; }
+.lead-cover { width: calc(11 * var(--u) / var(--text-scale, 1)); height: calc(11 * var(--u) / var(--text-scale, 1)); border-radius: calc(0.75 * var(--u)); object-fit: cover; background: var(--surface); }
+.lead-symbol { width: calc(7 * var(--u)); height: calc(7 * var(--u)); border-radius: calc(1 * var(--u)); background: var(--surface); display: grid; place-items: center; color: var(--muted); }
+.lead-symbol .icon { width: calc(3.5 * var(--u)); height: calc(3.5 * var(--u)); }
+.title { margin: 1.5rem 0 0; font-family: var(--font-display); font-weight: 500; font-size: min(3.5rem, calc(4.2 * var(--u))); line-height: 1.1; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .lead:has(.logo) + .title { display: none; }
 .meta { margin: 1.25rem 0 0; color: var(--muted); font-size: 1.125rem; min-height: 1.5rem; }
 .action { margin-top: 1.75rem; display: inline-flex; align-items: center; gap: 0.75rem; height: 3rem; padding: 0 1.25rem 0 1.5rem; border-radius: var(--radius); background: var(--accent); color: var(--on-accent); font-weight: 600; font-size: 1.125rem; }
@@ -67,6 +70,7 @@ body { position: relative; }
 
 /* Padding leaves room for the focus ring so nothing is clipped. */
 .row {
+  flex: none;
   margin-top: auto;
   padding: 0.5rem 4rem;
   display: flex;
@@ -77,11 +81,11 @@ body { position: relative; }
 
 .tile {
   flex: none;
-  width: 17.5rem;
-  height: 8.2rem;
+  width: calc(17.5 * var(--u));
+  height: calc(8.2 * var(--u) + 2.5rem - 2.5 * var(--u));
   border-radius: 0.75rem;
   background: var(--surface);
-  box-shadow: inset 0 0 0 1px var(--ring);
+  box-shadow: inset 0 0 0 var(--line) var(--ring);
   position: relative;
   overflow: hidden;
   display: flex;
@@ -93,12 +97,12 @@ body { position: relative; }
 .tile.on { box-shadow: 0 0 0 var(--focus) var(--accent); }
 .tile > img.art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 200ms ease; }
 .tile > img.art.loaded { opacity: 1; }
-.tile .tile-icon { width: 3.5rem; height: 3.5rem; object-fit: contain; }
+.tile .tile-icon { width: calc(3.5 * var(--u)); height: calc(3.5 * var(--u)); object-fit: contain; }
 .tile .tile-icon.symbol { color: var(--muted); }
 .tile .name { max-width: 15rem; padding: 0 1rem; font-weight: 600; font-size: 1rem; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tile .badge { position: absolute; top: 0.625rem; right: 0.625rem; width: 1.5rem; height: 1.5rem; border-radius: 0.375rem; display: grid; place-items: center; background: var(--accent); color: var(--on-accent); }
 .tile .badge .icon { width: 1rem; height: 1rem; }
-.tile.on .icon.symbol, .tile .icon.symbol { width: 2.25rem; height: 2.25rem; }
+.tile.on .icon.symbol, .tile .icon.symbol { width: calc(2.25 * var(--u)); height: calc(2.25 * var(--u)); }
 /* The player's card: the song under the app's name. */
 .tile.playing { gap: 0.5rem; }
 .tile.playing .song { max-width: 15rem; padding: 0 1rem; margin-top: -0.25rem; font-size: 0.9375rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -108,7 +112,7 @@ body { position: relative; }
   margin-top: 2rem;
   padding: 0.5rem 4rem;
   display: grid;
-  grid-template-columns: repeat(auto-fill, 17.5rem);
+  grid-template-columns: repeat(auto-fill, calc(17.5 * var(--u)));
   gap: 1.25rem;
   align-content: start;
   overflow: hidden;
@@ -135,7 +139,7 @@ body { position: relative; }
   padding: 0 1rem 0 0.5rem;
   border-radius: 0.75rem;
   background: var(--surface);
-  box-shadow: inset 0 0 0 1px var(--ring);
+  box-shadow: inset 0 0 0 var(--line) var(--ring);
   max-width: 34rem;
 }
 .mini-player[hidden] { display: none; }
@@ -159,18 +163,21 @@ body { position: relative; }
 /* The focused option's card: its preview on top and what it does under it,
    on the same surface as the options, so the text reads over any background. */
 .preview-card { display: flex; flex-direction: column; max-height: 100%; min-height: 0; border-radius: 0.75rem; background: var(--surface); overflow: hidden; }
+.preview-card[hidden] { display: none; }
 .stage { flex: 0 1 23.5rem; min-height: 12rem; position: relative; }
 .stage[hidden] { display: none; }
 .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .about { flex: none; margin: 0; padding: 1.25rem 1.5rem 1.5rem; font-size: 1.375rem; line-height: 1.6; }
-.stage:not([hidden]) + .about { box-shadow: inset 0 1px 0 var(--ring); }
+.stage:not([hidden]) + .about { box-shadow: inset 0 var(--line) 0 var(--ring); }
 .about .now { display: block; margin-top: 0.75rem; color: color-mix(in srgb, var(--text) 75%, transparent); }
 .about .now:empty { display: none; }
 .cats { display: flex; flex-direction: column; gap: 0.5rem; }
 .cat { display: flex; align-items: center; gap: 1rem; height: 3.5rem; padding: 0 1.25rem; border-radius: 0.75rem; font-weight: 600; font-size: 1.25rem; color: var(--muted); }
 .cat.sel { background: var(--surface); color: var(--text); }
 .cat.on { box-shadow: 0 0 0 var(--focus) var(--accent); }
-.panel { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem; border-radius: 0.75rem; background: var(--surface); }
+/* With big text the options may not all fit: the list scrolls to the focus
+   instead of spilling over the button hints. */
+.panel { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem; border-radius: 0.75rem; background: var(--surface); max-height: 100%; min-height: 0; overflow-y: auto; scrollbar-width: none; scroll-padding: 0.75rem; }
 .setting { display: flex; align-items: center; justify-content: space-between; gap: 2rem; min-height: 4rem; padding: 0 1.25rem; border-radius: 0.625rem; font-size: 1.25rem; }
 .setting .name { font-weight: 600; }
 .setting.on { background: var(--surface-hover); box-shadow: 0 0 0 var(--focus) var(--accent); }
@@ -186,6 +193,213 @@ body { position: relative; }
 .choice { display: flex; gap: 0.25rem; padding: 0.25rem; border-radius: 0.75rem; background: var(--bg); }
 .choice span { padding: 0.5rem 1rem; border-radius: 0.5rem; color: var(--muted); font-weight: 600; font-size: 1.0625rem; }
 .choice span.sel { background: var(--surface-hover); color: var(--text); }
+/* Customizing the buttons: the controller drawn in the middle, what each
+   button does on its side. */
+/* Three columns: the left hand's seven buttons, the controller, the right
+   hand's seven. The side columns share what is left equally (never less than
+   --pad-side) and do not depend on their content, so opening a button's
+   actions moves nothing; the drawing gives up size before the text. */
+.pad-map {
+  --pad-side: 18.5rem;
+  position: relative;
+  grid-column: 2 / span 2;
+  display: grid;
+  grid-template-columns: minmax(var(--pad-side), 1fr) minmax(0, calc(42.5 * var(--u))) minmax(var(--pad-side), 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  column-gap: calc(2 * var(--u));
+  align-items: stretch;
+  height: 100%;
+  min-height: 0;
+  padding: calc(1.5 * var(--u));
+  border-radius: 0.75rem;
+  background: var(--surface);
+}
+.settings.open .pad-map { grid-column: 1 / span 2; }
+
+.pad-side { display: grid; grid-template-rows: repeat(7, minmax(0, 1fr)); gap: max(12px, calc(0.75 * var(--u))); min-width: 0; min-height: 0; }
+.pad-side.left { justify-items: end; }
+.pad-side.right { justify-items: start; }
+.pad-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  align-self: center;
+  max-width: 100%;
+  min-height: calc(3.5 * var(--u));
+  padding: calc(0.375 * var(--u)) 1rem;
+  border-radius: 0.625rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.15;
+}
+.pad-side.left .pad-label { flex-direction: row-reverse; text-align: right; }
+.pad-label .glyph.inline { flex: none; margin: 0; color: var(--muted); }
+.pad-label .value { min-width: 0; overflow-wrap: break-word; }
+/* One hand: the other hand's buttons stay usable, quieter. */
+.pad-side.idle .pad-label:not(.on) { color: var(--muted); }
+.pad-label.on { background: var(--surface-hover); box-shadow: 0 0 0 var(--focus) var(--accent); }
+.pad-label.on .glyph.inline { color: var(--text); }
+
+/* The d-pad direction: a cross as big as the LT / LB badges, the arm of that
+   direction filled. */
+.btn-dpad { box-shadow: none; min-width: 0; padding: 0; }
+.btn-dpad .glyph-icon { width: 1.7em; height: 1.7em; }
+.btn-dpad .arm-on { fill: var(--text); stroke: none; }
+
+/* ---------- the controller ---------- */
+.pad-center { min-width: 0; min-height: 0; display: grid; place-items: center; }
+.pad-drawing {
+  /* The theme's colours (pad.js sets them on each drawing); these are the
+     default graphite. No shadows, no gradients, no shine. */
+  --pad-body: #35373c;
+  --pad-paint: var(--pad-body);
+  --pad-back: #212226;
+  --pad-bumper: #2b2d31;
+  --pad-well: #26272b;
+  --pad-stick: #45474c;
+  --pad-dpad: #45474c;
+  --pad-face: #2a2b2f;
+  --pad-line: #898781;
+  --pad-mark: #898781;
+  --pad-letter-a: #b2d69c;
+  --pad-letter-b: #e9938b;
+  --pad-letter-x: #9bb9d9;
+  --pad-letter-y: #d6c178;
+  /* The focus reads the same on any theme: a black ring outside the accent,
+     a blue inside with ivory letters. */
+  --pad-halo: #000000;
+  --pad-on: color-mix(in srgb, var(--accent) 45%, #16171a);
+  --pad-stroke: 3px;
+  --pad-detail: 2px;
+  --pad-focus: 3.5px;
+  width: 100%;
+  max-height: 100%;
+  display: block;
+  overflow: visible;
+}
+.pad-drawing * { vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round; }
+.pad-drawing .body { fill: var(--pad-paint); stroke: var(--pad-line); stroke-width: var(--pad-stroke); }
+.pad-drawing .trigger { fill: var(--pad-back); stroke: var(--pad-line); stroke-width: var(--pad-stroke); }
+.pad-drawing .bumper { fill: var(--pad-bumper); stroke: var(--pad-line); stroke-width: var(--pad-stroke); }
+.pad-drawing .well { fill: var(--pad-well); stroke: var(--pad-line); stroke-width: var(--pad-detail); }
+.pad-drawing .cap { fill: var(--pad-stick); stroke: var(--pad-line); stroke-width: var(--pad-stroke); }
+.pad-drawing .cross { fill: var(--pad-dpad); stroke: var(--pad-line); stroke-width: var(--pad-stroke); }
+.pad-drawing .arm { fill: transparent; stroke: none; }
+.pad-drawing .arrow { fill: var(--pad-mark); }
+.pad-drawing .face { fill: var(--pad-face); stroke: var(--pad-line); stroke-width: var(--pad-stroke); }
+.pad-drawing .small { fill: var(--pad-face); stroke: var(--pad-line); stroke-width: var(--pad-detail); }
+.pad-drawing .mark { fill: none; stroke: var(--pad-mark); stroke-width: var(--pad-detail); }
+.pad-drawing .mark.thin { stroke-width: 1.5px; }
+.pad-drawing text { font-family: var(--font-display); font-weight: 500; font-size: 15px; text-anchor: middle; dominant-baseline: central; }
+.pad-drawing .letter-a { fill: var(--pad-letter-a); }
+.pad-drawing .letter-b { fill: var(--pad-letter-b); }
+.pad-drawing .letter-x { fill: var(--pad-letter-x); }
+.pad-drawing .letter-y { fill: var(--pad-letter-y); }
+
+/* The button in focus: accent outline over a dark halo, its letter or arrow
+   still readable. On the bumpers only the band lights up. */
+.pad-drawing .halo { fill: none; stroke: var(--pad-halo); stroke-width: calc(var(--pad-focus) + 6px); }
+.pad-drawing .guide-mark { fill: var(--pad-mark); }
+.pad-drawing .on .key { stroke: var(--accent); stroke-width: var(--pad-focus); fill: var(--pad-on); }
+.pad-drawing .on text { fill: var(--text); }
+.pad-drawing .on .arrow { fill: var(--text); }
+
+/* The guide from the row in focus to its button, with the same dark halo
+   where it crosses the controller. */
+.pad-guide { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.pad-guide path { fill: none; stroke-linejoin: round; stroke-linecap: round; }
+.pad-guide .line { stroke: var(--accent); stroke-width: 3px; }
+.pad-guide .halo { stroke: #000000; stroke-width: 9px; }
+
+/* ---------- Color del control: the themes, the controller beside them ---------- */
+.pad-theme-row { justify-content: flex-start; gap: 1rem; }
+.pad-theme-row .name { flex: 1; }
+.setting .tick, .pad-theme-row .tick { flex: none; width: 1.5rem; height: 1.5rem; color: var(--accent); }
+.pad-chip { flex: none; display: flex; }
+.pad-chip span { width: 1.5rem; height: 1.5rem; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--muted); }
+.pad-chip span + span { margin-left: 0.25rem; }
+.pad-chip-icon { flex: none; width: 1.5rem; height: 1.5rem; margin: 0 0.875rem 0 0.875rem; color: var(--muted); }
+/* As tall as the list, the controller in its middle. */
+.pad-theme-card { align-self: stretch; display: grid; place-items: center; padding: calc(2 * var(--u)); }
+.pad-theme-card .pad-drawing { max-height: 100%; }
+
+/* ---------- a button's actions, in place of its column ---------- */
+/* The list shows whole rows only (its height is set in pad.js) and snaps to
+   them; it fades only over its own padding where it continues, so no action
+   is ever cut or looks switched off. */
+.pad-actions {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: calc(0.25 * var(--u));
+  padding: 1.5rem calc(0.5 * var(--u));
+  border-radius: 0.75rem;
+  overflow-y: auto;
+  scrollbar-width: none;
+  scroll-snap-type: y mandatory;
+  scroll-padding-block: 1.5rem;
+}
+/* A little wider than its column: into the gap next to the drawing and part
+   of the card's margin, so a name, «original» and the tick fit on one line. */
+.pad-actions.left { margin: 0 calc(-2.5 * var(--u)) 0 calc(-1 * var(--u)); }
+.pad-actions.right { margin: 0 calc(-1 * var(--u)) 0 calc(-2.5 * var(--u)); }
+.pad-actions.more-down { mask-image: linear-gradient(#000 calc(100% - 1.5rem), transparent calc(100% - 1rem)); }
+.pad-actions.more-up { mask-image: linear-gradient(transparent 1rem, #000 1.5rem); }
+.pad-actions.more-up.more-down { mask-image: linear-gradient(transparent 1rem, #000 1.5rem, #000 calc(100% - 1.5rem), transparent calc(100% - 1rem)); }
+.pad-action {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: calc(3.5 * var(--u));
+  padding: calc(0.375 * var(--u)) 0.75rem;
+  border-radius: 0.625rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--muted);
+  scroll-snap-align: start;
+}
+/* «original» on the same line as its name, next to the tick. */
+.pad-action .name { flex: 1; min-width: 0; white-space: nowrap; }
+.pad-action .original { flex: none; font-size: 1.125rem; font-weight: 400; color: var(--muted); }
+.pad-action .tick { flex: none; width: 1.5rem; height: 1.5rem; color: var(--accent); }
+.pad-action.current { color: var(--text); }
+.pad-action.on { background: var(--surface-hover); color: var(--text); box-shadow: 0 0 0 var(--focus) var(--accent); }
+.pad-action.on .original { color: var(--text); }
+
+/* ---------- high contrast: black, white lines, a thick yellow focus ---------- */
+.high-contrast .pad-map { box-shadow: inset 0 0 0 var(--line) var(--ring); }
+.high-contrast .pad-drawing {
+  --pad-body: #000000;
+  --pad-paint: #000000;
+  --pad-back: #000000;
+  --pad-bumper: #000000;
+  --pad-well: #000000;
+  --pad-stick: #000000;
+  --pad-dpad: #000000;
+  --pad-face: #000000;
+  --pad-line: #ffffff;
+  --pad-mark: #ffffff;
+  --pad-letter-a: #ffffff;
+  --pad-letter-b: #ffffff;
+  --pad-letter-x: #ffffff;
+  --pad-letter-y: #ffffff;
+  --pad-on: #000000;
+  --pad-halo: #000000;
+  --pad-stroke: 4px;
+  --pad-detail: 3px;
+  --pad-focus: 5px;
+}
+.high-contrast .pad-drawing text { fill: #ffffff; }
+.high-contrast .pad-drawing .on .key { fill: none; }
+.high-contrast .pad-drawing .on .arm { fill: none; }
+.high-contrast .pad-guide .line { stroke-width: 3px; }
+.high-contrast .pad-guide .halo { stroke: #000000; }
+.panel.more-below { mask-image: linear-gradient(180deg, #000 calc(100% - 4rem), transparent); }
+.panel.more-above { mask-image: linear-gradient(0deg, #000 calc(100% - 4rem), transparent); }
+.panel.more-above.more-below { mask-image: linear-gradient(180deg, transparent, #000 4rem, #000 calc(100% - 4rem), transparent); }
 .panel-title { padding: 0.75rem 1.25rem 0.25rem; font-weight: 600; font-size: 1rem; color: var(--muted); }
 /* A list's tick box: the accent when on. */
 .check { flex: none; width: 1.875rem; height: 1.875rem; border-radius: 0.5rem; display: grid; place-items: center; box-shadow: inset 0 0 0 0.125rem var(--ring-strong); }
@@ -219,11 +433,11 @@ body { position: relative; }
 .backdrop { background: var(--bg); transition: background-color 400ms ease; }
 .stage-cover {
   position: absolute;
-  right: 4rem;
-  top: 8rem;
-  height: 38rem;
-  width: 38rem;
-  border-radius: 1.25rem;
+  right: calc(4 * var(--u));
+  top: calc(8 * var(--u));
+  height: calc(38 * var(--u));
+  width: calc(38 * var(--u));
+  border-radius: calc(1.25 * var(--u));
   object-fit: cover;
   opacity: 0;
   transition: opacity 400ms ease;
@@ -266,7 +480,7 @@ body.music-stage .scrim {
 
 /* Volume changed from another tab: a small pill next to the clock. */
 .topbar-end { display: flex; align-items: center; gap: 1.5rem; }
-.volume-toast { height: 2.5rem; padding: 0 1rem; border-radius: 0.75rem; background: var(--surface); box-shadow: inset 0 0 0 1px var(--ring); }
+.volume-toast { height: 2.5rem; padding: 0 1rem; border-radius: 0.75rem; background: var(--surface); box-shadow: inset 0 0 0 var(--line) var(--ring); }
 .volume-toast[hidden] { display: none; }
 .volume-toast .glyph { display: none; }
 
@@ -277,3 +491,14 @@ body.music-stage .scrim {
 .tabs { grid-column: 2; }
 .tabs > * { line-height: 1; }
 .topbar-end { grid-column: 3; justify-self: end; }
+
+/* ---------- high contrast: plain black behind everything ---------- */
+.high-contrast .wall, .high-contrast .hero, .high-contrast .trailer, .high-contrast .scrim { display: none; }
+.high-contrast body.music-stage .backdrop { background: var(--bg); }
+/* Outlined panels and a plain switch: no tone differences to tell things apart. */
+.high-contrast .panel, .high-contrast .preview-card, .high-contrast .cat.sel { box-shadow: inset 0 0 0 var(--line) var(--ring); }
+.high-contrast .cat.sel.on { box-shadow: inset 0 0 0 var(--line) var(--ring), 0 0 0 var(--focus) var(--accent); }
+.high-contrast .switch:not(.on) { background: var(--bg); box-shadow: inset 0 0 0 var(--line) var(--ring); }
+.high-contrast .switch:not(.on)::after { background: var(--text); }
+.high-contrast .choice { box-shadow: inset 0 0 0 var(--line) var(--ring); }
+.high-contrast .choice span.sel { background: var(--text); color: var(--bg); }

@@ -237,14 +237,14 @@ const Previews = (() => {
     ctx.fillStyle = col(C.text, 0.85);
     ctx.beginPath(); ctx.roundRect(x + w - 13, ty(offset), 6, thumb, 3); ctx.fill();
   }
-  // The guide as the app shows it: a panel with its name and a few rows.
+  // The control center as the app shows it: a panel with its name and a few rows.
   function drawGuide({ x, y, w, h, alpha }) {
     ctx.save();
     ctx.globalAlpha = alpha;
     const dy = (1 - alpha) * 8;
     ctx.beginPath(); ctx.roundRect(x, y + dy, w, h, 14); ctx.fillStyle = col(C["surface-hover"]); ctx.fill();
     ctx.font = `600 24px ${FONT}`; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillStyle = col(C.text);
-    ctx.fillText("Guía", x + 20, y + dy + 28);
+    ctx.fillText("Centro de control", x + 20, y + dy + 28);
     for (let i = 0; i < 3; i++) {
       const ry = y + dy + 56 + i * 26;
       ctx.fillStyle = col(C.muted, 0.8);
@@ -579,7 +579,7 @@ const Previews = (() => {
       const pt = t - run.open;
       const button = (icon, name) => ({ kind: "button", icon, name, held, progress, ghost: g });
       return {
-        guide: t >= run.open ? { x: 200, y: L.content, w: 240, h: 140, alpha: alpha * easeOut(clamp01(pt / 0.15)) } : null,
+        guide: t >= run.open ? { x: 170, y: L.content, w: 300, h: 140, alpha: alpha * easeOut(clamp01(pt / 0.15)) } : null,
         controls: [button("view", "Vista"), button("menu", "Menú")],
         join: true,
       };

@@ -214,9 +214,9 @@ listen("trailer", ({ payload }) => playTrailer(payload));
 // art, the music cover or with the home screen closed).
 function syncMotion() {
   const stage = document.body.classList.contains("music-stage");
-  if (active && !stage && trailer.classList.contains("shown")) trailer.play().catch(() => {});
+  if (active && !stage && !Prefs.get()?.high_contrast && trailer.classList.contains("shown")) trailer.play().catch(() => {});
   else if (!trailer.paused) trailer.pause();
-  const covered = stage || heroes.some((h) => h.classList.contains("shown"));
+  const covered = stage || Prefs.get()?.high_contrast || heroes.some((h) => h.classList.contains("shown"));
   const visible = (layer) => active && layer.classList.contains("shown") && !covered;
   if (visible(wallVideo) && wallVideo.paused) wallVideo.play().catch(() => {});
   else if (!visible(wallVideo) && !wallVideo.paused) wallVideo.pause();
@@ -644,6 +644,25 @@ function folderItems() {
 // Language names, each in its own language.
 const LANGUAGE_NAMES = { es: "Español", en: "English", pt: "Português", fr: "Français", de: "Deutsch", it: "Italiano" };
 const languageName = (code) => LANGUAGE_NAMES[code] ?? code;
+// Which hand holds the controller; three long names do not fit side by side.
+const HANDS = [["both", "Dos manos"], ["left", "Mano izquierda"], ["right", "Mano derecha"]];
+const handName = (v) => (HANDS.find(([h]) => h === v) ?? HANDS[0])[1];
+const TEXT_SIZES = [[100, "Normal"], [110, "Grande"], [120, "Muy grande"], [135, "Enorme"], [150, "La más grande"]];
+const textSizeName = (v) => (TEXT_SIZES.find(([s]) => s === v) ?? TEXT_SIZES[0])[1];
+// Buttons that can be reassigned, as the settings name them, and what each can do.
+// Laid out as on the controller: the left hand's buttons, then the right's.
+const PAD_LEFT = ["lt", "lb", "l3", "up", "left", "right", "down"];
+const PAD_RIGHT = ["rt", "rb", "y", "x", "b", "a", "r3"];
+const REMAP_BUTTONS = [...PAD_LEFT, ...PAD_RIGHT];
+const ARROWS = { up: "↑", down: "↓", left: "←", right: "→" };
+const buttonText = (b) => (ARROWS[b] ? `Cruceta ${ARROWS[b]}` : `{${b.toUpperCase()}}`);
+// What each button usually does, in words, and the extra actions.
+const ACTION_WORDS = {
+  a: "Aceptar, clic", b: "Volver", x: "Clic derecho", y: "Teclado", lb: "Atrás", rb: "Adelante", lt: "Puntero lento", rt: "Siguiente canción",
+  l3: "Clic central", r3: "Intro", up: "Flecha arriba", down: "Flecha abajo", left: "Flecha izquierda", right: "Flecha derecha",
+  scroll_up: "Subir la página", scroll_down: "Bajar la página", none: "Nada",
+};
+const ACTIONS = ["a", "b", "x", "y", "lb", "rb", "lt", "rt", "l3", "r3", "up", "down", "left", "right", "scroll_up", "scroll_down", "none"];
 const ACCENT_NAMES = { blue: "Azul", violet: "Violeta", green: "Verde", amber: "Ámbar", pink: "Rosa", ivory: "Marfil" };
 // Names in everyday words, each with a line that says what it changes.
 const CATEGORIES = [
@@ -651,20 +670,24 @@ const CATEGORIES = [
     name: "Apariencia",
     icon: "palette",
     rows: () => [
-      { kind: "swatch", name: "Color principal", pref: "accent", options: Object.keys(Prefs.ACCENTS), desc: "El color del marco que muestra dónde estás y de botones como Jugar." },
-      { kind: "choice", name: "Tamaño de letra", pref: "text_size", options: [[100, "Normal"], [110, "Grande"], [120, "Muy grande"]], desc: "Agranda los textos de Inicio y de la guía para leerlos de lejos." },
+      Prefs.get()?.high_contrast ? null : { kind: "swatch", name: "Color principal", pref: "accent", options: Object.keys(Prefs.ACCENTS), desc: "El color del marco que muestra dónde estás y de botones como Jugar." },
+      { kind: "toggle", name: "Alto contraste", pref: "high_contrast", desc: "Fondo negro liso, letras y bordes blancos y un marco amarillo grueso en lo que tienes elegido. Se enciende sola si Windows usa alto contraste." },
+      { kind: "link", name: "Tamaño de letra", value: textSizeName(state.prefs?.text_size), run: () => openSub("text_size"), desc: "Agranda los textos de Inicio y del centro de control para leerlos de lejos." },
       { kind: "toggle", name: "Marco de selección más grueso", pref: "thick_focus", desc: "Un borde más ancho alrededor de lo que tienes elegido, para verlo mejor desde el sillón." },
       { kind: "link", name: "Fondo", value: state.wallpaper?.title ?? "Color liso", run: openWalls, desc: "Lo que se ve detrás de Inicio, sea una animación, un video o una imagen." },
       { kind: "toggle", name: "Imágenes de los juegos", pref: "game_art", desc: "Muestra el arte del juego elegido detrás de la pestaña Juegos." },
-    ],
+    ].filter(Boolean),
   },
   {
     name: "Botones",
     icon: "gamepad",
     rows: () => [
-      { kind: "toggle", name: "Aceptar con {B}", pref: "swap_ab", desc: "{B} acepta y {A} vuelve atrás, como en las consolas de Nintendo. Para volver a lo normal, entra aquí y presiona {B}." },
+      { kind: "link", name: "Distribución", pref: "hand", value: handName(state.prefs?.hand), run: () => openSub("hand"), desc: "Con una sola mano, todo queda del lado de esa mano. Clic con el botón de arriba, clic derecho con el gatillo y la cruceta o los botones desplazan. En un juego, mantén {View} con la izquierda o {Menu} con la derecha para abrir el centro de control." },
+      { kind: "link", name: "Personalizar botones", value: "", run: () => openSub("buttons"), desc: "Elige qué hace cada botón del control. Cambia la distribución de arriba para empezar de nuevo." },
+      { kind: "link", name: "Color del control", value: padThemeById(state.prefs?.pad_theme).name, run: () => openSub("pad_theme"), desc: "Los colores del control que se dibuja en Personalizar botones. Como vienen los controles, o una combinación al azar." },
+      { kind: "toggle", name: "Aceptar con {B}", pref: "swap_ab", desc: "{B} acepta y {A} vuelve atrás. Para volver a lo normal, entra aquí y presiona {B}." },
       { kind: "toggle", name: "Puntero con la palanca derecha", pref: "swap_sticks", desc: "La palanca derecha mueve el puntero y la izquierda sube o baja la página." },
-      { kind: "choice", name: "Tiempo para mantener presionado", pref: "hold_time", options: [["short", "Corto"], ["normal", "Normal"], ["long", "Largo"]], desc: "Cuánto hay que sostener {Menu} para abrir Inicio, o {View} y {Menu} juntos para la guía. Un toque tiene que ser más corto que esto." },
+      { kind: "choice", name: "Tiempo para mantener presionado", pref: "hold_time", options: [["short", "Corto"], ["normal", "Normal"], ["long", "Largo"]], desc: "Cuánto hay que sostener {Menu} para abrir Inicio, o {View} y {Menu} juntos para el centro de control. Un toque tiene que ser más corto que esto." },
     ],
   },
   {
@@ -716,7 +739,9 @@ async function setPref(name, value) {
     console.error(e);
     return render();
   }
-  if (CONFIRMED.includes(name) && value === true && !confirming) askToKeep(name, before);
+  if (CONFIRMED.includes(name) && value !== before && (value === true || (name === "hand" && value !== "both")) && !confirming) askToKeep(name, before);
+  // High contrast hides the colour row above it: the focus stays on it.
+  if (name === "high_contrast" && before !== value) state.settings.row = Math.max(0, state.settings.row + (value ? -1 : 1));
   render();
 }
 
@@ -726,6 +751,8 @@ function rowControl(r) {
     case "toggle":
       return el("span", { className: `switch${p[r.pref] ? " on" : ""}` });
     case "check":
+      // One choice (a size, a hand): only the chosen one is ticked. Several (languages): boxes.
+      if (r.size || r.hand) return r.on ? svg("check", "icon tick") : null;
       return el("span", { className: `check${r.on ? " on" : ""}` }, r.on ? svg("check") : null);
     case "choice":
       return el("span", { className: "choice" }, ...r.options.map(([v, label]) => el("span", { className: v === p[r.pref] ? "sel" : "", textContent: label })));
@@ -735,15 +762,27 @@ function rowControl(r) {
       return el("span", { className: "value" }, r.value, svg("chevron"));
     case "action": {
       const f = state.settings.forget;
-      const again = withButtons(`Presiona {${Prefs.get()?.swap_ab ? "B" : "A"}} otra vez`);
+      const again = withButtons("Presiona {A} otra vez", false);
       return el("span", { className: "value" }, ...(f === `${r.key}:ask` ? again : f === `${r.key}:done` ? [document.createTextNode("Listo")] : []));
     }
   }
 }
 
-// A list opened from a row: one line per language, ticked when on.
+// A list opened from a row: one line per language, ticked when on, one per
+// text size or controller theme with the chosen one ticked, or a button's
+// actions with a ✓ on the current one and a faint mark on the button's own.
 function subRows() {
   const p = state.prefs ?? {};
+  const sub = state.settings.sub;
+  const map = p.button_map ?? {};
+  if (sub === "buttons") return REMAP_BUTTONS.map((b) => ({ kind: "pick", name: buttonText(b), value: ACTION_WORDS[map[b] ?? b], button: b }));
+  if (sub.startsWith("button:")) {
+    const b = sub.slice(7);
+    return ACTIONS.map((a) => ({ kind: "check", name: ACTION_WORDS[a], original: a === b, button: b, action: a, on: (map[b] ?? b) === a }));
+  }
+  if (sub === "pad_theme") return themeRows();
+  if (sub === "hand") return HANDS.map(([hand, name]) => ({ kind: "check", name, hand, on: (p.hand ?? "both") === hand }));
+  if (sub === "text_size") return TEXT_SIZES.map(([size, name]) => ({ kind: "check", name, size, on: p.text_size === size }));
   return (p.available_languages ?? []).map((lang) => ({ kind: "check", name: languageName(lang), lang, on: (p.languages ?? []).includes(lang) }));
 }
 
@@ -751,11 +790,20 @@ function settingsRows() {
   return state.settings.sub ? subRows() : CATEGORIES[state.settings.cat].rows();
 }
 
+function subTitle(sub) {
+  if (sub === "text_size") return "Tamaño de letra";
+  if (sub === "hand") return "Distribución";
+  if (sub === "buttons" || sub === "pad_theme" || sub.startsWith("button:")) return "";
+  return "Idiomas";
+}
+
 function openSub(name) {
   const st = state.settings;
-  st.back = st.row;
+  (st.trail ??= []).push({ sub: st.sub, row: st.row });
   st.sub = name;
-  st.row = 0;
+  // A list of choices opens on the one in use.
+  const chosen = name === "text_size" || name === "hand" || name === "pad_theme" || name.startsWith("button:");
+  st.row = chosen ? Math.max(0, subRows().findIndex((r) => r.on)) : 0;
   render();
 }
 
@@ -773,6 +821,8 @@ function showPreview(row) {
   const id = row?.pref;
   const has = !!id && Previews.has(id);
   stage.hidden = !has;
+  // Lists opened from a row (languages, buttons) have nothing to explain.
+  card.hidden = !row?.desc && !has;
   if (!has) {
     about.querySelector(".now").replaceChildren();
     shown = { id: "", value: undefined };
@@ -794,26 +844,500 @@ function renderSettings() {
     el("div", { className: `cat${i === st.cat ? " sel" : ""}${i === st.cat && st.zone === "cats" ? " on" : ""}` }, svg(c.icon), el("span", { textContent: c.name })),
   );
   const panel = el("section", { className: "panel" },
-    st.sub ? el("div", { className: "panel-title" }, "Idiomas") : null,
+    st.sub && subTitle(st.sub) && st.sub !== "buttons" ? el("div", { className: "panel-title" }, ...withButtons(subTitle(st.sub))) : null,
     ...rows.map((r, i) =>
       el("div", { className: `setting${r.danger ? " danger" : ""}${st.zone === "rows" && i === st.row ? " on" : ""}` }, el("span", { className: "name" }, ...withButtons(r.name)), rowControl(r)),
     ),
   );
   const row = rows[st.row];
   const valued = row && (row.kind === "choice" || row.kind === "swatch");
+  const onPad = st.sub === "buttons" || st.sub.startsWith("button:");
   const hints = el("div", { className: "settings-hints" },
-    st.zone === "cats" ? hintEl("A", "Abrir") : hintEl("A", row?.kind === "link" ? "Abrir" : row?.kind === "action" ? (row.hint ?? "Borrar") : "Cambiar"),
+    st.zone === "cats" ? hintEl("A", "Abrir") : hintEl("A", onPad ? "Elegir" : row?.kind === "link" ? "Abrir" : row?.kind === "action" ? (row.hint ?? "Borrar") : "Cambiar"),
     st.zone === "rows" && valued ? hintEl("← →", "Elegir") : null,
     el("span", { className: "spacer" }),
     hintEl("B", st.zone === "rows" ? "Atrás" : "Cerrar"),
   );
+  if (st.sub === "pad_theme") return renderThemes(rows, cats);
   let body;
-  // The row in focus, or the category's first while choosing a category.
   showPreview(st.sub ? null : rows[st.zone === "rows" ? st.row : 0]);
-  if (!tiles) body = el("div", { className: "settings list" }, el("nav", { className: "cats" }, ...cats), panel, card);
+  const pad = onPad ? padMap(rows) : null;
+  if (pad && !tiles) body = el("div", { className: "settings list" }, el("nav", { className: "cats" }, ...cats), pad);
+  else if (pad) body = el("div", { className: "settings open" }, el("h2", { className: "cat-title" }, svg(CATEGORIES[st.cat].icon), CATEGORIES[st.cat].name), pad);
+  else if (!tiles) body = el("div", { className: "settings list" }, el("nav", { className: "cats" }, ...cats), panel, card);
   else if (st.zone === "cats") body = el("div", { className: "settings tiles" }, ...cats);
   else body = el("div", { className: "settings open" }, el("h2", { className: "cat-title" }, svg(CATEGORIES[st.cat].icon), CATEGORIES[st.cat].name), panel, card);
   view.replaceChildren(body, hints);
+  panel.querySelector(".setting.on")?.scrollIntoView({ block: "nearest" });
+  fadeEdges(panel);
+  if (pad) padGuide();
+}
+
+// ---------- the controller ----------
+// An Xbox Series controller seen from the front, on a 600 × 396 canvas.
+// Every reassignable button is a <g data-b> whose .key shape lights up in
+// the accent; the rest (body, Xbox, View, Menu, Share) never does.
+const PAD_GEO = {
+  ls: [165, 156], rs: [375, 238], dpad: [225, 238], face: [455, 156], gap: 36,
+  guide: [300, 84], view: [250, 118], menu: [350, 118], share: [300, 136],
+};
+// The body: shoulders, flanks opening out to the widest point low down, fat
+// grips tilted outwards and the U between them; a small dip at the top for
+// the Xbox button.
+const PAD_BODY = "M300 46C290 46 284 40 270 40C200 40 140 42 112 54C92 62 80 80 74 100C62 160 44 230 40 280C38 330 62 388 118 388C156 388 176 356 196 322C212 288 388 288 404 322C424 356 444 388 482 388C538 388 562 330 560 280C556 230 538 160 526 100C520 80 508 62 488 54C460 42 400 40 330 40C316 40 310 46 300 46Z";
+// LB: a 13 px band inside the top-left corner, a little way down the side,
+// drawn over the body. LT: behind the body, at most 30 px showing above LB.
+const PAD_BUMPER = "M165 42C140 43 124 47 112 55C96 62 86 76 80 96L72 100C76 76 90 54 108 43C124 34 144 30 165 30C172 30 172 42 165 42Z";
+const PAD_TRIGGER = "M98 46C98 26 106 12 124 9L152 8C161 8 165 14 165 22V46Z";
+
+function padSvg(themeId = state.prefs?.pad_theme) {
+  const g = PAD_GEO;
+  const uid = ++padIds;
+  const theme = padThemeById(themeId);
+  const mirror = 'transform="translate(600 0) scale(-1 1)"';
+  const part = (b, cls, d, t = "") => `<g data-b="${b}" ${t}><path class="key ${cls}" d="${d}"/></g>`;
+  const stick = (b, [x, y]) =>
+    `<circle class="well" cx="${x}" cy="${y}" r="32"/><g data-b="${b}"><circle class="key cap" cx="${x}" cy="${y}" r="20"/></g>`;
+  const face = (b, x, y) =>
+    `<g data-b="${b}"><circle class="key face" cx="${x}" cy="${y}" r="17"/><text class="letter-${b}" x="${x}" y="${y}">${b.toUpperCase()}</text></g>`;
+  const [fx, fy] = g.face;
+  const [dx, dy] = g.dpad;
+  const w = 7; // half the d-pad arm's width
+  const L = 18; // arm length from the centre (a 36 px cross)
+  const cross = `M${dx - w} ${dy - L}H${dx + w}V${dy - w}H${dx + L}V${dy + w}H${dx + w}V${dy + L}H${dx - w}V${dy + w}H${dx - L}V${dy - w}H${dx - w}Z`;
+  // Each arm, tip to centre, lights up whole.
+  const arm = (b, rect, tri) => `<g data-b="${b}"><rect class="key arm" ${rect} rx="1.5"/><path class="arrow" d="${tri}"/></g>`;
+  const [vx, vy] = g.view;
+  const [mx, my] = g.menu;
+  return `<svg class="pad-drawing" viewBox="0 0 600 396" style="${padThemeStyle(theme, uid)}" aria-hidden="true">
+  ${padPatterns(uid)}
+  ${part("lt", "trigger", PAD_TRIGGER)}${part("rt", "trigger", PAD_TRIGGER, mirror)}
+  <path class="body" d="${PAD_BODY}"/>
+  ${part("lb", "bumper", PAD_BUMPER)}${part("rb", "bumper", PAD_BUMPER, mirror)}
+  ${stick("l3", g.ls)}${stick("r3", g.rs)}
+  <circle class="well" cx="${dx}" cy="${dy}" r="32"/>
+  <path class="cross" d="${cross}"/>
+  ${arm("up", `x="${dx - w}" y="${dy - L}" width="${2 * w}" height="${L}"`, `M${dx} ${dy - L + 4}l4 5h-8z`)}
+  ${arm("down", `x="${dx - w}" y="${dy}" width="${2 * w}" height="${L}"`, `M${dx} ${dy + L - 4}l4 -5h-8z`)}
+  ${arm("left", `x="${dx - L}" y="${dy - w}" width="${L}" height="${2 * w}"`, `M${dx - L + 4} ${dy}l5 4v-8z`)}
+  ${arm("right", `x="${dx}" y="${dy - w}" width="${L}" height="${2 * w}"`, `M${dx + L - 4} ${dy}l-5 4v-8z`)}
+  ${face("y", fx, fy - g.gap)}${face("x", fx - g.gap, fy)}${face("b", fx + g.gap, fy)}${face("a", fx, fy + g.gap)}
+  <circle class="small" cx="${g.guide[0]}" cy="${g.guide[1]}" r="20"/>
+  <circle class="guide-mark" cx="${g.guide[0]}" cy="${g.guide[1]}" r="9"/>
+  <circle class="small" cx="${vx}" cy="${vy}" r="11"/>
+  <path class="mark thin" d="M${vx - 4.5} ${vy - 3.5}h5v4h-5zM${vx - 1.5} ${vy + 0.5}v2.5h6v-4.5h-2"/>
+  <circle class="small" cx="${mx}" cy="${my}" r="11"/>
+  <path class="mark thin" d="M${mx - 4} ${my - 3}h8M${mx - 4} ${my}h8M${mx - 4} ${my + 3}h8"/>
+  <rect class="small" x="${g.share[0] - 12}" y="${g.share[1] - 6}" width="24" height="12" rx="6"/>
+  <path class="mark thin" d="M${g.share[0]} ${g.share[1] + 2.5}v-5M${g.share[0] - 2.5} ${g.share[1]}l2.5 -2.5l2.5 2.5"/>
+</svg>`;
+}
+
+// ---------- themes ----------
+// The controller's colours: deep, muted colours as a factory would make them,
+// most with a quiet texture that is regular and on a grid (dots, fine lines,
+// a fine grid, stripes, honeycomb, carbon weave, concentric rings), always
+// flat: no blotches, no gradients. A theme is only data: each key becomes a
+// CSS token on the drawing. High contrast ignores the theme.
+const PAD_TEXT = "#ece8df";
+const PAD_BONE = "#b9b3a5";
+const PAD_BLACK = "#16171a";
+const PAD_IVORY = "#ece8de";
+const PAD_ACCENT = "#4c8dff";
+// The face buttons' usual colours.
+const PAD_ABXY = { a: "#3f9a2a", b: "#d0352c", x: "#2b72c4", y: "#b38700" };
+// Textures a theme can have.
+const PAD_PATTERNS = ["dots", "lines", "grid", "stripes", "hex", "carbon", "rings"];
+
+function hexRgb(h) {
+  const n = parseInt(h.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+const rgbHex = (c) => "#" + c.map((v) => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, "0")).join("");
+// `t` of b into a.
+const mix = (a, b, t) => rgbHex(hexRgb(a).map((v, i) => v + (hexRgb(b)[i] - v) * t));
+function luminance(h) {
+  return hexRgb(h).map((v) => v / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)).reduce((s, c, i) => s + c * [0.2126, 0.7152, 0.0722][i], 0);
+}
+function contrast(a, b) {
+  const [x, y] = [luminance(a), luminance(b)].sort((p, q) => q - p);
+  return (x + 0.05) / (y + 0.05);
+}
+function hsl(h, s, l) {
+  s /= 100;
+  l /= 100;
+  const f = (n) => {
+    const k = (n + h / 30) % 12;
+    return 255 * (l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1)));
+  };
+  return rgbHex([f(0), f(8), f(4)]);
+}
+// A colour with almost no colour in it (bone, grey, black).
+function neutral(h) {
+  const c = hexRgb(h);
+  return (Math.max(...c) - Math.min(...c)) / 255 < 0.08;
+}
+// Dark enough for ivory text, the accent and a light focus ring.
+const isDark = (c) => luminance(c) < 0.1;
+// The colour pushed towards black or white, no further than it needs to read on `bg`.
+function readable(c, bg, ratio) {
+  const to = contrast(bg, "#ffffff") >= contrast(bg, "#000000") ? "#ffffff" : "#000000";
+  for (let t = 0; t <= 1.001; t += 0.05) if (contrast(mix(c, to, t), bg) >= ratio) return mix(c, to, t);
+  return to;
+}
+// The outline: the body's own colour, lightened or darkened only as much as
+// it takes to read (3 : 1), so it never shines.
+const lineOn = (c) => readable(c, c, 3.2);
+// Letters in their colours (softened) or one colour; always 4.5 : 1.
+function letters(face, coloured) {
+  if (!coloured) {
+    const mono = readable(face, face, 4.8);
+    return { a: mono, b: mono, x: mono, y: mono };
+  }
+  return Object.fromEntries(Object.entries(PAD_ABXY).map(([k, c]) => [k, readable(mix(c, isDark(face) ? PAD_TEXT : "#000000", 0.35), face, 4.5)]));
+}
+
+// A full theme from a few colours; the rest follows from them.
+function padTheme({ body, back, bumper = back, stick, dpad = stick, face, coloured = true, pattern = null, hue = null }) {
+  const l = letters(face, coloured);
+  return {
+    body, back, bumper, stick, dpad, face, pattern, hue,
+    well: mix(stick, "#000000", 0.45),
+    line: lineOn(body),
+    mark: readable(face, face, 4.5),
+    // The texture: one shade lighter and one darker than the body.
+    p1: mix(body, "#ffffff", isDark(body) ? 0.07 : 0.06),
+    p2: mix(body, "#000000", isDark(body) ? 0.22 : 0.07),
+    // The focus ring's outer edge: ivory on dark bodies, black on light ones.
+    halo: isDark(body) ? PAD_IVORY : "#000000",
+    la: l.a, lb: l.b, lx: l.x, ly: l.y,
+  };
+}
+
+const PAD_THEMES = [
+  { id: "grafito", name: "Grafito", ...padTheme({ body: "#35373c", back: "#212226", bumper: "#2b2d31", stick: "#45474c", face: "#2a2b2f" }) },
+  { id: "carbon", name: "Carbón", ...padTheme({ body: "#1b1c1f", back: "#111214", bumper: "#222326", stick: "#2a2b2f", face: "#141517", coloured: false, pattern: "carbon" }) },
+  { id: "puntos", name: "Puntos", ...padTheme({ body: "#2b2d31", back: "#8a8780", stick: "#45474c", face: PAD_BLACK, pattern: "dots" }) },
+  { id: "marino", name: "Marino", ...padTheme({ body: "#1f3550", back: PAD_BONE, stick: PAD_BLACK, face: PAD_BLACK, coloured: false, pattern: "lines" }) },
+  { id: "petroleo", name: "Petróleo", ...padTheme({ body: "#1d4049", back: PAD_BLACK, stick: "#8a8780", face: PAD_BLACK, pattern: "rings" }) },
+  { id: "vino", name: "Vino", ...padTheme({ body: "#4a1f2a", back: PAD_BONE, stick: PAD_BLACK, face: PAD_BLACK, coloured: false, pattern: "grid" }) },
+  { id: "bosque", name: "Bosque", ...padTheme({ body: "#24392c", back: PAD_BLACK, stick: PAD_BLACK, face: PAD_BLACK, coloured: false, pattern: "stripes" }) },
+  { id: "oliva", name: "Oliva", ...padTheme({ body: "#3e4128", back: PAD_BLACK, stick: "#8a8780", face: PAD_BLACK, coloured: false, pattern: "hex" }) },
+  { id: "ciruela", name: "Ciruela", ...padTheme({ body: "#3d2440", back: PAD_BONE, stick: PAD_BLACK, face: PAD_BLACK, pattern: "dots" }) },
+  { id: "pizarra", name: "Pizarra", ...padTheme({ body: "#3a4148", back: PAD_BLACK, stick: "#8a8780", face: PAD_BLACK }) },
+  { id: "hueso", name: "Hueso", ...padTheme({ body: "#c4bdae", back: "#4f4c46", stick: "#4f4c46", face: "#3a3833" }) },
+  { id: "arena", name: "Arena", ...padTheme({ body: "#a3957a", back: "#3a3833", stick: "#3a3833", face: "#2a2926", coloured: false, pattern: "lines" }) },
+];
+const PAD_RANDOM = "random";
+
+// What every theme must meet.
+function themeProblems(t) {
+  const out = [];
+  if (contrast(t.line, t.body) < 3) out.push("line");
+  if ([t.la, t.lb, t.lx, t.ly].some((c) => contrast(c, t.face) < 4.5)) out.push("letters");
+  // The focus ring reads on the body and its texture: its outer edge or the
+  // accent itself. The guide line (black edge) must read on the body too.
+  const ground = t.pattern ? [t.body, t.p1, t.p2] : [t.body];
+  if (!ground.every((c) => Math.max(contrast(PAD_ACCENT, c), contrast(t.halo, c)) >= 3)) out.push("focus");
+  // (Thin textures — dots, lines, contour lines, honeycomb, specks — cover
+  // too little of the body to matter for a 3 px line; the filled ones do.)
+  const filled = ["stripes", "carbon"].includes(t.pattern) ? ground : [t.body];
+  if (!filled.every((c) => Math.max(contrast(PAD_ACCENT, c), contrast("#000000", c)) >= 3)) out.push("guide");
+  // Each part stands out from the body, or is a plain neutral.
+  for (const k of ["back", "stick", "dpad", "face"]) if (t[k] !== t.body && !neutral(t[k]) && contrast(t[k], t.body) < 3) out.push(k);
+  return out;
+}
+
+// ---------- random themes ----------
+// A seed always gives the same controller, in the same deep, muted colours as
+// the themes: a dark body (now and then a muted light one), its parts in
+// bone, grey, black or a darker or lighter shade of the opposite colour, and
+// often one of the textures. Never brown, never bright. A combination that
+// does not meet themeProblems is drawn again.
+function seededRandom(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+// Hues that stay a colour when dark (no oranges or yellows: they turn brown).
+const PAD_HUES = [345, 100, 150, 185, 210, 230, 255, 280, 305, 325];
+
+function randomTheme(seed) {
+  const r = seededRandom(seed);
+  const pick = (list) => list[Math.floor(r() * list.length)];
+  const between = (a, b) => a + r() * (b - a);
+  for (let tries = 0; tries < 40; tries++) {
+    const light = r() < 0.18;
+    const hue = light ? between(25, 55) : (pick(PAD_HUES) + between(-6, 6) + 360) % 360;
+    // Dark: deep and muted, dark enough for the accent to read on it.
+    let body;
+    if (light) body = hsl(hue, between(10, 22), between(58, 68));
+    else {
+      let l = between(16, 24);
+      // Dark reds need a little more colour or they turn brown.
+      const sat = hue > 330 || hue < 15 ? between(38, 50) : between(24, 42);
+      body = hsl(hue, sat, l);
+      while (luminance(body) > 0.05 && l > 8) body = hsl(hue, sat, (l -= 1));
+    }
+    const opposite = (hue + 180 + between(-30, 30)) % 360;
+    const shade = light ? hsl(hue, between(10, 20), between(22, 30)) : hsl(opposite, between(12, 25), between(60, 70));
+    const parts = light ? [PAD_BLACK, "#3a3833", "#4f4c46"] : [PAD_BONE, "#8a8780", PAD_BLACK, shade];
+    const back = pick(parts);
+    const stick = pick(parts);
+    const face = light ? pick([PAD_BLACK, "#3a3833"]) : PAD_BLACK;
+    const theme = padTheme({
+      body, back, bumper: r() < 0.5 ? back : body, stick, dpad: r() < 0.5 ? stick : face, face,
+      // Light bodies take only the finest textures.
+      coloured: r() < 0.5, pattern: r() < 0.6 ? pick(light ? ["dots", "lines", "grid"] : PAD_PATTERNS) : null, hue: light ? null : hue,
+    });
+    if (!themeProblems(theme).length) return { id: `${PAD_RANDOM}:${seed}`, name: "Al azar", ...theme };
+  }
+  return { ...PAD_THEMES[0], id: `${PAD_RANDOM}:${seed}`, name: "Al azar" };
+}
+// A new combination, its colour at least 40° away from the one before.
+function newSeed(previous) {
+  const before = previous?.startsWith(`${PAD_RANDOM}:`) ? padThemeById(previous).hue : null;
+  for (;;) {
+    const seed = 1 + Math.floor(Math.random() * 1e9);
+    const hue = randomTheme(seed).hue;
+    if (before == null || hue == null || Math.min(Math.abs(hue - before), 360 - Math.abs(hue - before)) >= 40) return seed;
+  }
+}
+
+function padThemeById(id) {
+  if (id?.startsWith(`${PAD_RANDOM}:`)) return randomTheme(+id.slice(PAD_RANDOM.length + 1) || 1);
+  return PAD_THEMES.find((t) => t.id === id) ?? PAD_THEMES[0];
+}
+
+// The theme as CSS tokens on the drawing; none in high contrast.
+let padIds = 0;
+function padThemeStyle(t, uid) {
+  if (state.prefs?.high_contrast) return "";
+  const v = {
+    "--pad-body": t.body, "--pad-back": t.back, "--pad-bumper": t.bumper, "--pad-well": t.well, "--pad-stick": t.stick,
+    "--pad-dpad": t.dpad, "--pad-face": t.face, "--pad-line": t.line, "--pad-mark": t.mark, "--pad-halo": t.halo,
+    "--pad-letter-a": t.la, "--pad-letter-b": t.lb, "--pad-letter-x": t.lx, "--pad-letter-y": t.ly,
+    "--pad-p1": t.p1, "--pad-p2": t.p2,
+    "--pad-paint": t.pattern ? `url(#pad-${t.pattern}-${uid})` : t.body,
+  };
+  return Object.entries(v).map(([k, c]) => `${k}:${c}`).join(";");
+}
+
+// The textures: regular and on a grid, one shade off the body so they read as
+// the material. Flat colours only.
+function padPatterns(uid) {
+  const P = (name, w, h, inner) => `<pattern id="pad-${name}-${uid}" width="${w}" height="${h}" patternUnits="userSpaceOnUse"><rect width="${w}" height="${h}" fill="var(--pad-body)"/>${inner}</pattern>`;
+  // Honeycomb: hexagons of side 8, in staggered rows.
+  const s = 8;
+  const hx = (cx, cy) => {
+    const pts = [0, 60, 120, 180, 240, 300].map((a) => [cx + s * Math.cos((a * Math.PI) / 180), cy + s * Math.sin((a * Math.PI) / 180)]);
+    return "M" + pts.map((p) => p.map((v) => v.toFixed(2)).join(" ")).join("L") + "Z";
+  };
+  const [hw, hh] = [3 * s, Math.sqrt(3) * s];
+  const honey = [hx(0, 0), hx(hw, 0), hx(0, hh), hx(hw, hh), hx(hw / 2, hh / 2)].join("");
+  return `<defs>
+  ${P("dots", 14, 14, '<circle cx="7" cy="7" r="0.9" fill="var(--pad-p1)"/>')}
+  ${P("lines", 7, 7, '<path d="M-1 8L8 -1M-1 1L1 -1M6 8L8 6" stroke="var(--pad-p1)" stroke-width="1"/>')}
+  ${P("grid", 12, 12, '<path d="M0 0.5H12M0.5 0V12" stroke="var(--pad-p1)" stroke-width="1" fill="none"/>')}
+  ${P("stripes", 12, 12, '<rect y="0" width="12" height="5" fill="var(--pad-p2)"/>')}
+  ${P("hex", hw, hh, `<path d="${honey}" fill="none" stroke="var(--pad-p2)" stroke-width="1"/>`)}
+  ${P("carbon", 8, 8, '<rect width="4" height="4" fill="var(--pad-p2)"/><rect x="4" y="4" width="4" height="4" fill="var(--pad-p2)"/><path d="M0 2h4M6 4v4M4 6h4M2 0v4" stroke="var(--pad-p1)" stroke-width="0.6"/>')}
+  ${P("rings", 40, 40, '<g fill="none" stroke="var(--pad-p1)" stroke-width="1"><circle cx="20" cy="20" r="6"/><circle cx="20" cy="20" r="12"/><circle cx="20" cy="20" r="18"/></g>')}
+</defs>`;
+}
+
+// A label's button, drawn as on the controller.
+const padData = (e, d) => (Object.assign(e.dataset, d), e);
+const padGlyph = (b) => setGlyph(el("span", { className: "glyph inline" }), ARROWS[b] ?? b.toUpperCase(), true);
+
+// ---------- the map ----------
+// The button in focus lights up inside a ring in the theme's halo colour
+// (ivory on dark bodies, black on light ones), so the accent reads on any theme.
+function padFocus(drawing, b) {
+  const g = drawing.querySelector(`[data-b="${b}"]`);
+  const key = g?.querySelector(".key");
+  if (!key) return;
+  g.classList.add("on");
+  const halo = key.cloneNode();
+  halo.setAttribute("class", "halo");
+  g.insertBefore(halo, key);
+}
+
+function padMap(rows) {
+  const st = state.settings;
+  const p = state.prefs ?? {};
+  const map = p.button_map ?? {};
+  const choosing = st.sub.startsWith("button:");
+  const at = choosing ? st.sub.slice(7) : rows[st.row]?.button;
+  // With one hand, the other hand's column is quieter (still usable).
+  const idle = { left: "right", right: "left" }[p.hand];
+  const label = (b) =>
+    padData(el("div", { className: `pad-label${b === at && !choosing ? " on" : ""}${b === at ? " at" : ""}` },
+      padGlyph(b),
+      el("span", { className: "value", textContent: ACTION_WORDS[map[b] ?? b] })), { b });
+  const side = (name, buttons) => {
+    if (choosing && buttons.includes(at)) return actionList(name, rows);
+    return el("div", { className: `pad-side ${name}${idle === name ? " idle" : ""}` }, ...buttons.map(label));
+  };
+  const drawing = el("div", { className: "pad-center", innerHTML: padSvg() });
+  padFocus(drawing, at);
+  const guide = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  guide.classList.add("pad-guide");
+  guide.innerHTML = '<path class="halo" d=""/><path class="line" d=""/>';
+  return el("section", { className: `pad-map${choosing ? " choosing" : ""}` }, side("left", PAD_LEFT), drawing, side("right", PAD_RIGHT), guide);
+}
+
+// The actions of the button in focus, in place of its column.
+function actionList(name, rows) {
+  const st = state.settings;
+  return el("div", { className: `pad-actions ${name}` },
+    ...rows.map((r, i) =>
+      el("div", { className: `pad-action${i === st.row ? " on" : ""}${r.on ? " current" : ""}` },
+        el("span", { className: "name", textContent: r.name }),
+        r.original ? el("span", { className: "original", textContent: "original" }) : null,
+        r.on ? svg("check", "icon tick") : null)));
+}
+
+// The open list shows whole rows only: its height is a whole number of rows
+// and the action in focus sits in the middle when it can.
+function padListFit(list) {
+  const items = [...list.children];
+  if (!items.length) return;
+  list.style.height = "";
+  const cs = getComputedStyle(list);
+  const [padTop, padBottom] = [parseFloat(cs.paddingTop), parseFloat(cs.paddingBottom)];
+  const gap = parseFloat(cs.rowGap) || 0;
+  const pitch = items[0].offsetHeight + gap;
+  const cell = getComputedStyle(list.parentElement);
+  const room = list.parentElement.clientHeight - parseFloat(cell.paddingTop) - parseFloat(cell.paddingBottom);
+  const n = Math.max(1, Math.min(items.length, Math.floor((room - padTop - padBottom + gap) / pitch)));
+  list.style.height = `${n * pitch - gap + padTop + padBottom}px`;
+  const at = Math.max(0, items.findIndex((i) => i.classList.contains("on")));
+  list.scrollTop = Math.max(0, Math.min(items.length - n, at - Math.floor(n / 2))) * pitch;
+  list.classList.toggle("more-up", list.scrollTop > 1);
+  list.classList.toggle("more-down", list.scrollTop + list.clientHeight < list.scrollHeight - 1);
+}
+
+// The guide: from the row in focus (a label, or an action in the open list)
+// to the edge of its button, in straight runs at right angles only. It leaves
+// the button sideways when the way out is clear, otherwise above or below it
+// (the shoulder buttons by their top or their outer side), runs out to 16 px
+// past the controller, then up or down to the row. It never crosses another
+// button.
+function padGuide() {
+  const map = view.querySelector(".pad-map");
+  if (!map) return;
+  const paths = map.querySelectorAll(".pad-guide path");
+  const path = { setAttribute: (k, v) => paths.forEach((p) => p.setAttribute(k, v)) };
+  const box = map.getBoundingClientRect();
+  const list = map.querySelector(".pad-actions");
+  if (list) padListFit(list);
+  const b = list ? state.settings.sub.slice(7) : map.querySelector(".pad-label.at")?.dataset.b;
+  const group = b && map.querySelector(`.pad-drawing [data-b="${b}"]`);
+  const key = group?.querySelector(".key");
+  if (!key) return path.setAttribute("d", "");
+  const left = PAD_LEFT.includes(b);
+  const row = (list ? list.querySelector(".pad-action.on") : map.querySelector(".pad-label.at")).getBoundingClientRect();
+  const root = getComputedStyle(document.documentElement);
+  const ring = parseFloat(root.getPropertyValue("--focus")) * parseFloat(root.fontSize) || 0;
+  const sx = left ? row.right + ring : row.left - ring;
+  const sy = row.top + row.height / 2;
+  const body = map.querySelector(".pad-drawing .body").getBoundingClientRect();
+  const ex = left ? body.left - 16 : body.right + 16;
+  const k = key.getBoundingClientRect();
+  const [cx, cy] = [k.left + k.width / 2, k.top + k.height / 2];
+  const edge = left ? k.left : k.right;
+  // Everything else drawn on the controller that a line must not cross.
+  const pad = 8;
+  const blocks = [...map.querySelectorAll(".pad-drawing .key, .pad-drawing .small")]
+    .filter((e) => e.closest("[data-b]") !== group)
+    .map((e) => e.getBoundingClientRect());
+  const hits = (a, c) => blocks.some((r) =>
+    Math.min(a[0], c[0]) < r.right + pad && Math.max(a[0], c[0]) > r.left - pad &&
+    Math.min(a[1], c[1]) < r.bottom + pad && Math.max(a[1], c[1]) > r.top - pad);
+  const clear = (pts) => pts.every((p, i) => i === 0 || !hits(pts[i - 1], p));
+  const tail = (y) => [[ex, y], [ex, sy], [sx, sy]];
+  const step = 8;
+  let pts = null;
+  if (b === "lt" || b === "rt") pts = [[cx, k.top], [cx, k.top - 12], ...tail(k.top - 12)];
+  else if (b === "lb" || b === "rb") pts = [[edge, k.bottom - 6], ...tail(k.bottom - 6)];
+  else {
+    const sideways = [[edge, cy], ...tail(cy)];
+    if (clear(sideways)) pts = sideways;
+    else {
+      // Above or below, nearer the row first, on the first clear lane.
+      const ways = sy < cy ? [-1, 1] : [1, -1];
+      for (let n = 1; n <= 12 && !pts; n++) {
+        for (const w of ways) {
+          const from = [cx, w < 0 ? k.top : k.bottom];
+          const lane = from[1] + w * (step + (n - 1) * step);
+          const cand = [from, [cx, lane], ...tail(lane)];
+          if (clear(cand)) { pts = cand; break; }
+        }
+      }
+      pts ??= sideways;
+    }
+  }
+  const o = ([x, y]) => `${(x - box.left).toFixed(1)} ${(y - box.top).toFixed(1)}`;
+  path.setAttribute("d", "M" + pts.map(o).join("L"));
+}
+
+addEventListener("resize", padGuide);
+document.fonts?.ready.then(padGuide);
+
+// ---------- choosing the theme ----------
+// Ajustes > Botones > Color del control: the themes in a list, with the
+// controller beside it in the theme in focus. «Al azar» keeps a generated
+// combination; «Otra combinación» makes a new one at once, and it stays.
+function themeRows() {
+  const cur = state.prefs?.pad_theme ?? PAD_THEMES[0].id;
+  const random = cur.startsWith(`${PAD_RANDOM}:`) ? cur : `${PAD_RANDOM}:${(state.settings.seed ??= newSeed(cur))}`;
+  return [
+    ...PAD_THEMES.map((t) => ({ kind: "theme", name: t.name, theme: t.id, on: cur === t.id })),
+    { kind: "theme", name: "Al azar", theme: random, on: cur === random },
+    { kind: "reroll", name: "Otra combinación", theme: random },
+    // The one before the last «Otra combinación», to go back to it.
+    ...(state.settings.previous && state.settings.previous !== cur ? [{ kind: "theme", name: "Combinación anterior", theme: state.settings.previous, back: true }] : []),
+  ];
+}
+// Two circles: the body (with its pattern) and its parts (the one that
+// stands out most from the body).
+function themeChip(id) {
+  const t = padThemeById(id);
+  const parts = [t.back, t.stick, t.face].sort((x, y) => contrast(y, t.body) - contrast(x, t.body))[0];
+  // A textured theme shows fine diagonal lines on its circle.
+  const paint = t.pattern ? `repeating-linear-gradient(45deg, ${t.p1} 0 1px, transparent 1px 4px), ${t.body}` : t.body;
+  return el("span", { className: "pad-chip" }, el("span", { style: `background:${paint}` }), el("span", { style: `background:${parts}` }));
+}
+
+function renderThemes(rows, cats) {
+  const st = state.settings;
+  const row = rows[st.row];
+  const panel = el("section", { className: "panel" },
+    ...rows.map((r, i) =>
+      el("div", { className: `setting pad-theme-row${i === st.row ? " on" : ""}` },
+        r.kind === "reroll" ? svg("shuffle", "icon pad-chip-icon") : themeChip(r.theme),
+        el("span", { className: "name", textContent: r.name }),
+        r.on ? svg("check", "icon tick") : null)));
+  const preview = el("section", { className: "preview-card pad-theme-card", innerHTML: padSvg(row.kind === "reroll" ? state.prefs?.pad_theme : row.theme) });
+  const hints = el("div", { className: "settings-hints" },
+    hintEl("A", row.kind === "reroll" ? "Otra combinación" : "Usar"),
+    el("span", { className: "spacer" }),
+    hintEl("B", "Atrás"));
+  view.replaceChildren(el("div", { className: "settings list" }, el("nav", { className: "cats" }, ...cats), panel, preview), hints);
+  panel.querySelector(".setting.on")?.scrollIntoView({ block: "nearest" });
+  fadeEdges(panel);
+}
+
+// Fade the edge where a list goes on, so no row looks cut.
+function fadeEdges(list) {
+  list.classList.toggle("more-above", list.scrollTop > 2);
+  list.classList.toggle("more-below", list.scrollTop + list.clientHeight < list.scrollHeight - 2);
 }
 
 function hintEl(key, text) {
@@ -837,6 +1361,15 @@ function settingsNav(dir) {
   }
   const rows = settingsRows();
   const r = rows[st.row];
+  // On the controller: up and down along a side, left and right across.
+  if (st.sub === "buttons") {
+    const side = st.row < PAD_LEFT.length ? 0 : PAD_LEFT.length;
+    const size = side ? PAD_RIGHT.length : PAD_LEFT.length;
+    const i = st.row - side;
+    if (dir === "up" || dir === "down") st.row = side + Math.max(0, Math.min(size - 1, i + (dir === "up" ? -1 : 1)));
+    else st.row = (dir === "left" ? 0 : PAD_LEFT.length) + Math.min(i, (dir === "left" ? PAD_LEFT : PAD_RIGHT).length - 1);
+    return render();
+  }
   if (dir === "up" || dir === "down") {
     st.row = Math.max(0, Math.min(rows.length - 1, st.row + (dir === "up" ? -1 : 1)));
     st.forget = "";
@@ -868,7 +1401,20 @@ function settingsSelect() {
   if (st.zone === "cats") return enterRows();
   const r = settingsRows()[st.row];
   const p = state.prefs ?? {};
-  if (r.kind === "toggle") setPref(r.pref, !p[r.pref]);
+  if (r.kind === "theme") {
+    // Going back swaps: the one left behind becomes the one before.
+    if (r.back) st.previous = p.pad_theme;
+    setPref("pad_theme", r.theme);
+  } else if (r.kind === "reroll") {
+    // A new combination at once; the focus stays here to press again.
+    st.previous = p.pad_theme;
+    setPref("pad_theme", `${PAD_RANDOM}:${(st.seed = newSeed(p.pad_theme))}`);
+  }
+  else if (r.kind === "toggle") setPref(r.pref, !p[r.pref]);
+  else if (r.kind === "check" && r.size) setPref("text_size", r.size);
+  else if (r.kind === "check" && r.hand) setPref("hand", r.hand);
+  else if (r.kind === "pick") openSub(`button:${r.button}`);
+  else if (r.kind === "check" && r.action) setPref("button_map", { button: r.button, action: r.action }).then(settingsBack);
   else if (r.kind === "check") {
     const langs = p.languages ?? [];
     const next = langs.includes(r.lang) ? langs.filter((l) => l !== r.lang) : [...langs, r.lang];
@@ -906,7 +1452,7 @@ async function resetAll() {
 // Swapping the buttons or sticks could leave someone unable to drive the
 // screen: the change asks to be kept and goes back by itself if nobody does.
 const CONFIRM_SECONDS = 10;
-const CONFIRMED = ["swap_ab", "swap_sticks"];
+const CONFIRMED = ["swap_ab", "swap_sticks", "hand"];
 let confirming = null; // { name, before, left, timer }
 const confirmEl = el("div", { className: "confirm", hidden: true });
 document.body.append(confirmEl);
@@ -949,8 +1495,9 @@ async function keepChange(keep) {
 function settingsBack() {
   const st = state.settings;
   if (st.sub) {
-    st.sub = "";
-    st.row = st.back ?? 0;
+    const back = st.trail?.pop() ?? { sub: "", row: 0 };
+    st.sub = back.sub;
+    st.row = back.row;
     render();
     return true;
   }
@@ -1120,6 +1667,7 @@ function switchTab(delta) {
   if (state.sheet) return;
   state.settings.zone = "cats";
   state.settings.sub = "";
+  state.settings.trail = [];
   state.tab = TABS[(TABS.indexOf(state.tab) + delta + TABS.length) % TABS.length];
   render();
 }
@@ -1349,6 +1897,7 @@ Prefs.watch((p) => {
   state.prefs = p;
   state.gameArt = p.game_art;
   render();
+  syncMotion(); // high contrast stops the videos and animations behind
   // Its hints show the buttons as they are now.
   if (confirming) renderConfirm();
 });

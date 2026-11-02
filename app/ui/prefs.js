@@ -12,6 +12,7 @@ const Prefs = (() => {
     pink: "#e8709f",
     ivory: "#ece8df",
   };
+  const HIGH_CONTRAST_ACCENT = "#ffd60a";
   const listeners = [];
   let current = null;
 
@@ -24,11 +25,13 @@ const Prefs = (() => {
   function apply(p) {
     current = p;
     const root = document.documentElement;
-    const accent = ACCENTS[p.accent] ?? ACCENTS.blue;
+    // High contrast: a yellow focus and accent, whatever colour was chosen.
+    const accent = p.high_contrast ? HIGH_CONTRAST_ACCENT : ACCENTS[p.accent] ?? ACCENTS.blue;
     root.style.setProperty("--accent", accent);
     root.style.setProperty("--on-accent", onAccent(accent));
     root.style.setProperty("--text-scale", String((p.text_size || 100) / 100));
     root.classList.toggle("thick-focus", !!p.thick_focus);
+    root.classList.toggle("high-contrast", !!p.high_contrast);
     if (typeof Backgrounds !== "undefined") Backgrounds.refresh();
     listeners.forEach((f) => f(p));
   }

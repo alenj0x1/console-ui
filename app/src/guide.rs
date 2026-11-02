@@ -31,7 +31,7 @@ pub struct GuideState {
 pub fn create(app: &AppHandle) -> tauri::Result<()> {
     *app.state::<GuideState>().game_dirs.lock().unwrap() = crate::sources::game_dirs();
     let w = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App("guide.html".into()))
-        .title("Guía")
+        .title("Centro de control")
         .decorations(false)
         .transparent(true)
         .shadow(false)
@@ -81,7 +81,7 @@ pub fn set_visible(app: &AppHandle, visible: bool) {
         let dirs = state.game_dirs.lock().unwrap().clone();
         let list = state.switcher.refresh(&dirs);
         let games = list.iter().filter(|w| w.game).count();
-        handle.state::<crate::events::Events>().log(&format!("guía: {} ventanas, {games} juegos", list.len()));
+        handle.state::<crate::events::Events>().log(&format!("centro de control: {} ventanas, {games} juegos", list.len()));
         *state.windows.lock().unwrap() = list;
         let h = handle.clone();
         let _ = handle.run_on_main_thread(move || {
@@ -134,7 +134,7 @@ fn in_guide(app: &AppHandle) -> Result<(), String> {
     if app.state::<crate::AppState>().mode.load(Ordering::Relaxed) == crate::mode_code(Mode::Guide) {
         Ok(())
     } else {
-        Err("la guía no está abierta".into())
+        Err("el centro de control no está abierto".into())
     }
 }
 
@@ -152,7 +152,7 @@ pub fn guide_switch(app: AppHandle, id: String) -> Result<(), String> {
     let hwnd = state.switcher.get(&id).ok_or("esa ventana ya no está abierta")?;
     let game = state.windows.lock().unwrap().iter().any(|w| w.id == id && w.game);
     switcher::activate(hwnd);
-    app.state::<crate::events::Events>().log(&format!("guía: cambiar de ventana (juego: {game})"));
+    app.state::<crate::events::Events>().log(&format!("centro de control: cambiar de ventana (juego: {game})"));
     app.state::<crate::AppState>().send(if game { Mode::Off } else { Mode::Cursor });
     Ok(())
 }

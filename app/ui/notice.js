@@ -5,3 +5,6 @@ here.listen("notice", ({ payload }) => {
   document.querySelector(".notice").dataset.kind = payload.kind;
   if (payload.kind === "admin") document.getElementById("name").textContent = payload.name || "Esta ventana";
 });
+// The buttons drawn as on the controller, as everywhere else.
+const hint = document.getElementById("game-hint");
+hint.replaceChildren(...withButtons(hint.textContent));

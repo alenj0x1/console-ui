@@ -42,6 +42,29 @@ pub enum Event {
     Click,
 }
 
+/// What a reassigned button does: another button, a trigger, scrolling
+/// (as the stick that scrolls would), or nothing.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Action {
+    Button(u16),
+    LeftTrigger,
+    RightTrigger,
+    ScrollUp,
+    ScrollDown,
+    Nothing,
+}
+
+/// A reassigned control: a button bit, or one of the triggers pressed past half.
+pub mod source {
+    pub const LT: u32 = 0x1_0000;
+    pub const RT: u32 = 0x2_0000;
+}
+
+/// How far a button that scrolls pushes the stick that scrolls (a steady,
+/// readable speed rather than the fastest one).
+const SCROLL_PUSH: f32 = 0.7;
+const TRIGGER_PRESS: f32 = 0.5;
+
 /// The user's adjustments over the cursor profile and the controls, which
 /// can change while the engine runs.
 #[derive(Clone, Debug, PartialEq)]
@@ -61,6 +84,12 @@ pub struct Tuning {
     pub swap_ab: bool,
     /// How long View + Menu and Menu are held; taps must be shorter.
     pub hold: Duration,
+    /// Reassigned controls (one-hand layouts and the user's own); the rest
+    /// keep their place.
+    pub remap: Vec<(u32, Action)>,
+    /// In a game, holding this button alone opens the guide (one hand cannot
+    /// hold View and Menu together).
+    pub guide_hold: Option<u16>,
 }
 
 impl Default for Tuning {
@@ -74,6 +103,8 @@ impl Default for Tuning {
             swap_sticks: false,
             swap_ab: false,
             hold: Duration::from_millis(600),
+            remap: Vec::new(),
+            guide_hold: None,
         }
     }
 }
@@ -85,12 +116,47 @@ impl Tuning {
             std::mem::swap(&mut pad.lx, &mut pad.rx);
             std::mem::swap(&mut pad.ly, &mut pad.ry);
         }
+        if !self.remap.is_empty() {
+            pad = self.remapped(pad);
+        }
         if self.swap_ab {
             let (a, b) = (pad.buttons & btn::A, pad.buttons & btn::B);
             pad.buttons &= !(btn::A | btn::B);
             pad.buttons |= if a != 0 { btn::B } else { 0 } | if b != 0 { btn::A } else { 0 };
         }
         pad
+    }
+
+    fn remapped(&self, pad: PadState) -> PadState {
+        let mut down = pad.buttons as u32;
+        if pad.lt >= TRIGGER_PRESS {
+            down |= source::LT;
+        }
+        if pad.rt >= TRIGGER_PRESS {
+            down |= source::RT;
+        }
+        let mut out = pad;
+        for &(from, _) in &self.remap {
+            match from {
+                source::LT => out.lt = 0.0,
+                source::RT => out.rt = 0.0,
+                b => out.buttons &= !(b as u16),
+            }
+        }
+        for &(from, action) in &self.remap {
+            if down & from == 0 {
+                continue;
+            }
+            match action {
+                Action::Button(b) => out.buttons |= b,
+                Action::LeftTrigger => out.lt = 1.0,
+                Action::RightTrigger => out.rt = 1.0,
+                Action::ScrollUp => out.ry = SCROLL_PUSH,
+                Action::ScrollDown => out.ry = -SCROLL_PUSH,
+                Action::Nothing => {}
+            }
+        }
+        out
     }
 
     fn profile(&self, base: &CursorProfile) -> CursorProfile {
@@ -450,7 +516,8 @@ impl Engine {
     }
 
     fn chord(&mut self, pad: &PadState, now: Instant) -> Option<Mode> {
-        let both = pad.held(btn::BACK | btn::START);
+        let alone = self.mode == Mode::Off && self.tuning.guide_hold.is_some_and(|b| pad.held(b));
+        let both = pad.held(btn::BACK | btn::START) || alone;
         let mut changed = None;
         if both {
             let since = *self.chord_since.get_or_insert(now);
@@ -632,6 +699,26 @@ mod tests {
         assert_eq!(out.buttons, btn::B | btn::X);
         assert_eq!((out.lx, out.ly, out.rx, out.ry), (0.0, -1.0, 0.5, 0.0));
         assert_eq!(Tuning::default().apply(pad), pad);
+    }
+
+    #[test]
+    fn remap_moves_buttons_triggers_and_scroll() {
+        let t = Tuning {
+            remap: vec![
+                (btn::LB as u32, Action::Button(btn::A)),
+                (source::LT, Action::Button(btn::X)),
+                (btn::DPAD_UP as u32, Action::ScrollUp),
+                (btn::Y as u32, Action::Nothing),
+            ],
+            ..Tuning::default()
+        };
+        let pad = PadState { buttons: btn::LB | btn::DPAD_UP | btn::Y | btn::B, lt: 0.9, ..PadState::default() };
+        let out = t.apply(pad);
+        assert_eq!(out.buttons, btn::A | btn::X | btn::B);
+        assert_eq!(out.lt, 0.0);
+        assert_eq!(out.ry, SCROLL_PUSH);
+        // Released: nothing is left pressed.
+        assert_eq!(t.apply(PadState::default()), PadState::default());
     }
 
     #[test]
