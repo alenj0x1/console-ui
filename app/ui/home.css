@@ -73,7 +73,9 @@ body { position: relative; }
 .info .hint .plus { margin: 0 -0.125rem; }
 /* Hints that do not fit next to the action go, all together, on their own
    line under it (placeHints measures it). */
-.info .hints.below { display: flex; width: max-content; margin: 1.25rem 0 0; }
+/* A row too long even for its own line (longer words in Spanish) wraps, a
+   whole hint at a time, instead of being cut at the edge. */
+.info .hints.below { display: flex; flex-wrap: wrap; row-gap: 1rem; width: auto; max-width: 100%; margin: 1.25rem 0 0; }
 .info .source { margin: 0; font-weight: 600; font-size: 1.125rem; color: var(--muted); }
 .info .progress { margin-top: 1.25rem; max-width: 36rem; }
 
