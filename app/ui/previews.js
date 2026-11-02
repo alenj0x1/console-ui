@@ -359,16 +359,16 @@ const Previews = (() => {
   // to 60 % (under the boost threshold); the hand lets go 0.45 s after the
   // pointer reaches the target; if it went past, it comes back at 45 %.
   SCENES.slowdown = {
-    values: ["off", "soft", "normal", "strong"],
-    factor: { off: 1, soft: 0.65, normal: 0.45, strong: 0.25 },
+    values: [0, 35, 55, 75],
+    level: (v) => (v <= 0 ? "off" : v < 45 ? "soft" : v < 65 ? "normal" : "strong"),
     captions: {
       off: "Va a la misma velocidad sobre los botones, así que es fácil pasarse.",
       soft: "Frena un poco.",
       normal: "Frena lo justo para detenerte encima.",
-      strong: "Va a un cuarto de la velocidad. Ideal si te cuesta atinar o te tiembla la mano.",
+      strong: "Va mucho más lento sobre los botones. Ideal si te cuesta atinar o te tiembla la mano.",
     },
     sim(value) {
-      const c = curve({ hover: this.factor[value] }), frames = [];
+      const c = curve({ hover: 1 - value / 100 }), frames = [];
       const inside = (x) => x >= BOX.x && x <= BOX.x + BOX.w;
       let x = 20, t = 0, phase = "wait", from = 0, entered = null, stopped = null, click = null, release = null, overshoot = null, back = Infinity, over = false, since = 99;
       while (t < 8) {
@@ -390,7 +390,7 @@ const Previews = (() => {
         t += DT;
         if (click !== null && t > click + PRESS + HOLD) break;
       }
-      return { frames, click, overshoot, back, done: click + PRESS + HOLD, key: overshoot ? overshoot.t + 0.2 : click + 0.15, assisted: value !== "off" };
+      return { frames, click, overshoot, back, done: click + PRESS + HOLD, key: overshoot ? overshoot.t + 0.2 : click + 0.15, assisted: value > 0 };
     },
     frame(run, t, alpha, ghost, L) {
       const f = at(run.frames, t), pt = t - run.click;
@@ -414,15 +414,15 @@ const Previews = (() => {
   // «Velocidad del puntero»: the profile's top speed × 0.7 / 1 / 1.4. The same
   // 0.7 s push at 60 %: the trail and where it stops show the speed.
   SCENES.cursor_speed = {
-    values: ["slow", "normal", "fast"],
-    factor: { slow: 0.7, normal: 1, fast: 1.4 },
+    values: [70, 100, 140],
+    level: (v) => (v < 85 ? "slow" : v <= 120 ? "normal" : "fast"),
     captions: {
       slow: "Más preciso, pero cruzar la pantalla toma más tiempo.",
       normal: "El equilibrio entre precisión y rapidez.",
       fast: "Cruza la pantalla en un momento, pero cuesta más atinar.",
     },
     sim(value) {
-      const c = curve({ speed: this.factor[value] }), frames = [];
+      const c = curve({ speed: value / 100 }), frames = [];
       let x = 60;
       const end = 0.35 + 0.7 + 0.1 + 0.4;
       for (let t = 0; t < end; t += DT) {
@@ -448,15 +448,15 @@ const Previews = (() => {
   // outside the pointer creeps. Zoomed in (a 0.03-screen-high piece) so a few
   // real pixels show.
   SCENES.deadzone = {
-    values: ["small", "normal", "large"],
-    zone: { small: 0.08, normal: 0.12, large: 0.18 },
+    values: [8, 12, 18],
+    level: (v) => (v < 10 ? "small" : v <= 15 ? "normal" : "large"),
     captions: {
       small: "Reacciona al mínimo roce. Si te tiembla la mano, el puntero se mueve solo.",
       normal: "Ignora los temblores pequeños.",
       large: "Ignora casi cualquier temblor, pero hay que empujar un poco más para moverlo.",
     },
     sim(value) {
-      const dz = this.zone[value], c = curve({ deadzone: dz }), frames = [], zoom = 360 / 0.03;
+      const dz = value / 100, c = curve({ deadzone: dz }), frames = [], zoom = 360 / 0.03;
       let x = 200;
       const end = 3.35;
       for (let t = 0; t < end + 0.5; t += DT) {
@@ -511,14 +511,14 @@ const Previews = (() => {
     };
   }
   SCENES.scroll_speed = {
-    values: ["slow", "normal", "fast"],
-    factor: { slow: 0.5, normal: 1, fast: 1.6 },
+    values: [50, 100, 160],
+    level: (v) => (v < 75 ? "slow" : v <= 130 ? "normal" : "fast"),
     captions: {
       slow: "Recorre la página despacio, sin perder dónde ibas.",
       normal: "Ni muy lento ni muy rápido.",
       fast: "Recorre páginas largas en un momento.",
     },
-    sim(value) { return scrollRun(this.factor[value], 1); },
+    sim(value) { return scrollRun(value / 100, 1); },
     frame: scrollFrame,
   };
   SCENES.invert_scroll = {
@@ -594,15 +594,15 @@ const Previews = (() => {
   // the guide (engine.rs: toggle_hold = hold; Menu alone opens Inicio 100 ms sooner).
   SCENES.hold_time = {
     names: true,
-    values: ["short", "normal", "long"],
-    ms: { short: 400, normal: 600, long: 900 },
+    values: [400, 600, 900],
+    level: (v) => (v < 500 ? "short" : v <= 750 ? "normal" : "long"),
     captions: {
       short: "Se abren enseguida, pero es más fácil abrirlos sin querer.",
       normal: "Hay que sostenerlos un momento.",
       long: "Hay que sostener casi un segundo, así es difícil abrirlos sin querer.",
     },
     sim(value) {
-      const hold = this.ms[value] / 1000, press = 0.4, open = press + hold, release = open + 0.45;
+      const hold = value / 1000, press = 0.4, open = press + hold, release = open + 0.45;
       return { hold, press, open, release, done: release + HOLD, key: open + 0.2 };
     },
     frame(run, t, alpha, ghost, L) {
@@ -751,7 +751,11 @@ const Previews = (() => {
     },
     has: (id) => id in SCENES,
     values: (id) => SCENES[id]?.values.slice() ?? [],
-    caption: (id, value) => SCENES[id]?.captions[String(value)] ?? "",
+    // Amounts read as the level they are closest to.
+    caption: (id, value) => {
+      const s = SCENES[id];
+      return (s && (s.level ? s.captions[s.level(value)] : s.captions[String(value)])) ?? "";
+    },
     show(id, value, prev) {
       const scene = SCENES[id];
       if (!scene || !ctx) return;

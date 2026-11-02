@@ -49,8 +49,8 @@ pub struct Settings {
     /// One of prefs::ACCENTS.
     #[serde(default = "blue")]
     pub accent: String,
-    /// Home screen and guide text size, in percent (prefs::TEXT_SIZES).
-    #[serde(default = "hundred")]
+    /// Home screen and guide text size, in percent (prefs::LEVELS).
+    #[serde(default = "hundred", deserialize_with = "level::text_size")]
     pub text_size: u32,
     #[serde(default)]
     pub thick_focus: bool,
@@ -88,25 +88,29 @@ pub struct Settings {
     /// "covers" (a row of box art), "grid" (box art) or "list" (names).
     #[serde(default = "banners")]
     pub library_view: String,
-    /// Cursor and controls (see prefs::tuning): "slow" / "normal" / "fast"…
-    #[serde(default = "normal")]
-    pub cursor_speed: String,
-    #[serde(default = "normal")]
-    pub deadzone: String,
-    /// Slowdown over clickable elements: "off" / "soft" / "normal" / "strong".
-    #[serde(default = "normal")]
-    pub slowdown: String,
-    #[serde(default = "normal")]
-    pub scroll_speed: String,
+    /// Cursor and controls (see prefs::tuning and prefs::LEVELS): the
+    /// pointer's top speed, in percent of the profile's.
+    #[serde(default = "hundred", deserialize_with = "level::cursor_speed")]
+    pub cursor_speed: u32,
+    /// Stick travel ignored around the centre, in percent.
+    #[serde(default = "twelve", deserialize_with = "level::deadzone")]
+    pub deadzone: u32,
+    /// How much the pointer slows over clickable elements, in percent
+    /// (0 = not at all).
+    #[serde(default = "fifty_five", deserialize_with = "level::slowdown")]
+    pub slowdown: u32,
+    /// Scroll speed, in percent.
+    #[serde(default = "hundred", deserialize_with = "level::scroll_speed")]
+    pub scroll_speed: u32,
     #[serde(default)]
     pub invert_scroll: bool,
     #[serde(default)]
     pub swap_sticks: bool,
     #[serde(default)]
     pub swap_ab: bool,
-    /// "short" / "normal" / "long".
-    #[serde(default = "normal")]
-    pub hold_time: String,
+    /// How long buttons are held, in milliseconds.
+    #[serde(default = "six_hundred", deserialize_with = "level::hold_time")]
+    pub hold_time: u32,
     /// The colours of the controller drawn in Personalizar botones: a theme
     /// id (prefs::PAD_THEMES) or "random:<seed>".
     #[serde(default = "graphite")]
@@ -132,6 +136,12 @@ pub struct Settings {
     /// The music tab shows the lyrics in place of the cover.
     #[serde(default)]
     pub music_lyrics: bool,
+    /// How much darker the background gets behind Inicio, in percent.
+    #[serde(default, deserialize_with = "level::wall_dim")]
+    pub wall_dim: u32,
+    /// The games tab's order: "recent" (last played first) or "az".
+    #[serde(default = "recent")]
+    pub game_order: String,
     /// The game played last (a library id), first on the games tab.
     #[serde(default)]
     pub last_game: Option<String>,
@@ -153,12 +163,12 @@ fn grid() -> String {
     "grid".into()
 }
 
-fn normal() -> String {
-    "normal".into()
-}
-
 fn list() -> String {
     "list".into()
+}
+
+fn recent() -> String {
+    "recent".into()
 }
 
 fn banners() -> String {
@@ -175,6 +185,67 @@ fn graphite() -> String {
 
 fn hundred() -> u32 {
     100
+}
+
+#[cfg(test)]
+mod level_tests {
+    use super::Settings;
+
+    #[test]
+    fn reads_old_names_and_numbers() {
+        let s: Settings = serde_json::from_str(r#"{"cursor_speed":"fast","deadzone":"small","slowdown":"off","hold_time":"long","wall_dim":"some","scroll_speed":130}"#).unwrap();
+        assert_eq!((s.cursor_speed, s.deadzone, s.slowdown, s.hold_time, s.wall_dim, s.scroll_speed), (140, 8, 0, 900, 25, 130));
+        let d = Settings::default();
+        assert_eq!((d.cursor_speed, d.deadzone, d.slowdown, d.hold_time, d.wall_dim, d.text_size), (100, 12, 55, 600, 0, 100));
+    }
+}
+
+fn twelve() -> u32 {
+    12
+}
+
+fn fifty_five() -> u32 {
+    55
+}
+
+fn six_hundred() -> u32 {
+    600
+}
+
+/// Amounts are numbers; versions before saved some as names ("slow",
+/// "large"…), read here as the number each name stood for.
+mod level {
+    use serde::{Deserialize, Deserializer};
+
+    fn read<'de, D: Deserializer<'de>>(d: D, names: &[(&str, u32)], normal: u32) -> Result<u32, D::Error> {
+        Ok(match serde_json::Value::deserialize(d)? {
+            serde_json::Value::Number(n) => n.as_u64().map_or(normal, |v| v as u32),
+            serde_json::Value::String(s) => names.iter().find(|(k, _)| *k == s).map_or(normal, |(_, v)| *v),
+            _ => normal,
+        })
+    }
+
+    pub fn cursor_speed<'de, D: Deserializer<'de>>(d: D) -> Result<u32, D::Error> {
+        read(d, &[("slow", 70), ("fast", 140)], 100)
+    }
+    pub fn scroll_speed<'de, D: Deserializer<'de>>(d: D) -> Result<u32, D::Error> {
+        read(d, &[("slow", 50), ("fast", 160)], 100)
+    }
+    pub fn deadzone<'de, D: Deserializer<'de>>(d: D) -> Result<u32, D::Error> {
+        read(d, &[("small", 8), ("large", 18)], 12)
+    }
+    pub fn slowdown<'de, D: Deserializer<'de>>(d: D) -> Result<u32, D::Error> {
+        read(d, &[("off", 0), ("soft", 35), ("strong", 75)], 55)
+    }
+    pub fn hold_time<'de, D: Deserializer<'de>>(d: D) -> Result<u32, D::Error> {
+        read(d, &[("short", 400), ("long", 900)], 600)
+    }
+    pub fn wall_dim<'de, D: Deserializer<'de>>(d: D) -> Result<u32, D::Error> {
+        read(d, &[("some", 25), ("more", 50)], 0)
+    }
+    pub fn text_size<'de, D: Deserializer<'de>>(d: D) -> Result<u32, D::Error> {
+        read(d, &[], 100)
+    }
 }
 
 impl Default for Settings {

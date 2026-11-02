@@ -46,13 +46,13 @@ function pointStep(next) {
 }
 
 const TUNE = [
-  { pref: "cursor_speed", name: "Velocidad del puntero", options: [["slow", "Lenta"], ["normal", "Normal"], ["fast", "Rápida"]] },
-  { pref: "deadzone", name: "Ignorar movimientos pequeños", options: [["small", "Poco"], ["normal", "Normal"], ["large", "Mucho"]] },
+  { pref: "cursor_speed", name: "Velocidad del puntero", options: [[70, "Lenta"], [100, "Normal"], [140, "Rápida"]] },
+  { pref: "deadzone", name: "Ignorar movimientos pequeños", options: [[8, "Poco"], [12, "Normal"], [18, "Mucho"]] },
 ];
 function tuneStep(next) {
   const rows = TUNE.flatMap((t) => {
     const choice = el("div", { className: "choice" });
-    const paint = () => [...choice.children].forEach((b) => b.classList.toggle("sel", b.dataset.v === Prefs.get()?.[t.pref]));
+    const paint = () => [...choice.children].forEach((b) => b.classList.toggle("sel", Number(b.dataset.v) === Prefs.get()?.[t.pref]));
     for (const [v, label] of t.options) {
       const b = el("button", { textContent: label });
       b.dataset.v = v;

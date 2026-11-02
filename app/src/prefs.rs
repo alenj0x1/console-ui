@@ -85,7 +85,23 @@ fn action(name: &str) -> padcore::Action {
     }
 }
 
-pub const TEXT_SIZES: [u32; 5] = [100, 110, 120, 135, 150];
+/// Amounts set with a slider: (name, lowest, highest, step). The pages
+/// keep the same table with the levels the slider rests on.
+pub const LEVELS: [(&str, u32, u32, u32); 7] = [
+    ("cursor_speed", 40, 200, 5),
+    ("scroll_speed", 30, 250, 10),
+    ("deadzone", 4, 25, 1),
+    ("slowdown", 0, 80, 5),
+    ("hold_time", 300, 1200, 50),
+    ("text_size", 100, 150, 5),
+    ("wall_dim", 0, 60, 5),
+];
+
+fn level(name: &str, value: &Value) -> Option<u32> {
+    let (_, lo, hi, step) = LEVELS.iter().find(|l| l.0 == name)?;
+    let v = value.as_u64()? as u32;
+    (v >= *lo && v <= *hi && (v - lo) % step == 0).then_some(v)
+}
 
 /// What the pages need to know; the settings screen shows and changes it.
 #[derive(Clone, Serialize)]
@@ -109,14 +125,16 @@ pub struct Preferences {
     pub trailer_sound: bool,
     pub music_online: bool,
     pub music_lyrics: bool,
-    pub cursor_speed: String,
-    pub deadzone: String,
-    pub slowdown: String,
-    pub scroll_speed: String,
+    pub wall_dim: u32,
+    pub game_order: String,
+    pub cursor_speed: u32,
+    pub deadzone: u32,
+    pub slowdown: u32,
+    pub scroll_speed: u32,
     pub invert_scroll: bool,
     pub swap_sticks: bool,
     pub swap_ab: bool,
-    pub hold_time: String,
+    pub hold_time: u32,
     pub pad_theme: String,
     pub hand: String,
     /// Every button and what it does now.
@@ -144,14 +162,16 @@ impl Preferences {
             trailer_sound: s.trailer_sound,
             music_online: s.music_online,
             music_lyrics: s.music_lyrics,
-            cursor_speed: s.cursor_speed.clone(),
-            deadzone: s.deadzone.clone(),
-            slowdown: s.slowdown.clone(),
-            scroll_speed: s.scroll_speed.clone(),
+            wall_dim: s.wall_dim,
+            game_order: s.game_order.clone(),
+            cursor_speed: s.cursor_speed,
+            deadzone: s.deadzone,
+            slowdown: s.slowdown,
+            scroll_speed: s.scroll_speed,
             invert_scroll: s.invert_scroll,
             swap_sticks: s.swap_sticks,
             swap_ab: s.swap_ab,
-            hold_time: s.hold_time.clone(),
+            hold_time: s.hold_time,
             pad_theme: s.pad_theme.clone(),
             hand: s.hand.clone(),
             button_map: button_map(s),
@@ -181,7 +201,7 @@ pub fn set_preference(app: AppHandle, webview: tauri::Webview, name: String, val
             store.update(|s| s.accent = v)?
         }
         "text_size" => {
-            let v = value.as_u64().map(|v| v as u32).filter(|v| TEXT_SIZES.contains(v)).ok_or("tamaño no válido")?;
+            let v = level("text_size", &value).ok_or("tamaño no válido")?;
             store.update(|s| s.text_size = v)?
         }
         "thick_focus" => {
@@ -237,28 +257,29 @@ pub fn set_preference(app: AppHandle, webview: tauri::Webview, name: String, val
             let v = flag()?;
             store.update(|s| s.music_online = v)?
         }
+        "wall_dim" => {
+            let v = level("wall_dim", &value).ok_or("valor no válido")?;
+            store.update(|s| s.wall_dim = v)?
+        }
+        "game_order" => {
+            let v = pick(&["recent", "az"])?;
+            store.update(|s| s.game_order = v)?
+        }
         "library_view" => {
             let v = pick(&["banners", "covers", "grid", "list"])?;
             store.update(|s| s.library_view = v)?
         }
-        "cursor_speed" | "scroll_speed" => {
-            let v = pick(&["slow", "normal", "fast"])?;
-            store.update(|s| *if name == "cursor_speed" { &mut s.cursor_speed } else { &mut s.scroll_speed } = v)?;
-            send_tuning(&app);
-        }
-        "deadzone" => {
-            let v = pick(&["small", "normal", "large"])?;
-            store.update(|s| s.deadzone = v)?;
-            send_tuning(&app);
-        }
-        "slowdown" => {
-            let v = pick(&["off", "soft", "normal", "strong"])?;
-            store.update(|s| s.slowdown = v)?;
-            send_tuning(&app);
-        }
-        "hold_time" => {
-            let v = pick(&["short", "normal", "long"])?;
-            store.update(|s| s.hold_time = v)?;
+        "cursor_speed" | "scroll_speed" | "deadzone" | "slowdown" | "hold_time" => {
+            let v = level(&name, &value).ok_or("valor no válido")?;
+            store.update(|s| {
+                *match name.as_str() {
+                    "cursor_speed" => &mut s.cursor_speed,
+                    "scroll_speed" => &mut s.scroll_speed,
+                    "deadzone" => &mut s.deadzone,
+                    "slowdown" => &mut s.slowdown,
+                    _ => &mut s.hold_time,
+                } = v
+            })?;
             send_tuning(&app);
         }
         "pad_theme" => {
@@ -308,20 +329,16 @@ pub fn set_preference(app: AppHandle, webview: tauri::Webview, name: String, val
 
 /// The engine's adjustments from the settings.
 pub fn tuning(s: &Settings) -> padcore::Tuning {
-    let pick = |v: &str, slow: f32, normal: f32, fast: f32| match v {
-        "slow" | "small" | "short" | "soft" => slow,
-        "fast" | "large" | "long" | "strong" => fast,
-        _ => normal,
-    };
+    let pct = |v: u32| v as f32 / 100.0;
     padcore::Tuning {
-        speed: pick(&s.cursor_speed, 0.7, 1.0, 1.4),
-        deadzone: pick(&s.deadzone, 0.08, 0.12, 0.18),
-        hover_factor: if s.slowdown == "off" { 1.0 } else { pick(&s.slowdown, 0.65, 0.45, 0.25) },
-        scroll: pick(&s.scroll_speed, 0.5, 1.0, 1.6),
+        speed: pct(s.cursor_speed),
+        deadzone: pct(s.deadzone),
+        hover_factor: 1.0 - pct(s.slowdown),
+        scroll: pct(s.scroll_speed),
         invert_scroll: s.invert_scroll,
         swap_sticks: s.swap_sticks || s.hand == "right",
         swap_ab: s.swap_ab,
-        hold: std::time::Duration::from_millis(pick(&s.hold_time, 400.0, 600.0, 900.0) as u64),
+        hold: std::time::Duration::from_millis(s.hold_time as u64),
         remap: button_map(s).iter().filter(|(b, a)| b != a).map(|(b, a)| (source(b), action(a))).collect(),
         guide_hold: match s.hand.as_str() {
             "left" => Some(padcore::pad::btn::BACK),

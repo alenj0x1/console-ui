@@ -21,7 +21,6 @@ const TABS = ["games", "apps", "media", "settings"];
 const ASSET = window.__ASSET ?? "http://cui.localhost";
 const CLOCK_EVERY_MS = 15000;
 const EDIT = "__edit";
-const WALL = "__wall";
 // Background id for the plain colour.
 const NO_WALL = "none";
 const KINDS = { animated: "Animado", video: "Video", image: "Imagen" };
@@ -629,7 +628,12 @@ const coversView = () => {
 function gameItems() {
   const open = (g) => state.running.includes(g.id);
   const rank = (g) => (open(g) ? (g.id === state.lastGame ? 0 : 1) : g.id === state.lastGame ? 2 : 3);
-  const games = state.games.map((g, i) => [g, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(([g]) => g);
+  // A–Z: only the open games go before the rest.
+  const az = state.prefs?.game_order === "az";
+  const byName = (a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" });
+  const base = az ? [...state.games].sort(byName) : state.games;
+  const order = az ? (g) => (open(g) ? 0 : 1) : rank;
+  const games = base.map((g, i) => [g, i]).sort((a, b) => order(a[0]) - order(b[0]) || a[1] - b[1]).map(([g]) => g);
   return games.map((g) => ({
     key: g.id,
     rev: open(g) ? "+" : "",
@@ -744,13 +748,7 @@ function appItems() {
       render();
     },
   };
-  const wall = {
-    key: WALL,
-    tile: () => el("div", { className: "tile" }, svg("photo", "icon symbol"), el("span", { className: "name", textContent: "Fondo" })),
-    info: () => ({ lead: el("div", { className: "lead-symbol" }, svg("photo")), title: "Fondo", meta: state.wallpaper?.title ?? "", action: ["Cambiar", "A"] }),
-    select: openWalls,
-  };
-  return [...pinned, edit, wall];
+  return [...pinned, edit];
 }
 
 function playerName(source) {
@@ -1001,8 +999,18 @@ const languageName = (code) => LANGUAGE_NAMES[code] ?? code;
 // Which hand holds the controller; three long names do not fit side by side.
 const HANDS = [["both", "Dos manos"], ["left", "Mano izquierda"], ["right", "Mano derecha"]];
 const handName = (v) => (HANDS.find(([h]) => h === v) ?? HANDS[0])[1];
-const TEXT_SIZES = [[100, "Normal"], [110, "Grande"], [120, "Muy grande"], [135, "Enorme"], [150, "La más grande"]];
-const textSizeName = (v) => (TEXT_SIZES.find(([s]) => s === v) ?? TEXT_SIZES[0])[1];
+// Amounts set with a slider (as prefs.rs LEVELS): their range, the levels
+// the slider rests on for a moment while held, and how the value reads.
+const percent = (v) => `${v} %`;
+const LEVELS = {
+  cursor_speed: { min: 40, max: 200, step: 5, stops: [70, 100, 140], show: percent },
+  scroll_speed: { min: 30, max: 250, step: 10, stops: [50, 100, 160], show: percent },
+  deadzone: { min: 4, max: 25, step: 1, stops: [8, 12, 18], show: percent },
+  slowdown: { min: 0, max: 80, step: 5, stops: [35, 55, 75], show: (v) => (v ? percent(v) : "No") },
+  hold_time: { min: 300, max: 1200, step: 50, stops: [400, 600, 900], show: (v) => `${(v / 1000).toLocaleString("es", { maximumFractionDigits: 2 })} s` },
+  text_size: { min: 100, max: 150, step: 5, stops: [110, 120, 135], show: percent },
+  wall_dim: { min: 0, max: 60, step: 5, stops: [25, 50], show: (v) => (v ? percent(v) : "No") },
+};
 // Buttons that can be reassigned, as the settings name them, and what each can do.
 // Laid out as on the controller: the left hand's buttons, then the right's.
 const PAD_LEFT = ["lt", "lb", "l3", "up", "left", "right", "down"];
@@ -1026,7 +1034,7 @@ const CATEGORIES = [
     rows: () => [
       Prefs.get()?.high_contrast ? null : { kind: "swatch", name: "Color principal", pref: "accent", options: Object.keys(Prefs.ACCENTS), desc: "El color del marco que muestra dónde estás y de botones como Jugar." },
       { kind: "toggle", name: "Alto contraste", pref: "high_contrast", desc: "Fondo negro liso, letras y bordes blancos y un marco amarillo grueso en lo que tienes elegido. Se enciende sola si Windows usa alto contraste." },
-      { kind: "link", name: "Tamaño de letra", value: textSizeName(state.prefs?.text_size), run: () => openSub("text_size"), desc: "Agranda los textos de Inicio y del centro de control para leerlos de lejos." },
+      { kind: "range", name: "Tamaño de letra", pref: "text_size", desc: "Agranda los textos de Inicio y del centro de control para leerlos de lejos." },
       { kind: "toggle", name: "Marco de selección más grueso", pref: "thick_focus", desc: "Un borde más ancho alrededor de lo que tienes elegido, para verlo mejor desde el sillón." },
       { kind: "link", name: "Fondo", value: state.wallpaper?.title ?? "Color liso", run: openWalls, desc: "Lo que se ve detrás de Inicio, sea una animación, un video o una imagen." },
       { kind: "toggle", name: "Letra en lugar de la carátula", pref: "music_lyrics", desc: "En Multimedia, lo que suena muestra su letra donde va la carátula, que pasa a verse chica junto al título. También se cambia con {R3}." },
@@ -1043,17 +1051,17 @@ const CATEGORIES = [
       { kind: "link", name: "Color del control", value: padThemeById(state.prefs?.pad_theme).name, run: () => openSub("pad_theme"), desc: "Los colores del control que se dibuja en Personalizar botones. Como vienen los controles, o una combinación al azar." },
       { kind: "toggle", name: "Aceptar con {B}", pref: "swap_ab", desc: "{B} acepta y {A} vuelve atrás. Para volver a lo normal, entra aquí y presiona {B}." },
       { kind: "toggle", name: "Puntero con la palanca derecha", pref: "swap_sticks", desc: "La palanca derecha mueve el puntero y la izquierda sube o baja la página." },
-      { kind: "choice", name: "Tiempo para mantener presionado", pref: "hold_time", options: [["short", "Corto"], ["normal", "Normal"], ["long", "Largo"]], desc: "Cuánto hay que sostener {Menu} para abrir Inicio, o {View} + {Menu} para el centro de control. Un toque tiene que ser más corto que esto." },
+      { kind: "range", name: "Tiempo para mantener presionado", pref: "hold_time", desc: "Cuánto hay que sostener {Menu} para abrir Inicio, o {View} + {Menu} para el centro de control. Un toque tiene que ser más corto que esto." },
     ],
   },
   {
     name: "Puntero",
     icon: "pointer",
     rows: () => [
-      { kind: "choice", name: "Velocidad del puntero", pref: "cursor_speed", options: [["slow", "Lenta"], ["normal", "Normal"], ["fast", "Rápida"]], desc: "Qué tan rápido se mueve el puntero por la pantalla." },
-      { kind: "choice", name: "Ayuda para apuntar", pref: "slowdown", options: [["off", "No"], ["soft", "Suave"], ["normal", "Normal"], ["strong", "Fuerte"]], desc: "El puntero va más lento al pasar sobre algo que se puede pulsar, para que no te pases. No frena cuando cruzas la pantalla rápido." },
-      { kind: "choice", name: "Ignorar movimientos pequeños", pref: "deadzone", options: [["small", "Poco"], ["normal", "Normal"], ["large", "Mucho"]], desc: "Cuánto hay que mover la palanca para que el puntero reaccione. Súbelo si el puntero se mueve solo o si te tiembla la mano." },
-      { kind: "choice", name: "Velocidad al desplazar", pref: "scroll_speed", options: [["slow", "Lenta"], ["normal", "Normal"], ["fast", "Rápida"]], desc: "Qué tan rápido sube o baja la página con la palanca que desplaza." },
+      { kind: "range", name: "Velocidad del puntero", pref: "cursor_speed", desc: "Qué tan rápido se mueve el puntero por la pantalla." },
+      { kind: "range", name: "Ayuda para apuntar", pref: "slowdown", desc: "El puntero va más lento al pasar sobre algo que se puede pulsar, para que no te pases. No frena cuando cruzas la pantalla rápido." },
+      { kind: "range", name: "Ignorar movimientos pequeños", pref: "deadzone", desc: "Cuánto hay que mover la palanca para que el puntero reaccione. Súbelo si el puntero se mueve solo o si te tiembla la mano." },
+      { kind: "range", name: "Velocidad al desplazar", pref: "scroll_speed", desc: "Qué tan rápido sube o baja la página con la palanca que desplaza." },
       { kind: "toggle", name: "Desplazar al revés", pref: "invert_scroll", desc: "Al empujar la palanca hacia arriba, la página baja." },
     ],
   },
@@ -1130,6 +1138,16 @@ function rowControl(r) {
       return el("span", { className: "choice" }, ...r.options.map(([v, label]) => el("span", { className: v === p[r.pref] ? "sel" : "", textContent: label })));
     case "swatch":
       return el("span", { className: "swatches" }, ...r.options.map((id) => el("span", { className: `swatch${id === p[r.pref] ? " sel" : ""}`, style: `background:${Prefs.ACCENTS[id]}`, title: ACCENT_NAMES[id] })));
+    case "range": {
+      const l = LEVELS[r.pref], v = p[r.pref] ?? l.min;
+      const at = (x) => `${((x - l.min) / (l.max - l.min)) * 100}%`;
+      return el("span", { className: "range" },
+        el("span", { className: "track" },
+          el("span", { className: "fill", style: `width:${at(v)}` }),
+          ...l.stops.map((s) => el("span", { className: "stop", style: `left:${at(s)}` })),
+          el("span", { className: "knob", style: `left:${at(v)}` })),
+        el("span", { className: "amount", textContent: l.show(v) }));
+    }
     case "link":
       return el("span", { className: "value" }, r.value, svg("chevron"));
     case "action": {
@@ -1154,7 +1172,6 @@ function subRows() {
   }
   if (sub === "pad_theme") return themeRows();
   if (sub === "hand") return HANDS.map(([hand, name]) => ({ kind: "check", name, hand, on: (p.hand ?? "both") === hand }));
-  if (sub === "text_size") return TEXT_SIZES.map(([size, name]) => ({ kind: "check", name, size, on: p.text_size === size }));
   if (sub === "tv_display") return (state.tv?.displays ?? []).map((c) => ({ kind: "check", single: true, name: c.name, tv: ["display", c.id], on: state.tv.display === c.id }));
   if (sub === "tv_audio") {
     const outs = [{ id: "", name: "Sin cambiar" }, ...(state.tv?.outputs ?? [])];
@@ -1168,7 +1185,6 @@ function settingsRows() {
 }
 
 function subTitle(sub) {
-  if (sub === "text_size") return "Tamaño de letra";
   if (sub === "hand") return "Distribución";
   if (sub === "tv_display") return "Pantalla de la TV";
   if (sub === "tv_audio") return "Sonido en Modo TV";
@@ -1181,7 +1197,7 @@ function openSub(name) {
   (st.trail ??= []).push({ sub: st.sub, row: st.row });
   st.sub = name;
   // A list of choices opens on the one in use.
-  const chosen = name === "text_size" || name === "hand" || name === "pad_theme" || name.startsWith("button:") || name.startsWith("tv_");
+  const chosen = name === "hand" || name === "pad_theme" || name.startsWith("button:") || name.startsWith("tv_");
   st.row = chosen ? Math.max(0, subRows().findIndex((r) => r.on)) : 0;
   render();
 }
@@ -1230,10 +1246,12 @@ function renderSettings() {
   );
   const row = rows[st.row];
   const valued = row && (row.kind === "choice" || row.kind === "swatch");
+  const sliding = row?.kind === "range";
   const onPad = st.sub === "buttons" || st.sub.startsWith("button:");
   const hints = el("div", { className: "settings-hints" },
-    st.zone === "cats" ? hintEl("A", "Abrir") : hintEl("A", onPad ? "Elegir" : row?.kind === "link" ? "Abrir" : row?.kind === "action" ? (row.hint ?? "Borrar") : "Cambiar"),
+    st.zone === "cats" ? hintEl("A", "Abrir") : sliding ? null : hintEl("A", onPad ? "Elegir" : row?.kind === "link" ? "Abrir" : row?.kind === "action" ? (row.hint ?? "Borrar") : "Cambiar"),
     st.zone === "rows" && valued ? hintEl("← →", "Elegir") : null,
+    st.zone === "rows" && sliding ? hintEl("← →", "Ajustar") : null,
     el("span", { className: "spacer" }),
     hintEl("B", st.zone === "rows" ? "Atrás" : "Cerrar"),
   );
@@ -1250,6 +1268,124 @@ function renderSettings() {
   panel.querySelector(".setting.on")?.scrollIntoView({ block: "nearest" });
   fadeEdges(panel);
   if (pad) padGuide();
+}
+
+// ---------- sliders ----------
+// Left / right move a slider one step; held, it keeps going and rests a
+// moment on each usual level (LEVELS stops), so it is easy to land there
+// and never stops for good. The page shows each step at once; the value is
+// saved once the slider stops moving.
+const STOP_MS = 350;
+const HELD_MS = 160;
+const SAVE_MS = 150;
+const slide = { last: 0, rest: 0, timer: 0 };
+
+function slideLevel(pref, d) {
+  const l = LEVELS[pref], now = performance.now();
+  const held = now - slide.last < HELD_MS;
+  slide.last = now;
+  const v = state.prefs?.[pref] ?? l.min;
+  if (held && l.stops.includes(v) && now - slide.rest < STOP_MS) return;
+  const next = Math.max(l.min, Math.min(l.max, v + d * l.step));
+  if (next === v) return;
+  if (l.stops.includes(next)) slide.rest = now;
+  state.prefs = { ...state.prefs, [pref]: next };
+  if (quick.open) renderQuick();
+  else render();
+  clearTimeout(slide.timer);
+  slide.timer = setTimeout(() => setPref(pref, next), SAVE_MS);
+}
+
+// ---------- personalising Inicio ----------
+// Menu on Juegos, Apps or Multimedia: a panel on the right with how Inicio
+// looks. Every change shows at once behind it; B or Menu closes it.
+const quick = { open: false, row: 0, from: false };
+const quickEl = document.getElementById("quick");
+
+function quickRows() {
+  const p = state.prefs ?? {};
+  return [
+    { kind: "link", name: "Fondo", value: state.wallpaper?.title ?? "Color liso", run: quickWalls },
+    p.high_contrast ? null : { kind: "swatch", name: "Color principal", pref: "accent", options: Object.keys(Prefs.ACCENTS) },
+    { kind: "range", name: "Oscurecer el fondo", pref: "wall_dim" },
+    { kind: "choice", name: "Forma", pref: "library_view", options: [["banners", "Anchas"], ["covers", "Portadas"], ["grid", "Cuadrícula"], ["list", "Lista"]] },
+    { kind: "choice", name: "Orden de los juegos", pref: "game_order", options: [["recent", "Recientes"], ["az", "A–Z"]] },
+    { kind: "toggle", name: "Imágenes de los juegos", pref: "game_art" },
+    { kind: "range", name: "Tamaño de letra", pref: "text_size" },
+    { kind: "toggle", name: "Letra en lugar de la carátula", pref: "music_lyrics" },
+  ].filter(Boolean);
+}
+
+// The backgrounds grid; B there comes back to the panel.
+function quickWalls() {
+  closeQuick();
+  quick.from = true;
+  openWalls();
+}
+
+function openQuick() {
+  quick.open = true;
+  quick.row = Math.min(quick.row, quickRows().length - 1);
+  renderQuick();
+}
+
+function closeQuick() {
+  quick.open = false;
+  renderQuick();
+}
+
+function renderQuick() {
+  document.body.classList.toggle("quick-open", quick.open);
+  quickEl.hidden = !quick.open;
+  if (!quick.open) return;
+  const p = state.prefs ?? {};
+  const rows = quickRows();
+  const r = rows[quick.row];
+  const valued = r.kind === "choice" || r.kind === "swatch";
+  quickEl.replaceChildren(
+    el("div", { className: "quick-rows" },
+      ...rows.map((x, i) => el("div", { className: `setting${i === quick.row ? " on" : ""}` }, el("span", { className: "name", textContent: x.name }), rowControl(x)))),
+    el("div", { className: "settings-hints" },
+      r.kind === "link" ? hintEl("A", "Abrir") : r.kind === "toggle" ? hintEl("A", "Cambiar") : null,
+      valued ? hintEl("← →", "Elegir") : null,
+      r.kind === "range" ? hintEl("← →", "Ajustar") : null,
+      el("span", { className: "spacer" }),
+      hintEl("B", "Cerrar")),
+  );
+  quickEl.querySelector(".setting.on")?.scrollIntoView({ block: "nearest" });
+}
+
+const quickValues = (r) => (r.kind === "swatch" ? r.options : r.options.map(([v]) => v));
+
+function quickNav(dir) {
+  const rows = quickRows();
+  const r = rows[quick.row];
+  if (dir === "up" || dir === "down") {
+    quick.row = Math.max(0, Math.min(rows.length - 1, quick.row + (dir === "up" ? -1 : 1)));
+    return renderQuick();
+  }
+  if (r.kind === "link" || r.kind === "toggle") return;
+  if (r.kind === "range") return slideLevel(r.pref, dir === "left" ? -1 : 1);
+  // Left / right step through the values and stop at the ends.
+  const values = quickValues(r);
+  const next = values[values.indexOf(state.prefs?.[r.pref]) + (dir === "left" ? -1 : 1)];
+  if (next === undefined) return;
+  // Shown at once, so quick presses step from the newest value.
+  state.prefs = { ...state.prefs, [r.pref]: next };
+  renderQuick();
+  setPref(r.pref, next);
+}
+
+function quickPress(button) {
+  const r = quickRows()[quick.row];
+  if (button === "b" || button === "menu") return closeQuick();
+  if (button !== "a") return;
+  if (r.kind === "link") return r.run();
+  if (r.kind === "toggle") return setPref(r.pref, !state.prefs?.[r.pref]);
+  if (r.kind === "range") return;
+  // A on a value moves to the next one, round.
+  const values = quickValues(r);
+  setPref(r.pref, values[(values.indexOf(state.prefs?.[r.pref]) + 1) % values.length]);
 }
 
 // ---------- the controller ----------
@@ -1756,7 +1892,8 @@ function settingsNav(dir) {
     return render();
   }
   const d = dir === "left" ? -1 : 1;
-  if (r.kind === "choice") {
+  if (r.kind === "range") slideLevel(r.pref, d);
+  else if (r.kind === "choice") {
     const at = r.options.findIndex(([v]) => v === state.prefs?.[r.pref]);
     const next = r.options[at + d];
     if (next) setPref(r.pref, next[0]);
@@ -1793,7 +1930,6 @@ function settingsSelect() {
   else if (r.kind === "toggle" && r.tv) toggleTv();
   else if (r.kind === "toggle") setPref(r.pref, !p[r.pref]);
   else if (r.kind === "check" && r.tv) chooseTv(...r.tv);
-  else if (r.kind === "check" && r.size) setPref("text_size", r.size);
   else if (r.kind === "check" && r.hand) setPref("hand", r.hand);
   else if (r.kind === "pick") openSub(`button:${r.button}`);
   else if (r.kind === "check" && r.action) setPref("button_map", { button: r.button, action: r.action }).then(settingsBack);
@@ -1979,9 +2115,10 @@ function volumeHint(head) {
   const held = libraryView() === "grid" || libraryView() === "list";
   const keys = held ? [glyph("RT"), plusSign(), glyph("↕")] : [glyph("↕")];
   const hint = el("span", { className: "hint" }, ...keys, "Volumen");
+  const custom = state.sheet ? null : el("span", { className: "hint" }, glyph("Menu"), "Personalizar");
   const hints = head.querySelector(".hints");
-  if (hints) hints.append(hint);
-  else (head.querySelector(".action") ?? head.querySelector(".meta"))?.after(el("span", { className: "hints" }, hint));
+  if (hints) hints.append(...[hint, custom].filter(Boolean));
+  else (head.querySelector(".action") ?? head.querySelector(".meta"))?.after(el("span", { className: "hints" }, hint, custom ?? ""));
   return head;
 }
 
@@ -2334,8 +2471,11 @@ function back() {
     return;
   }
   if (state.sheet) {
+    const toQuick = state.sheet === "wall" && quick.from;
     state.sheet = "";
+    quick.from = false;
     render();
+    if (toQuick) openQuick();
     return;
   }
   if (state.tab === "settings" && settingsBack()) return;
@@ -2364,6 +2504,8 @@ function onPress(button) {
     else if (button === "b") keepChange(false);
     return;
   }
+  if (quick.open) return quickPress(button);
+  if (button === "menu" && !state.sheet && state.tab !== "settings") return openQuick();
   if (state.sheet === "search") {
     const s = state.search;
     if (button === "a" && s.zone === "keys") return typeSearch(SEARCH_KEYS[s.key].toLowerCase());
@@ -2408,7 +2550,8 @@ function onPress(button) {
 listen("pad", ({ payload }) => {
   if (!active) return;
   if (payload.kind === "nav" && payload.source !== "right") {
-    if (!confirming) (rt.held ? rtNav : onNav)(payload.dir);
+    if (quick.open) quickNav(payload.dir);
+    else if (!confirming) (rt.held ? rtNav : onNav)(payload.dir);
   } else if (payload.kind === "press") onPress(payload.button);
   else if (payload.kind === "release" && payload.button === "rt") rtUp();
 });
@@ -2453,6 +2596,9 @@ listen("mode", ({ payload }) => {
   syncMotion();
   if (payload !== "home") return;
   state.sheet = "";
+  quick.open = false;
+  quick.from = false;
+  renderQuick();
   state.focus.games = 0;
   load();
   invoke("volume_get").then((v) => (state.volume = v));
@@ -2501,6 +2647,8 @@ Prefs.watch((p) => {
   }
   state.prefs = p;
   state.gameArt = p.game_art;
+  document.body.style.setProperty("--dim", String((p.wall_dim ?? 0) / 100));
+  renderQuick();
   loadSound();
   render();
   syncMotion(); // high contrast stops the videos and animations behind
