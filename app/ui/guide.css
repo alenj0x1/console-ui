@@ -7,7 +7,27 @@ body { background: color-mix(in srgb, var(--bg) 95%, transparent); display: flex
 .icon { width: 1.5rem; height: 1.5rem; display: block; }
 .glyph { font-size: 0.9375rem; }
 
-.topbar { display: flex; justify-content: flex-end; align-items: center; height: 2.5rem; }
+.topbar { display: flex; justify-content: flex-end; align-items: center; gap: 2rem; height: 2.5rem; }
+/* The controller's battery: its level drawn inside the outline, and in words. */
+.battery { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 1.125rem; color: var(--muted); }
+.battery[hidden] { display: none; }
+.battery .icon { width: 1.75rem; height: 1.75rem; }
+.battery.low { color: var(--danger); }
+
+/* Power menu: Menu opens it under the clock; one-line rows as in the other menus. */
+body { position: relative; }
+.power { position: absolute; top: 5.5rem; right: 4rem; width: 24rem; padding: 0.5rem; border-radius: 0.75rem; background: var(--surface); box-shadow: inset 0 0 0 var(--line) var(--ring-strong); z-index: 1; }
+.power[hidden] { display: none; }
+.power .row { display: flex; align-items: center; gap: 1rem; height: 3.25rem; padding: 0 1rem; border-radius: 0.5rem; font-weight: 600; font-size: 1.125rem; }
+.power .row .icon { flex: none; color: var(--muted); }
+.power .row > span:last-child { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.power .row.on { background: var(--surface-hover); box-shadow: 0 0 0 var(--focus) var(--accent); }
+/* Holding A: the row fills from the left for the hold time (HOLD_MS). */
+.power .row { position: relative; overflow: hidden; }
+.power .row > * { position: relative; }
+.power .row::before { content: ""; position: absolute; inset: 0; width: 0; background: color-mix(in srgb, var(--accent) 22%, transparent); }
+.power .row.holding::before { width: 100%; transition: width 1000ms linear; }
+@media (prefers-reduced-motion: reduce) { .power .row.holding::before { transition: none !important; width: 100%; } }
 #clock { font-weight: 600; font-size: 1.25rem; }
 
 main { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 2.5rem; }

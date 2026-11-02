@@ -111,7 +111,7 @@ async function intro() {
       className: "lead",
       textContent:
         experiment === "suggest"
-          ? "Escribe cada frase y presiona Menu para enviarla. Primero una ronda de práctica sin y con sugerencias, luego cuatro que cuentan. Con sugerencias, RT elige la primera y arriba en la cruceta llegas a las demás."
+          ? "Escribe cada frase y presiona Menu para enviarla. Primero una ronda de práctica sin y con sugerencias, luego cuatro que cuentan. Con sugerencias, Vista elige la primera y arriba en la cruceta llegas a las demás."
           : "Escribe cada frase y presiona Menu para enviarla. Primero una ronda de práctica con cada teclado y luego cuatro que cuentan. Mantén A (o el gatillo) sobre una vocal para la tilde.",
     }),
     start,

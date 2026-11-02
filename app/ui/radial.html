@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Menú radial</title>
+  <link rel="stylesheet" href="theme.css">
+  <style>
+    html, body { height: 100%; margin: 0; background: transparent; overflow: hidden; user-select: none; cursor: default; }
+    body { display: grid; place-items: center; }
+    svg.ring { width: 100%; height: 100%; display: block; }
+    .slice { fill: var(--surface); stroke: var(--ring-strong); stroke-width: 1.5; }
+    /* The aimed slice: the focus ring's colour and width, a light tint inside. */
+    .slice.on { fill: color-mix(in srgb, var(--accent) 12%, var(--surface)); stroke: var(--accent); stroke-width: 4; }
+    .hub { fill: var(--bg); stroke: var(--ring-strong); stroke-width: 1.5; }
+    .label { fill: var(--text); font-family: var(--font-text); font-weight: 600; font-size: 17px; text-anchor: middle; }
+    .mark { color: var(--muted); }
+    .on-mark { color: var(--text); }
+    /* Nothing aimed: letting go cancels, shown in the middle. */
+    .cancel { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <svg class="ring" viewBox="0 0 560 560" aria-hidden="true"></svg>
+  <script src="prefs.js"></script>
+  <script src="icons.js"></script>
+  <script src="radial.js"></script>
+</body>
+</html>

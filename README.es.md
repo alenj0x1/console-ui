@@ -15,20 +15,23 @@ Usa todo Windows desde el sillón con el control: un cursor asistido, un teclado
 - **Ajustes**: una pestaña de Inicio para el color de acento, el tamaño del texto, los controles, el cursor, el teclado, el modo juego, abrir con Windows y la vibración.
 - **Modo juego**: cuando un juego pasa al frente (desde Inicio, Steam o cualquier otro lado), el control es suyo (dos vibraciones cortas), y el cursor vuelve cuando se cierra.
 - **Centro de control**: mantén View + Menu (los dos botones pequeños del centro del control: dos cuadritos y tres rayas), incluso en un juego, para ver tus ventanas abiertas y cambiar a una con A (un juego recibe el control; lo demás, el cursor), cerrar una con Y o manejar la música sin salir del juego; B vuelve. En el escritorio también se abre con un toque de View.
+- **Modo TV**: deja encendida solo la pantalla de la TV y manda el sonido a ella; al apagarlo todo vuelve como estaba.
+- **Bienvenida**: una práctica corta con el control la primera vez.
 - **Laboratorios**: cada decisión de diseño se midió con el usuario antes de adoptarla (ver `labs/`).
 
 ## Controles
 
 | Control | Modo cursor | Teclado |
 |---|---|---|
-| Stick izquierdo / cruceta | Mover cursor (LT = precisión) / flechas | Mover la tecla marcada |
+| Stick izquierdo / cruceta | Mover cursor / flechas | Mover la tecla marcada |
 | Stick derecho | Scroll | Mover el punto de escritura |
 | A / X / L3 | Clic izquierdo / derecho / central | Escribir (mantener = tilde) / borrar / idiomas |
 | B | Esc | Cerrar el teclado |
 | Y | Abrir el teclado (también al hacer clic en un campo de texto) | Espacio |
 | LB / RB | Atrás / adelante | Mayúscula / símbolos |
-| RT | Toque: Intro. Mantener + cruceta: volumen, canción anterior/siguiente | Tomar la primera sugerencia |
-| View / Menu | Centro de control / menú Inicio (mantener: pantalla de Inicio) | – / Intro |
+| LT | Mantener: puntero lento. Con la cruceta: saltar al botón más cercano | |
+| RT | Toque: Intro. Mantener + cruceta: volumen, canción anterior/siguiente | Intro |
+| View / Menu | Centro de control (mantener: menú rápido) / menú Inicio (mantener: pantalla de Inicio) | Tomar la primera sugerencia / Intro |
 | Mantener View + Menu | Centro de control (también en un juego) | |
 
 ## Requisitos

@@ -15,20 +15,23 @@ Use all of Windows from the couch with a game controller: an assisted cursor, an
 - **Settings**: a tab on the home screen for the accent colour, text size, controls, cursor, keyboard, game mode, starting with Windows and vibration.
 - **Game mode**: a game coming to the front (from the home screen, Steam or anywhere else) gets the controller (two short rumbles), and the cursor comes back when it closes.
 - **Control center**: hold View + Menu (the two small buttons in the middle of the controller: two squares and three lines), even in a game, to see your open windows and switch to one with A (a game gets the controller, anything else the cursor), close one with Y, or control the music without leaving the game; B goes back. In the desktop, a tap on View opens it too.
+- **TV mode**: leaves only the TV's screen on and sends the sound to it; turning it off puts everything back.
+- **Welcome**: a short practice with the controller the first time.
 - **Labs**: every design choice was measured with the user before adopting it (see `labs/`).
 
 ## Controls
 
 | Control | Cursor mode | Keyboard |
 |---|---|---|
-| Left stick / d-pad | Move cursor (LT = precision) / arrow keys | Move the highlight |
+| Left stick / d-pad | Move cursor / arrow keys | Move the highlight |
 | Right stick | Scroll | Move the text caret |
 | A / X / L3 | Left / right / middle click | Type (hold for accent) / backspace / languages |
 | B | Esc | Close the keyboard |
 | Y | Open the keyboard (also by clicking a text field) | Space |
 | LB / RB | Back / forward | Shift / symbols |
-| RT | Tap: Enter. Hold + d-pad: volume, previous/next track | Take the first suggestion |
-| View / Menu | Control center / Start menu (hold: home screen) | – / Enter |
+| LT | Hold: slow pointer. With the d-pad: jump to the nearest button | |
+| RT | Tap: Enter. Hold + d-pad: volume, previous/next track | Enter |
+| View / Menu | Control center (hold: quick menu) / Start menu (hold: home screen) | Take the first suggestion / Enter |
 | Hold View + Menu | Control center (also in a game) | |
 
 ## Requirements

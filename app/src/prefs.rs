@@ -159,7 +159,9 @@ pub fn preferences(store: tauri::State<Store>) -> Preferences {
 /// Changes one preference. Only the home screen's settings may call it.
 #[tauri::command]
 pub fn set_preference(app: AppHandle, webview: tauri::Webview, name: String, value: Value) -> Result<Preferences, String> {
-    if webview.label() != crate::home::LABEL {
+    // The welcome tunes the pointer while you try it.
+    let welcome = webview.label() == crate::welcome::LABEL && matches!(name.as_str(), "cursor_speed" | "deadzone");
+    if webview.label() != crate::home::LABEL && !welcome {
         return Err("no permitido".into());
     }
     let store = app.state::<Store>();

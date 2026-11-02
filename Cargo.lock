@@ -890,6 +890,7 @@ dependencies = [
  "tauri-build",
  "ureq",
  "windows",
+ "windows-core",
  "windows-sys 0.61.2",
 ]
 

@@ -50,7 +50,10 @@ const state = {
   games: [],
   apps: [],
   pinned: [],
-  focus: { games: 0, apps: 0, media: 0, edit: 0, medit: 0, wall: 0, folder: 0 },
+  focus: { games: 0, apps: 0, media: 0, edit: 0, medit: 0, wall: 0, folder: 0, search: 0 },
+  // Finding a game (the "search" sheet): what was typed, and whether the
+  // letters or the results have the focus.
+  search: { q: "", zone: "keys", key: 0 },
   // The media tab's apps and sites (null = the installed media apps).
   picks: null,
   // Its edit grid lists every app only once asked to.
@@ -59,10 +62,12 @@ const state = {
   // sub: a list opened from a row (the keyboard's languages), with its own focus.
   settings: { zone: "cats", cat: 0, row: 0, forget: "", sub: "", subRow: 0 },
   prefs: null,
+  // TV mode (tv_state): the screens and sound outputs, the chosen ones, on or off.
+  tv: null,
   // A grid over the apps tab instead of the row: "edit" (pinned apps),
   // "medit" (the media tab's apps and sites),
-  // "wall" (background) or "folder" (adding a folder of backgrounds); ""
-  // when closed.
+  // "wall" (background), "folder" (adding a folder of backgrounds) or
+  // "search" (finding a game, over the games tab); "" when closed.
   sheet: "",
   // The folder being browsed and the folders already added.
   folder: null,
@@ -134,6 +139,13 @@ function glyph(text) {
   return setGlyph(el("span", { className: "glyph" }), text);
 }
 
+// The tab bar's LB / RB, drawn as the buttons (and as the ones that switch
+// tabs now, with a one-hand layout).
+function paintTabGlyphs() {
+  document.querySelectorAll(".tabs > .glyph").forEach((g) => setGlyph(g, g.dataset.button ??= g.textContent.trim()));
+}
+paintTabGlyphs();
+
 // ---------- background ----------
 
 function setHero(url) {
@@ -192,7 +204,7 @@ function setTrailer(gameId) {
   trailerFor = gameId;
   clearTimeout(trailerTimer);
   trailer.classList.remove("shown");
-  if (!gameId) return syncMotion();
+  if (!gameId || calm.matches) return syncMotion();
   trailerTimer = setTimeout(async () => {
     if (await invoke("game_trailer", { id: gameId }).catch(() => false)) playTrailer(gameId);
   }, TRAILER_DELAY_MS);
@@ -210,16 +222,21 @@ function playTrailer(gameId) {
 
 listen("trailer", ({ payload }) => playTrailer(payload));
 
+// Windows' "Show animations" is off: backgrounds stay still and trailers
+// do not play.
+const calm = matchMedia("(prefers-reduced-motion: reduce)");
+calm.addEventListener("change", () => { Backgrounds.stop(); syncMotion(); });
+
 // Videos and animations run only while they can be seen (not under a game's
 // art, the music cover or with the home screen closed).
 function syncMotion() {
   const stage = document.body.classList.contains("music-stage");
-  if (active && !stage && !Prefs.get()?.high_contrast && trailer.classList.contains("shown")) trailer.play().catch(() => {});
+  if (active && !stage && !calm.matches && !Prefs.get()?.high_contrast && trailer.classList.contains("shown")) trailer.play().catch(() => {});
   else if (!trailer.paused) trailer.pause();
   const covered = stage || Prefs.get()?.high_contrast || heroes.some((h) => h.classList.contains("shown"));
   const visible = (layer) => active && layer.classList.contains("shown") && !covered;
-  if (visible(wallVideo) && wallVideo.paused) wallVideo.play().catch(() => {});
-  else if (!visible(wallVideo) && !wallVideo.paused) wallVideo.pause();
+  if (visible(wallVideo) && wallVideo.paused && !calm.matches) wallVideo.play().catch(() => {});
+  else if ((!visible(wallVideo) || calm.matches) && !wallVideo.paused) wallVideo.pause();
   const id = wallCanvas.dataset.id;
   if (visible(wallCanvas) && Backgrounds.running() !== id) Backgrounds.start(id, wallCanvas);
   else if (!visible(wallCanvas)) Backgrounds.stop();
@@ -366,14 +383,81 @@ function gameItems() {
     key: g.id,
     tile: () =>
       el("div", { className: "tile" }, g.art.includes("header") ? img(art(g, "header"), "art") : el("span", { className: "name", textContent: g.name })),
-    info: () => ({
-      lead: g.art.includes("logo") ? el("img", { className: "logo", src: art(g, "logo"), alt: g.name }) : null,
-      title: g.name,
-      meta: [playedAgo(g.last_played), SOURCES[g.source]].filter(Boolean).join(" · "),
-      action: ["Jugar", "A"],
-    }),
+    info: () => {
+      const head = infoEl({
+        lead: g.art.includes("logo") ? el("img", { className: "logo", src: art(g, "logo"), alt: g.name }) : null,
+        title: g.name,
+        meta: [playedAgo(g.last_played), SOURCES[g.source]].filter(Boolean).join(" · "),
+        action: ["Jugar", "A"],
+      });
+      if (state.sheet !== "search") head.querySelector(".action").after(el("span", { className: "hints" }, el("span", { className: "hint" }, glyph("Y"), "Buscar")));
+      return head;
+    },
+    name: g.name,
     select: () => open(g.id),
   }));
+}
+
+// ---------- finding a game ----------
+// Y on the games tab: letters on top, every game below in A–Z order, the
+// ones that match what was typed. A types, X erases, Y adds a space, LT / RT
+// jump to the previous / next letter.
+// Ten to a row, numbers last (game names like 2048 or FIFA 23).
+const SEARCH_KEYS = [..."ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"];
+const SEARCH_COLUMNS = 10;
+const fold = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+const initial = (name) => fold(name)[0] ?? "";
+
+function searchItems() {
+  const q = fold(state.search.q).trim();
+  const byName = (a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" });
+  // Words that start with what was typed ("ho" finds Hollow Knight, not Asphalt).
+  const words = (name) => " " + fold(name).replace(/[^a-z0-9]+/g, " ");
+  return gameItems().filter((g) => !q || words(g.name).includes(" " + q)).sort(byName);
+}
+
+function searchHead() {
+  const s = state.search;
+  const keys = el("div", { className: "search-keys" },
+    ...SEARCH_KEYS.map((k, i) => el("span", { className: `search-key${s.zone === "keys" && i === s.key ? " on" : ""}`, textContent: k })));
+  const field = el("div", { className: "search-field" }, svg("search"),
+    el("span", { className: s.q ? "query" : "query empty", textContent: s.q || "Buscar un juego" }));
+  const hints = el("div", { className: "hints" },
+    el("span", { className: "hint" }, glyph("X"), "Borrar"),
+    el("span", { className: "hint" }, glyph("Y"), "Espacio"),
+    el("span", { className: "hint" }, glyph("LT RT"), "Letra"),
+    el("span", { className: "hint" }, glyph("B"), "Cerrar"));
+  const head = el("section", { className: "search" }, field, keys, hints);
+  head.dataset.item = "search";
+  return head;
+}
+
+function openSearch() {
+  state.sheet = "search";
+  state.search = { q: "", zone: "keys", key: 0 };
+  state.focus.search = 0;
+  render();
+}
+
+function typeSearch(text) {
+  const s = state.search;
+  s.q = text === null ? s.q.slice(0, -1) : (s.q + text).slice(0, 40);
+  state.focus.search = 0;
+  render();
+}
+
+// LT / RT: the first game of the previous or next letter among the results.
+function jumpLetter(dir) {
+  const list = searchItems();
+  if (!list.length) return;
+  const starts = list.map((g, i) => i).filter((i) => i === 0 || initial(list[i].name) !== initial(list[i - 1].name));
+  const at = state.focus.search;
+  const group = starts.filter((i) => i <= at).pop();
+  const to = dir > 0 ? starts.find((i) => i > at) : starts.filter((i) => i < group).pop();
+  if (to === undefined) return;
+  state.search.zone = "grid";
+  state.focus.search = to;
+  render();
 }
 
 function appTile(app, extra) {
@@ -546,7 +630,7 @@ async function toggleMedia(id) {
   const picks = mediaPicks();
   state.picks = picks.includes(id) ? picks.filter((p) => p !== id) : [...picks, id];
   render();
-  await invoke("set_media", { ids: state.picks }).catch(console.error);
+  await invoke("set_media", { ids: state.picks }).catch((e) => failed("No se pudo guardar el cambio.", e));
 }
 
 // Moves the progress bar without rebuilding.
@@ -720,12 +804,26 @@ const CATEGORIES = [
     ],
   },
   {
+    name: "Modo TV",
+    icon: "tv",
+    rows: () => {
+      const tv = state.tv;
+      const nameOf = (list, id) => list?.find((c) => c.id === id)?.name;
+      return [
+        { kind: "toggle", tv: true, name: "Modo TV", desc: "Solo la TV queda encendida, como pantalla principal y con su sonido. Al apagarlo, todo vuelve como estaba. Si la TV no muestra nada, espera 15 s y vuelve sola." },
+        { kind: "link", name: "Pantalla de la TV", value: nameOf(tv?.displays, tv?.display) ?? "Elegir", run: () => openSub("tv_display"), desc: "La pantalla que queda encendida en Modo TV." },
+        { kind: "link", name: "Sonido en Modo TV", value: nameOf(tv?.outputs, tv?.audio) ?? "Sin cambiar", run: () => openSub("tv_audio"), desc: "Por dónde sale el sonido en Modo TV, por ejemplo los parlantes de la TV." },
+      ];
+    },
+  },
+  {
     name: "General",
     icon: "settings",
     rows: () => [
       { kind: "toggle", name: "Iniciar con Windows", pref: "start_with_windows", desc: "Se abre sola y en silencio al encender la computadora." },
       { kind: "toggle", name: "Vibrar al cambiar de modo", pref: "rumble", desc: "El control vibra cuando pasa a un juego y cuando vuelve al puntero." },
       { kind: "choice", name: "Forma de este menú", pref: "settings_view", options: [["list", "Lista"], ["tiles", "Cuadros"]], desc: "Todo en una lista, o una categoría a la vez en cuadros grandes." },
+      { kind: "link", name: "Practicar con el control", value: "", run: () => invoke("welcome_open").catch((e) => failed("No se pudo abrir la práctica.", e)), desc: "La práctica del principio: apuntar, cómo se siente el puntero, el teclado, Inicio y el centro de control." },
       { kind: "action", key: "reset", hint: "Restablecer", name: "Dejar todo como venía", run: () => twice("reset", resetAll), desc: "Vuelve todas las opciones de Ajustes a como venían. Tus apps fijadas y tus palabras se quedan. Pide confirmar antes." },
     ],
   },
@@ -749,10 +847,10 @@ function rowControl(r) {
   const p = state.prefs ?? {};
   switch (r.kind) {
     case "toggle":
-      return el("span", { className: `switch${p[r.pref] ? " on" : ""}` });
+      return el("span", { className: `switch${(r.tv ? state.tv?.on : p[r.pref]) ? " on" : ""}` });
     case "check":
       // One choice (a size, a hand): only the chosen one is ticked. Several (languages): boxes.
-      if (r.size || r.hand) return r.on ? svg("check", "icon tick") : null;
+      if (r.size || r.hand || r.single) return r.on ? svg("check", "icon tick") : null;
       return el("span", { className: `check${r.on ? " on" : ""}` }, r.on ? svg("check") : null);
     case "choice":
       return el("span", { className: "choice" }, ...r.options.map(([v, label]) => el("span", { className: v === p[r.pref] ? "sel" : "", textContent: label })));
@@ -783,6 +881,11 @@ function subRows() {
   if (sub === "pad_theme") return themeRows();
   if (sub === "hand") return HANDS.map(([hand, name]) => ({ kind: "check", name, hand, on: (p.hand ?? "both") === hand }));
   if (sub === "text_size") return TEXT_SIZES.map(([size, name]) => ({ kind: "check", name, size, on: p.text_size === size }));
+  if (sub === "tv_display") return (state.tv?.displays ?? []).map((c) => ({ kind: "check", single: true, name: c.name, tv: ["display", c.id], on: state.tv.display === c.id }));
+  if (sub === "tv_audio") {
+    const outs = [{ id: "", name: "Sin cambiar" }, ...(state.tv?.outputs ?? [])];
+    return outs.map((c) => ({ kind: "check", single: true, name: c.name, tv: ["audio", c.id], on: (state.tv?.audio ?? "") === c.id }));
+  }
   return (p.available_languages ?? []).map((lang) => ({ kind: "check", name: languageName(lang), lang, on: (p.languages ?? []).includes(lang) }));
 }
 
@@ -793,6 +896,8 @@ function settingsRows() {
 function subTitle(sub) {
   if (sub === "text_size") return "Tamaño de letra";
   if (sub === "hand") return "Distribución";
+  if (sub === "tv_display") return "Pantalla de la TV";
+  if (sub === "tv_audio") return "Sonido en Modo TV";
   if (sub === "buttons" || sub === "pad_theme" || sub.startsWith("button:")) return "";
   return "Idiomas";
 }
@@ -802,7 +907,7 @@ function openSub(name) {
   (st.trail ??= []).push({ sub: st.sub, row: st.row });
   st.sub = name;
   // A list of choices opens on the one in use.
-  const chosen = name === "text_size" || name === "hand" || name === "pad_theme" || name.startsWith("button:");
+  const chosen = name === "text_size" || name === "hand" || name === "pad_theme" || name.startsWith("button:") || name.startsWith("tv_");
   st.row = chosen ? Math.max(0, subRows().findIndex((r) => r.on)) : 0;
   render();
 }
@@ -1065,7 +1170,8 @@ function seededRandom(seed) {
   };
 }
 // Hues that stay a colour when dark (no oranges or yellows: they turn brown).
-const PAD_HUES = [345, 100, 150, 185, 210, 230, 255, 280, 305, 325];
+// Only two of them are wines and plums, so a draw seldom turns red.
+const PAD_HUES = [100, 150, 185, 210, 230, 255, 280, 315, 345];
 
 function randomTheme(seed) {
   const r = seededRandom(seed);
@@ -1080,7 +1186,7 @@ function randomTheme(seed) {
     else {
       let l = between(16, 24);
       // Dark reds need a little more colour or they turn brown.
-      const sat = hue > 330 || hue < 15 ? between(38, 50) : between(24, 42);
+      const sat = hue > 330 || hue < 15 ? between(32, 40) : between(24, 42);
       body = hsl(hue, sat, l);
       while (luminance(body) > 0.05 && l > 8) body = hsl(hue, sat, (l -= 1));
     }
@@ -1144,7 +1250,7 @@ function padPatterns(uid) {
   ${P("dots", 14, 14, '<circle cx="7" cy="7" r="0.9" fill="var(--pad-p1)"/>')}
   ${P("lines", 7, 7, '<path d="M-1 8L8 -1M-1 1L1 -1M6 8L8 6" stroke="var(--pad-p1)" stroke-width="1"/>')}
   ${P("grid", 12, 12, '<path d="M0 0.5H12M0.5 0V12" stroke="var(--pad-p1)" stroke-width="1" fill="none"/>')}
-  ${P("stripes", 12, 12, '<rect y="0" width="12" height="5" fill="var(--pad-p2)"/>')}
+  ${P("stripes", 12, 12, '<rect y="0" width="12" height="4" fill="var(--pad-p2)" opacity="0.55"/>')}
   ${P("hex", hw, hh, `<path d="${honey}" fill="none" stroke="var(--pad-p2)" stroke-width="1"/>`)}
   ${P("carbon", 8, 8, '<rect width="4" height="4" fill="var(--pad-p2)"/><rect x="4" y="4" width="4" height="4" fill="var(--pad-p2)"/><path d="M0 2h4M6 4v4M4 6h4M2 0v4" stroke="var(--pad-p1)" stroke-width="0.6"/>')}
   ${P("rings", 40, 40, '<g fill="none" stroke="var(--pad-p1)" stroke-width="1"><circle cx="20" cy="20" r="6"/><circle cx="20" cy="20" r="12"/><circle cx="20" cy="20" r="18"/></g>')}
@@ -1410,7 +1516,9 @@ function settingsSelect() {
     st.previous = p.pad_theme;
     setPref("pad_theme", `${PAD_RANDOM}:${(st.seed = newSeed(p.pad_theme))}`);
   }
+  else if (r.kind === "toggle" && r.tv) toggleTv();
   else if (r.kind === "toggle") setPref(r.pref, !p[r.pref]);
+  else if (r.kind === "check" && r.tv) chooseTv(...r.tv);
   else if (r.kind === "check" && r.size) setPref("text_size", r.size);
   else if (r.kind === "check" && r.hand) setPref("hand", r.hand);
   else if (r.kind === "pick") openSub(`button:${r.button}`);
@@ -1423,6 +1531,44 @@ function settingsSelect() {
     const at = r.options.findIndex(([v]) => v === p[r.pref]);
     setPref(r.pref, r.options[(at + 1) % r.options.length][0]);
   } else if (r.kind === "link" || r.kind === "action") r.run();
+}
+
+// TV mode: what can be chosen and whether it is on, read when the home
+// screen opens and after every change.
+async function loadTv() {
+  state.tv = await invoke("tv_state").catch(() => null);
+  render();
+}
+
+// Turning it on with no screen chosen asks for the screen first, then turns on.
+let tvAfterChoice = false;
+async function toggleTv() {
+  if (!state.tv?.display && !state.tv?.on) {
+    tvAfterChoice = true;
+    return openSub("tv_display");
+  }
+  const on = !state.tv.on;
+  try {
+    await invoke("tv_set", { on });
+    if (on) askToKeepTv();
+  } catch (e) {
+    failed(on ? "No se pudo encender el Modo TV." : "No se pudo apagar el Modo TV.", e);
+  }
+  await loadTv();
+}
+
+async function chooseTv(what, id) {
+  try {
+    await invoke("tv_choose", { what, id });
+  } catch (e) {
+    return failed("No se pudo guardar el cambio.", e);
+  }
+  await loadTv();
+  settingsBack();
+  if (what === "display" && tvAfterChoice) {
+    tvAfterChoice = false;
+    toggleTv();
+  }
 }
 
 // Actions that can't be undone ask for a second A first.
@@ -1453,7 +1599,9 @@ async function resetAll() {
 // screen: the change asks to be kept and goes back by itself if nobody does.
 const CONFIRM_SECONDS = 10;
 const CONFIRMED = ["swap_ab", "swap_sticks", "hand"];
-let confirming = null; // { name, before, left, timer }
+let confirming = null; // { name, before, left, timer } or { tv: true, left, timer }
+// TV mode asks the same way (app/src/tv.rs CONFIRM_WITHIN).
+const TV_CONFIRM_SECONDS = 15;
 const confirmEl = el("div", { className: "confirm", hidden: true });
 document.body.append(confirmEl);
 
@@ -1468,13 +1616,24 @@ function askToKeep(name, before) {
   renderConfirm();
 }
 
+function askToKeepTv() {
+  clearInterval(confirming?.timer);
+  confirming = { tv: true, left: TV_CONFIRM_SECONDS };
+  confirming.timer = setInterval(() => {
+    confirming.left -= 1;
+    if (confirming.left <= 0) return keepChange(false);
+    renderConfirm();
+  }, 1000);
+  renderConfirm();
+}
 function renderConfirm() {
   confirmEl.hidden = !confirming;
   if (!confirming) return;
+  const tv = confirming.tv;
   confirmEl.replaceChildren(
     el("div", { className: "confirm-card" },
-      el("h2", { textContent: "¿Dejas los botones así?" }),
-      el("p", { textContent: `Si no eliges nada, vuelven a como estaban en ${confirming.left} s.` }),
+      el("h2", { textContent: tv ? "¿Se ve bien la TV?" : "¿Dejas los botones así?" }),
+      el("p", { textContent: tv ? `Si no eliges nada, todo vuelve como estaba en ${confirming.left} s.` : `Si no eliges nada, vuelven a como estaban en ${confirming.left} s.` }),
       el("div", { className: "confirm-actions" },
         el("span", { className: "action" }, el("span", { textContent: "Dejar así" }), glyph("A")),
         el("span", { className: "hint" }, glyph("B"), "Volver a como estaba"),
@@ -1489,6 +1648,10 @@ async function keepChange(keep) {
   clearInterval(c.timer);
   confirming = null;
   renderConfirm();
+  if (c.tv) {
+    await invoke(keep ? "tv_confirm" : "tv_set", keep ? {} : { on: false }).catch((e) => failed("No se pudo cambiar el Modo TV.", e));
+    return loadTv();
+  }
   if (!keep) await setPref(c.name, c.before);
 }
 
@@ -1515,6 +1678,7 @@ function items() {
   if (state.sheet === "medit") return mediaEditItems();
   if (state.sheet === "wall") return wallItems();
   if (state.sheet === "folder") return folderItems();
+  if (state.sheet === "search") return searchItems();
   return { games: gameItems, apps: appItems, media: mediaItems }[state.tab]();
 }
 
@@ -1544,6 +1708,7 @@ function render() {
   document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === state.tab));
 
   document.body.classList.toggle("settings-open", state.tab === "settings" && !state.sheet);
+  document.body.classList.toggle("search-open", state.sheet === "search");
   if (state.tab === "settings" && !state.sheet) {
     paintBackground();
     // The music tab's cover would stay over the dimmed background.
@@ -1562,6 +1727,13 @@ function render() {
   state.focus[fk] = Math.max(0, Math.min(state.focus[fk], list.length - 1));
   const at = state.focus[fk];
 
+  if (state.sheet === "search" && !list.length) {
+    view.replaceChildren(searchHead(), el("div", { className: "search-empty" },
+      el("div", { className: "lead-symbol" }, svg("search")),
+      el("div", {}, el("b", { textContent: "Ningún juego coincide" }), el("span", {}, ...withButtons("Borra una letra con {X} para ver más.", false)))));
+    renderPlayer();
+    return;
+  }
   if (!list.length && state.tab === "games") {
     view.replaceChildren(infoEl({ lead: el("div", { className: "lead-symbol" }, svg("gamepad")), title: "Tus juegos aparecen aquí", meta: "Los juegos instalados con Steam o Epic Games se agregan solos." }));
     renderPlayer();
@@ -1577,6 +1749,7 @@ function render() {
     return list[at]?.more ? "Mostrar" : list[at]?.on ? "Quitar" : "Agregar";
   };
   const headFor = () => {
+    if (state.sheet === "search") return searchHead();
     const head = editing
       ? infoEl({ lead: el("div", { className: "lead-symbol" }, svg("edit")), title: state.sheet === "medit" ? "Editar Multimedia" : "Editar apps", meta: "", action: [editLabel(), "A"] })
       : asInfo(list[at].info());
@@ -1589,6 +1762,8 @@ function render() {
     strip.dataset.key = key;
     list.forEach((item) => strip.append(item.tile()));
     view.replaceChildren(headFor(), strip);
+  } else if (state.sheet === "search") {
+    view.querySelector(".search").replaceWith(headFor());
   } else if (editing) {
     const label = view.querySelector(".info .action span");
     if (label) label.textContent = editLabel();
@@ -1596,7 +1771,8 @@ function render() {
     const head = headFor();
     if (view.querySelector(".info").dataset.item !== head.dataset.item) view.querySelector(".info").replaceWith(head);
   }
-  [...strip.children].forEach((t, k) => t.classList.toggle("on", k === at));
+  const ringed = state.sheet !== "search" || state.search.zone === "grid";
+  [...strip.children].forEach((t, k) => t.classList.toggle("on", ringed && k === at));
   const song = strip.querySelector(".tile.playing .song");
   if (song && song.textContent !== state.media.title) song.textContent = state.media.title;
   strip.children[at]?.scrollIntoView({ inline: "nearest", block: "nearest" });
@@ -1642,8 +1818,30 @@ function columns(grid) {
   return n === -1 ? Math.max(tiles.length, 1) : n;
 }
 
+function searchNav(dir) {
+  const s = state.search;
+  // The list can empty itself (a library reload): the letters take the focus.
+  if (!searchItems().length) s.zone = "keys";
+  if (s.zone === "keys") {
+    const step = { left: -1, right: 1, up: -SEARCH_COLUMNS, down: SEARCH_COLUMNS }[dir];
+    const to = s.key + step;
+    if (to >= 0 && to < SEARCH_KEYS.length) s.key = to;
+    // Down from the last row of letters: the results.
+    else if (dir === "down" && searchItems().length) s.zone = "grid";
+    render();
+    return true;
+  }
+  if (dir === "up" && state.focus.search < columns(view.querySelector(".grid"))) {
+    s.zone = "keys";
+    render();
+    return true;
+  }
+  return false;
+}
+
 function onNav(dir) {
   if (state.tab === "settings" && !state.sheet) return settingsNav(dir);
+  if (state.sheet === "search" && searchNav(dir)) return;
   // Up / down outside the app grid change the volume.
   if (!state.sheet && (dir === "up" || dir === "down")) {
     changeVolume(invoke("volume_step", { delta: dir === "up" ? VOLUME_STEP : -VOLUME_STEP }));
@@ -1672,19 +1870,34 @@ function switchTab(delta) {
   render();
 }
 
+// Says what failed (and why, in the host's words) for a few seconds.
+const TOAST_MS = 5000;
+let failTimer = 0;
+function failed(what, e) {
+  console.error(e);
+  const toast = document.getElementById("toast");
+  toast.querySelector("b").textContent = what;
+  const why = typeof e === "string" ? e : "";
+  toast.querySelector("span").textContent = why ? why[0].toUpperCase() + why.slice(1) + "." : "";
+  toast.hidden = false;
+  clearTimeout(failTimer);
+  failTimer = setTimeout(() => (toast.hidden = true), TOAST_MS);
+}
+
 async function open(id) {
   try {
     const isGame = await invoke("launch", { id });
     await invoke("set_mode", { mode: isGame ? "off" : "cursor" });
   } catch (e) {
-    console.error(e);
+    const name = state.games.find((g) => g.id === id)?.name ?? appById(id)?.name;
+    failed(name ? `No se pudo abrir ${name}.` : "No se pudo abrir.", e);
   }
 }
 
 async function togglePin(id) {
   state.pinned = state.pinned.includes(id) ? state.pinned.filter((p) => p !== id) : [...state.pinned, id];
   render();
-  await invoke("set_pinned", { ids: state.pinned });
+  await invoke("set_pinned", { ids: state.pinned }).catch((e) => failed("No se pudieron guardar tus apps.", e));
 }
 
 async function openWalls() {
@@ -1695,7 +1908,7 @@ async function openWalls() {
     state.engine = data.engine;
     state.folders = data.folders;
   } catch (e) {
-    return console.error(e);
+    return failed("No se pudieron cargar los fondos.", e);
   }
   state.sheet = "wall";
   // Start on the background in use.
@@ -1711,7 +1924,7 @@ async function chooseWall(w) {
   try {
     await invoke("set_wallpaper", { id: w?.id ?? NO_WALL });
   } catch (e) {
-    console.error(e);
+    failed("No se pudo cambiar el fondo.", e);
     state.wallpaper = before;
     render();
   }
@@ -1720,7 +1933,7 @@ async function chooseWall(w) {
 async function toggleGameArt() {
   state.gameArt = !state.gameArt;
   render();
-  await invoke("set_game_art", { on: state.gameArt }).catch(console.error);
+  await invoke("set_game_art", { on: state.gameArt }).catch((e) => failed("No se pudo guardar el cambio.", e));
 }
 
 // A streaming site in the default browser, driven with the cursor.
@@ -1729,7 +1942,7 @@ async function openService(id) {
     await invoke("open_service", { id });
     await invoke("set_mode", { mode: "cursor" });
   } catch (e) {
-    console.error(e);
+    failed("No se pudo abrir el sitio.", e);
   }
 }
 
@@ -1738,7 +1951,7 @@ async function openWorkshop() {
     await invoke("open_workshop");
     await invoke("set_mode", { mode: "cursor" });
   } catch (e) {
-    console.error(e);
+    failed("No se pudo abrir Wallpaper Engine.", e);
   }
 }
 
@@ -1747,7 +1960,7 @@ async function openFolder(path) {
   try {
     state.folder = await invoke("browse_folders", { path });
   } catch (e) {
-    return console.error(e);
+    return failed("No se pudo abrir la carpeta.", e);
   }
   state.sheet = "folder";
   state.focus.folder = 0;
@@ -1758,7 +1971,7 @@ async function addFolder(path) {
   try {
     await invoke("add_wallpaper_folder", { path });
   } catch (e) {
-    return console.error(e);
+    return failed("No se pudo agregar la carpeta.", e);
   }
   await openWalls();
 }
@@ -1811,13 +2024,21 @@ function onPress(button) {
     else if (button === "b") keepChange(false);
     return;
   }
+  if (state.sheet === "search") {
+    const s = state.search;
+    if (button === "a" && s.zone === "keys") return typeSearch(SEARCH_KEYS[s.key].toLowerCase());
+    if (button === "x") return typeSearch(null);
+    if (button === "y") return typeSearch(" ");
+    if (button === "lt" || button === "rt") return jumpLetter(button === "lt" ? -1 : 1);
+  }
   switch (button) {
     case "a":
       if (state.tab === "settings" && !state.sheet) settingsSelect();
       else items()[state.focus[focusKey()]]?.select();
       break;
     case "y":
-      changeVolume(invoke("volume_mute"));
+      if (state.tab === "games" && !state.sheet && state.games.length) openSearch();
+      else changeVolume(invoke("volume_mute"));
       break;
     case "b":
       back();
@@ -1856,6 +2077,7 @@ async function load() {
   state.picks = data.media;
   state.gameArt = data.game_art;
   render();
+  loadTv();
 }
 
 listen("library", load);
@@ -1900,4 +2122,5 @@ Prefs.watch((p) => {
   syncMotion(); // high contrast stops the videos and animations behind
   // Its hints show the buttons as they are now.
   if (confirming) renderConfirm();
+  paintTabGlyphs();
 });

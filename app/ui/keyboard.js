@@ -137,7 +137,8 @@ function finishWord(word) {
     suggester.learn(state.prev, w);
     invoke("learn_word", { prev: state.prev, word: w });
   }
-  state.prev = Suggester.learnable(w) ? w : "";
+  // A word from a password never becomes the context of the next one.
+  state.prev = !state.private && Suggester.learnable(w) ? w : "";
 }
 
 // ---------- model ----------
@@ -199,7 +200,7 @@ function keyEl(key, id, focused) {
     const label = document.createElement("span");
     label.textContent = word ?? "";
     el.append(label);
-    if (word && key.i === 0) el.append(glyphEl(state.layout === "grid" ? "RT" : "View"));
+    if (word && key.i === 0) el.append(glyphEl("View"));
   } else if (key.type === "char") {
     el.textContent = state.shift ? key.ch.toUpperCase() : key.ch;
     if (VARIANTS[key.ch]) {
@@ -216,7 +217,8 @@ function keyEl(key, id, focused) {
     const label = document.createElement("span");
     label.textContent =
       key.id === "lang" ? state.languages.map((l) => l.toUpperCase()).join(" · ") : key.id === "sym" && state.sym ? "abc" : a.label;
-    el.append(label, glyphEl(a.glyph));
+    // RT is Enter in the grid, as with the pointer; the halves type with it.
+    el.append(label, glyphEl(key.id === "enter" && state.layout === "grid" ? "RT" : a.glyph));
   }
   return el;
 }
@@ -545,7 +547,7 @@ function onPress(button) {
       if (!grid) typePress("lt", "left");
       break;
     case "rt":
-      if (grid) accept(0);
+      if (grid) act("enter");
       else typePress("rt", "right");
       break;
     case "view":

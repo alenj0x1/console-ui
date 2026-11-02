@@ -643,6 +643,8 @@ const Previews = (() => {
   return {
     mount(el) {
       this.unmount();
+      // Windows' animations off: the scene's most telling moment, still.
+      if (matchMedia("(prefers-reduced-motion: reduce)").matches) frozen = "key";
       canvas = el; ctx = canvas.getContext("2d");
       glyphs(); readTheme(); size();
       const io = new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; wake(); });

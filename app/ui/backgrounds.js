@@ -175,7 +175,8 @@ const Backgrounds = (() => {
   return {
     has: (id) => name(id) in BODY,
 
-    // Draws `id` on the canvas until stop(); follows the window's size.
+    // Draws `id` on the canvas until stop(); follows the window's size. With
+    // Windows' animations off it draws one still frame.
     start(id, canvas) {
       this.stop();
       if (!draws.has(canvas)) draws.set(canvas, renderer(canvas));
@@ -190,6 +191,11 @@ const Backgrounds = (() => {
         last = now;
         const [w, h] = [canvas.clientWidth, canvas.clientHeight];
         if (canvas.width !== w || canvas.height !== h) [canvas.width, canvas.height] = [w, h];
+        if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          draw(id, PREVIEW[name(id)]?.t ?? 7, 1, PREVIEW[name(id)]?.gain ?? 1);
+          cancelAnimationFrame(running.raf);
+          return;
+        }
         draw(id, (now - begin) / 1000 + 4);
       };
       running = { canvas, id, raf: requestAnimationFrame(tick) };

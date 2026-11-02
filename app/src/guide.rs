@@ -173,9 +173,48 @@ pub fn guide_back(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn guide_close_window(app: AppHandle, id: String) -> Result<(), String> {
+pub fn guide_close_window(webview: tauri::Webview, app: AppHandle, id: String) -> Result<(), String> {
+    crate::only_from(&webview, &[LABEL])?;
     in_guide(&app)?;
     let hwnd = app.state::<GuideState>().switcher.get(&id).ok_or("esa ventana ya no está abierta")?;
     switcher::close(hwnd);
+    Ok(())
+}
+
+/// Sleep, restart, shut down or sign out, from the guide's power menu (the
+/// page asks for a second press first, except for sleep).
+#[tauri::command]
+pub fn guide_power(webview: tauri::Webview, app: AppHandle, action: String) -> Result<(), String> {
+    crate::only_from(&webview, &[LABEL])?;
+    in_guide(&app)?;
+    let args: &[&str] = match action.as_str() {
+        "sleep" => &[],
+        "restart" => &["/r", "/t", "0"],
+        "shutdown" => &["/s", "/t", "0"],
+        "signout" => &["/l"],
+        _ => return Err(format!("acción desconocida: {action}")),
+    };
+    app.state::<crate::events::Events>().log(&format!("centro de control: energía ({action})"));
+    guide_back(app)?;
+    if args.is_empty() {
+        // Sleep, never hibernate (SetSuspendState's first argument).
+        std::thread::spawn(|| {
+            std::thread::sleep(std::time::Duration::from_millis(300));
+            unsafe { windows_sys::Win32::System::Power::SetSuspendState(false, false, false) };
+        });
+        return Ok(());
+    }
+    // shutdown.exe from System32 (as Windows reports it), never one found
+    // on the PATH or through an environment variable.
+    let mut buf = [0u16; 260];
+    let n = unsafe { windows_sys::Win32::System::SystemInformation::GetSystemDirectoryW(buf.as_mut_ptr(), buf.len() as u32) } as usize;
+    if n == 0 || n >= buf.len() {
+        return Err("no se encontró Windows".into());
+    }
+    let system = std::path::PathBuf::from(String::from_utf16_lossy(&buf[..n]));
+    std::process::Command::new(system.join("shutdown.exe"))
+        .args(args)
+        .spawn()
+        .map_err(|e| e.to_string())?;
     Ok(())
 }

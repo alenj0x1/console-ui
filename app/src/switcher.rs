@@ -151,7 +151,7 @@ fn alt_tab_window(hwnd: HWND) -> bool {
     }
 }
 
-fn pid_of(hwnd: HWND) -> u32 {
+pub(crate) fn pid_of(hwnd: HWND) -> u32 {
     let mut pid = 0;
     unsafe { GetWindowThreadProcessId(hwnd, &mut pid) };
     pid

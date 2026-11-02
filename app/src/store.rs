@@ -104,6 +104,21 @@ pub struct Settings {
     /// id (prefs::PAD_THEMES) or "random:<seed>".
     #[serde(default = "graphite")]
     pub pad_theme: String,
+    /// TV mode: the screen (monitor device path) and sound output (endpoint
+    /// id) to use; no sound output = the sound stays where it is.
+    #[serde(default)]
+    pub tv_display: Option<String>,
+    #[serde(default)]
+    pub tv_audio: Option<String>,
+    /// TV mode was on when the app last stopped (it may have died): the next
+    /// start puts the screens back, and the sound output saved here.
+    #[serde(default)]
+    pub tv_left_on: bool,
+    #[serde(default)]
+    pub tv_audio_before: Option<String>,
+    /// The welcome was finished or skipped (it opens by itself until then).
+    #[serde(default)]
+    pub welcomed: bool,
 }
 
 fn yes() -> bool {

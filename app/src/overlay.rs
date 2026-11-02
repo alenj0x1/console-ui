@@ -201,7 +201,7 @@ pub fn follow_caret(app: &AppHandle) {
 const SHELL_PANELS: [&str; 4] = ["SearchApp.exe", "SearchHost.exe", "StartMenuExperienceHost.exe", "ShellExperienceHost.exe"];
 
 /// Work area (without the taskbar) and scale of the monitor showing `at`.
-fn monitor_at((x, y): (i32, i32)) -> Option<(RECT, f64)> {
+pub(crate) fn monitor_at((x, y): (i32, i32)) -> Option<(RECT, f64)> {
     unsafe {
         let mon = MonitorFromPoint(POINT { x, y }, MONITOR_DEFAULTTOPRIMARY);
         let mut info: MONITORINFO = std::mem::zeroed();

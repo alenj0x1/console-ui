@@ -1,6 +1,7 @@
 // The guide: open windows (switch to one, close one) and the music, over a
 // game or the desktop. A switches, B goes back, Y closes the window, X plays
-// or pauses, LT / RT change the song (as on the home screen).
+// or pauses, LT / RT change the song (as on the home screen). Menu opens the
+// power menu; the controller's battery shows next to the clock.
 
 const { invoke } = window.__TAURI__.core;
 const here = window.__TAURI__.webviewWindow.getCurrentWebviewWindow();
@@ -13,7 +14,22 @@ const windowsEl = document.getElementById("windows");
 const musicEl = document.getElementById("music");
 const hintsEl = document.getElementById("hints");
 
-const state = { windows: [], focus: 0, media: {}, active: false };
+const state = { windows: [], focus: 0, media: {}, active: false, battery: null, power: null, tvOn: false };
+
+// The power menu: sleep at once; the rest need A held for a moment (a
+// shaky double press never shuts the PC down). With TV mode on, its first
+// row turns it off.
+const HOLD_MS = 1000;
+const POWER = [
+  { id: "tv", icon: "tv", name: "Apagar Modo TV", tv: true },
+  { id: "sleep", icon: "moon", name: "Suspender" },
+  { id: "restart", icon: "restart", name: "Reiniciar", hold: "Mantén {A} para reiniciar" },
+  { id: "shutdown", icon: "power", name: "Apagar", hold: "Mantén {A} para apagar" },
+  { id: "signout", icon: "logout", name: "Cerrar sesión", hold: "Mantén {A} para salir" },
+];
+const powerRows = () => POWER.filter((o) => !o.tv || state.tvOn);
+const powerEl = document.getElementById("power");
+const batteryEl = document.getElementById("battery");
 
 function el(tag, props = {}, ...children) {
   const e = Object.assign(document.createElement(tag), props);
@@ -115,15 +131,43 @@ function renderMusic() {
   }
 }
 
+// state.power: null (closed) or { focus, timer } (timer: A is being held).
+function renderPower() {
+  const p = state.power;
+  powerEl.hidden = !p;
+  if (!p) return;
+  powerEl.replaceChildren(...powerRows().map((o, i) => {
+    const on = i === p.focus;
+    const label = el("span");
+    label.append(...(on && o.hold ? withButtons(o.hold, false) : [o.name]));
+    return el("div", { className: `row${on ? " on" : ""}${on && p.timer ? " holding" : ""}` }, svg(o.icon), label);
+  }));
+}
+
+function renderBattery() {
+  const b = state.battery;
+  batteryEl.hidden = !b;
+  if (!b) return;
+  // Up to three bars inside the battery outline.
+  const bars = [7, 10, 13].slice(0, b.wired ? 0 : b.level).map((x) => `<path d="M${x} 10v4"/>`).join("");
+  const mark = b.wired ? icon("plug") : icon("battery").replace("</svg>", `${bars}</svg>`);
+  batteryEl.classList.toggle("low", !b.wired && b.level <= 1);
+  batteryEl.innerHTML = `${mark}<span>${b.wired ? "Con cable" : ["Batería vacía", "Batería baja", "Batería media", "Batería llena"][b.level]}</span>`;
+}
+
 let hintsKey = "";
 function renderHints() {
-  const key = `${state.windows.length > 0}|${!!state.media.title}|${!!state.media.playing}|${!!Prefs.get()?.swap_ab}|${JSON.stringify(Prefs.get()?.button_map ?? {})}`;
+  const key = `${!!state.power}|${state.windows.length > 0}|${!!state.media.title}|${!!state.media.playing}|${!!Prefs.get()?.swap_ab}|${JSON.stringify(Prefs.get()?.button_map ?? {})}`;
   if (key === hintsKey) return;
   hintsKey = key;
+  if (state.power) {
+    hintsEl.replaceChildren(hint("A", "Elegir"), hint("B", "Volver", "back"));
+    return;
+  }
   const parts = [];
   if (state.windows.length) parts.push(hint("A", "Cambiar"), hint("Y", "Cerrar ventana"));
   if (state.media.title) parts.push(hint("X", state.media.playing ? "Pausar" : "Reproducir"), hint("LT RT", "Canción"));
-  parts.push(hint("B", "Volver", "back"));
+  parts.push(hint("Menu", "Energía"), hint("B", "Volver", "back"));
   hintsEl.replaceChildren(...parts);
 }
 
@@ -141,7 +185,54 @@ function move(d) {
 
 const focused = () => state.windows[state.focus];
 
+function powerRun(o) {
+  state.power = null;
+  if (o.tv) invoke("tv_set", { on: false }).catch(console.error);
+  else invoke("guide_power", { action: o.id }).catch(console.error);
+  renderPower();
+  renderHints();
+}
+
+function powerPress(button) {
+  const p = state.power;
+  if (button === "a") {
+    const o = powerRows()[p.focus];
+    if (!o.hold) return powerRun(o);
+    if (!p.timer) p.timer = setTimeout(() => powerRun(o), HOLD_MS);
+  } else if (button === "b") {
+    clearTimeout(p.timer);
+    state.power = null;
+  }
+  renderPower();
+  renderHints();
+}
+
+// Letting go of A before the moment is up does nothing.
+function powerRelease(button) {
+  const p = state.power;
+  if (button !== "a" || !p?.timer) return;
+  clearTimeout(p.timer);
+  p.timer = 0;
+  renderPower();
+}
+
+function powerMove(d) {
+  const p = state.power;
+  clearTimeout(p.timer);
+  p.timer = 0;
+  p.focus = Math.max(0, Math.min(powerRows().length - 1, p.focus + d));
+  renderPower();
+}
+
 function onPress(button) {
+  // Menu (a tap) opens and closes the power menu.
+  if (button === "menu") {
+    clearTimeout(state.power?.timer);
+    state.power = state.power ? null : { focus: 0, timer: 0 };
+    renderPower();
+    return renderHints();
+  }
+  if (state.power) return powerPress(button);
   const music = (action) => state.media.title && invoke("media_control", { action }).catch(console.error);
   switch (button) {
     case "a":
@@ -172,12 +263,17 @@ function onPress(button) {
   }
 }
 
+
 listen("pad", ({ payload }) => {
   if (!state.active) return;
-  if (payload.kind === "nav" && payload.source !== "right") {
+  if (payload.kind === "nav" && payload.source !== "right" && state.power) {
+    if (payload.dir === "up") powerMove(-1);
+    else if (payload.dir === "down") powerMove(1);
+  } else if (payload.kind === "nav" && payload.source !== "right") {
     if (payload.dir === "left") move(-1);
     else if (payload.dir === "right") move(1);
   } else if (payload.kind === "press") onPress(payload.button);
+  else if (payload.kind === "release" && state.power) powerRelease(payload.button);
 });
 
 // Waits for the images in the page to be decoded (or a short while).
@@ -207,6 +303,8 @@ listen("mode", ({ payload }) => {
   state.active = payload === "guide";
   // Closing: draw nothing, so the next open never starts on this list.
   if (!state.active) {
+    state.power = null;
+    powerEl.hidden = true;
     state.windows = [];
     windowsEl.replaceChildren();
     musicEl.hidden = true;
@@ -219,3 +317,13 @@ function tick() {
 tick();
 setInterval(tick, CLOCK_EVERY_MS);
 invoke("current_mode").then((m) => (state.active = m === "guide"));
+window.__TAURI__.event.listen("tv", ({ payload }) => (state.tvOn = payload));
+invoke("tv_state").then((t) => (state.tvOn = t.on)).catch(() => {});
+listen("battery", ({ payload }) => {
+  state.battery = payload;
+  renderBattery();
+});
+invoke("pad_battery").then((b) => {
+  state.battery = b;
+  renderBattery();
+});

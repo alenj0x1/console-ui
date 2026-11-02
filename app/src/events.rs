@@ -61,6 +61,8 @@ impl Events {
         let Some(path) = self.path.lock().unwrap().clone() else { return };
         let ms = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis()).unwrap_or(0);
         if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(path) {
+            // One event per line, whatever a name or id contains.
+            let what: String = what.chars().map(|c| if c.is_control() { ' ' } else { c }).collect();
             let _ = writeln!(f, "{ms} {what} [foco: {}]", foreground_program());
         }
     }

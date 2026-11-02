@@ -177,7 +177,8 @@ pub async fn wallpapers(app: AppHandle) -> Wallpapers {
 }
 
 #[tauri::command]
-pub fn set_wallpaper(state: tauri::State<HomeState>, store: tauri::State<Store>, id: String) -> Result<(), String> {
+pub fn set_wallpaper(webview: tauri::Webview, state: tauri::State<HomeState>, store: tauri::State<Store>, id: String) -> Result<(), String> {
+    crate::only_from(&webview, &[crate::home::LABEL])?;
     if id != NO_WALLPAPER && state.wallpaper(&id).is_none() {
         return Err("fondo desconocido".into());
     }
@@ -219,7 +220,8 @@ const SERVICES: [(&str, &str); 6] = [
 
 /// Opens a streaming site in the default browser (where the user is signed in).
 #[tauri::command]
-pub fn open_service(app: AppHandle, id: String) -> Result<(), String> {
+pub fn open_service(webview: tauri::Webview, app: AppHandle, id: String) -> Result<(), String> {
+    crate::only_from(&webview, &[crate::home::LABEL])?;
     if app.state::<crate::AppState>().mode.load(std::sync::atomic::Ordering::Relaxed) != crate::mode_code(padcore::Mode::Home) {
         return Err("la pantalla de Inicio no está activa".into());
     }
@@ -228,19 +230,22 @@ pub fn open_service(app: AppHandle, id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn open_workshop() -> Result<(), String> {
+pub fn open_workshop(webview: tauri::Webview, ) -> Result<(), String> {
+    crate::only_from(&webview, &[crate::home::LABEL])?;
     wallpaper_engine::open_workshop()
 }
 
 #[tauri::command]
-pub async fn browse_folders(path: Option<String>) -> Result<folders::Listing, String> {
+pub async fn browse_folders(webview: tauri::Webview, path: Option<String>) -> Result<folders::Listing, String> {
+    crate::only_from(&webview, &[crate::home::LABEL])?;
     tauri::async_runtime::spawn_blocking(move || folders::browse(path.as_deref())).await.map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-pub fn add_wallpaper_folder(store: tauri::State<Store>, path: String) -> Result<(), String> {
+pub fn add_wallpaper_folder(webview: tauri::Webview, store: tauri::State<Store>, path: String) -> Result<(), String> {
+    crate::only_from(&webview, &[crate::home::LABEL])?;
     let dir = PathBuf::from(&path);
-    if !dir.is_absolute() || !dir.is_dir() {
+    if !folders::local_dir(&dir) {
         return Err("carpeta no encontrada".into());
     }
     let mut list = store.settings.lock().unwrap().wallpaper_folders.clone();
@@ -252,19 +257,22 @@ pub fn add_wallpaper_folder(store: tauri::State<Store>, path: String) -> Result<
 }
 
 #[tauri::command]
-pub fn remove_wallpaper_folder(store: tauri::State<Store>, path: String) -> Result<(), String> {
+pub fn remove_wallpaper_folder(webview: tauri::Webview, store: tauri::State<Store>, path: String) -> Result<(), String> {
+    crate::only_from(&webview, &[crate::home::LABEL])?;
     let gone = sources::key(Path::new(&path));
     let list = store.settings.lock().unwrap().wallpaper_folders.clone();
     store.set_wallpaper_folders(list.into_iter().filter(|d| sources::key(d) != gone).collect())
 }
 
 #[tauri::command]
-pub fn set_game_art(store: tauri::State<Store>, on: bool) -> Result<(), String> {
+pub fn set_game_art(webview: tauri::Webview, store: tauri::State<Store>, on: bool) -> Result<(), String> {
+    crate::only_from(&webview, &[crate::home::LABEL])?;
     store.set_game_art(on)
 }
 
 #[tauri::command]
-pub fn set_pinned(state: tauri::State<HomeState>, store: tauri::State<Store>, ids: Vec<String>) -> Result<(), String> {
+pub fn set_pinned(webview: tauri::Webview, state: tauri::State<HomeState>, store: tauri::State<Store>, ids: Vec<String>) -> Result<(), String> {
+    crate::only_from(&webview, &[crate::home::LABEL])?;
     let lib = state.library.lock().unwrap();
     if ids.iter().any(|id| !lib.has_app(id)) {
         return Err("app desconocida".into());
@@ -280,7 +288,8 @@ fn valid_media(lib: &Library, id: &str) -> bool {
 }
 
 #[tauri::command]
-pub fn set_media(state: tauri::State<HomeState>, store: tauri::State<Store>, ids: Vec<String>) -> Result<(), String> {
+pub fn set_media(webview: tauri::Webview, state: tauri::State<HomeState>, store: tauri::State<Store>, ids: Vec<String>) -> Result<(), String> {
+    crate::only_from(&webview, &[crate::home::LABEL])?;
     let lib = state.library.lock().unwrap();
     if ids.iter().any(|id| !valid_media(&lib, id)) {
         return Err("app o sitio desconocido".into());
@@ -291,7 +300,8 @@ pub fn set_media(state: tauri::State<HomeState>, store: tauri::State<Store>, ids
 /// Launches a game or app; returns true for games (the caller hands the
 /// controller to the game) and false for apps (back to the cursor).
 #[tauri::command]
-pub fn launch(app: AppHandle, state: tauri::State<HomeState>, events: tauri::State<crate::events::Events>, id: String) -> Result<bool, String> {
+pub fn launch(webview: tauri::Webview, app: AppHandle, state: tauri::State<HomeState>, events: tauri::State<crate::events::Events>, id: String) -> Result<bool, String> {
+    crate::only_from(&webview, &[crate::home::LABEL])?;
     // Only the visible home screen may launch anything.
     if app.state::<crate::AppState>().mode.load(std::sync::atomic::Ordering::Relaxed) != crate::mode_code(padcore::Mode::Home) {
         events.log(&format!("inicio rechaza abrir {id}: no está en modo Inicio"));
@@ -352,8 +362,9 @@ fn decode(s: &str) -> String {
     let mut out = Vec::with_capacity(b.len());
     let mut i = 0;
     while i < b.len() {
-        if b[i] == b'%' && i + 2 < b.len() {
-            if let Ok(v) = u8::from_str_radix(&s[i + 1..i + 3], 16) {
+        // Bytes, not the str: a '%' before a multi-byte letter can't split it.
+        if b[i] == b'%' && i + 3 <= b.len() {
+            if let Some(v) = std::str::from_utf8(&b[i + 1..i + 3]).ok().and_then(|h| u8::from_str_radix(h, 16).ok()) {
                 out.push(v);
                 i += 3;
                 continue;

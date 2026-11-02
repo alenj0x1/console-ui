@@ -28,7 +28,8 @@ impl WallpaperSource for Folders {
                 dirs.push((d, label.into()));
             }
         }
-        for d in &settings.wallpaper_folders {
+        // Saved before network folders were refused: skipped, never opened.
+        for d in settings.wallpaper_folders.iter().filter(|d| local_dir(d)) {
             dirs.push((d.clone(), folder_name(d)));
         }
         let mut out = Vec::new();
@@ -119,18 +120,32 @@ fn media_in(dir: &Path) -> usize {
         .unwrap_or(0)
 }
 
+/// A folder on a drive of this PC: never a network share or a network
+/// drive (opening one sends the Windows sign-in hash to that server).
+pub fn local_dir(dir: &Path) -> bool {
+    use std::path::{Component, Prefix};
+    let Some(Component::Prefix(p)) = dir.components().next() else { return false };
+    let letter = match p.kind() {
+        Prefix::Disk(l) | Prefix::VerbatimDisk(l) => l,
+        _ => return false,
+    };
+    let root: Vec<u16> = format!("{}:\\", letter as char).encode_utf16().chain([0]).collect();
+    let kind = unsafe { windows_sys::Win32::Storage::FileSystem::GetDriveTypeW(root.as_ptr()) };
+    kind != windows_sys::Win32::System::WindowsProgramming::DRIVE_REMOTE && dir.is_absolute() && dir.is_dir()
+}
+
 /// Sub-folders of `path` (or the drives), skipping hidden and system ones.
 pub fn browse(path: Option<&str>) -> Result<Listing, String> {
     let Some(path) = path else {
         let drives = ('A'..='Z')
             .map(|c| PathBuf::from(format!("{c}:\\")))
-            .filter(|d| d.is_dir())
+            .filter(|d| local_dir(d))
             .map(|d| Entry { name: d.to_string_lossy().trim_end_matches('\\').to_owned(), path: d.to_string_lossy().into_owned(), media: 0 })
             .collect();
         return Ok(Listing { path: None, parent: None, folders: drives, media: 0 });
     };
     let dir = PathBuf::from(path);
-    if !dir.is_absolute() || !dir.is_dir() {
+    if !local_dir(&dir) {
         return Err("carpeta no encontrada".into());
     }
     let mut folders: Vec<Entry> = std::fs::read_dir(&dir)

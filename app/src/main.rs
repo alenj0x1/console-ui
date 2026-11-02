@@ -18,7 +18,10 @@ mod sources;
 mod store;
 mod guide;
 mod prefs;
+mod radial;
 mod switcher;
+mod tv;
+mod welcome;
 
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
@@ -46,6 +49,15 @@ const SAVE_EVERY: Duration = Duration::from_secs(15);
 const ADMIN_CHECK_EVERY: Duration = Duration::from_millis(400);
 /// After a click, the app needs a moment to move the focus to what was clicked.
 const CLICK_SETTLE: Duration = Duration::from_millis(150);
+/// Programs whose password prompts look like any other text (sudo, ssh,
+/// runas, a remote desktop): nothing typed there is learned.
+const UNMARKED_PASSWORDS: [&str; 8] =
+    ["conhost.exe", "OpenConsole.exe", "WindowsTerminal.exe", "cmd.exe", "powershell.exe", "pwsh.exe", "mstsc.exe", "msrdc.exe"];
+/// How often the controller's battery is read (it changes slowly).
+const BATTERY_CHECK_EVERY: Duration = Duration::from_secs(30);
+/// A controller found this soon after start was already there: no notice.
+const QUIET_START: Duration = Duration::from_secs(5);
+const PAD_NOTICE_FOR: Duration = Duration::from_secs(4);
 
 enum EngineCmd {
     SetMode(Mode),
@@ -66,6 +78,8 @@ struct AppState {
     /// A game the user took the controller back from (tray): not handed to
     /// it again automatically while it stays in front.
     declined: std::sync::atomic::AtomicIsize,
+    /// The controller's last battery reading, for the guide.
+    battery: Mutex<Option<padcore::xinput::Battery>>,
 }
 
 impl AppState {
@@ -203,6 +217,7 @@ fn engine_loop(app: AppHandle, rx: Receiver<EngineCmd>, lab: bool, open_home: bo
     cfg.keyboard_enabled = true;
     cfg.keyboard_locked = lab;
     cfg.guide_enabled = !lab;
+    cfg.radial_slots = if lab { 0 } else { radial::SLOT_COUNT };
     let stop = Arc::new(AtomicBool::new(false));
     let hover_state = Hover::new();
     let probe = hover::spawn_probe(hover_state.clone(), stop.clone());
@@ -216,12 +231,32 @@ fn engine_loop(app: AppHandle, rx: Receiver<EngineCmd>, lab: bool, open_home: bo
         }
     }
     let mut events = Vec::new();
+    // LT + D-pad: the accessibility tree is read on its own thread, in order,
+    // each jump from where the last one left the cursor.
+    let (jump_tx, jump_rx) = mpsc::channel::<hover::Toward>();
+    std::thread::Builder::new()
+        .name("jump".into())
+        .spawn(move || {
+            while let Ok(mut toward) = jump_rx.recv() {
+                // Presses that piled up while the last search ran: only the
+                // latest counts, so the cursor never keeps jumping after you let go.
+                while let Ok(t) = jump_rx.try_recv() {
+                    toward = t;
+                }
+                if let Some((x, y)) = hover::nearest_clickable(inject::cursor_pos(), toward) {
+                    inject::move_to(x, y);
+                }
+            }
+        })
+        .expect("spawn jump thread");
     // Admin window in front: its handle (as a number), shown in the notice.
     let mut blocked_by: Option<isize> = None;
     let mut last_admin_check = std::time::Instant::now();
     // The game that has the controller (game mode): when it closes, the
     // cursor comes back.
     let mut playing: Option<isize> = None;
+    let started = std::time::Instant::now();
+    let mut last_battery_check = started;
     if open_home {
         engine.set_mode(Mode::Home);
         apply_mode(&app, Mode::Home);
@@ -260,6 +295,10 @@ fn engine_loop(app: AppHandle, rx: Receiver<EngineCmd>, lab: bool, open_home: bo
                 follow_games(&app, &mut engine, &mut playing);
             }
         }
+        if engine.connected() && last_battery_check.elapsed() >= BATTERY_CHECK_EVERY {
+            last_battery_check = std::time::Instant::now();
+            update_battery(&app, &engine, !lab);
+        }
         engine.step(&mut events);
         for e in events.drain(..) {
             match e {
@@ -294,6 +333,10 @@ fn engine_loop(app: AppHandle, rx: Receiver<EngineCmd>, lab: bool, open_home: bo
                     });
                 }
                 Event::Click => {}
+                Event::Jump(toward) => {
+                    let _ = jump_tx.send(toward);
+                }
+                Event::Radial(r) => radial::handle(&app, r),
                 Event::Ui(u) => {
                     let target = match engine.mode() {
                         Mode::Home => home::LABEL,
@@ -304,12 +347,27 @@ fn engine_loop(app: AppHandle, rx: Receiver<EngineCmd>, lab: bool, open_home: bo
                 }
                 Event::Connected(_) => {
                     let _ = app.emit("pad-connected", true);
+                    // Already low when it connects: say so too (not in the lab).
+                    let battery = update_battery(&app, &engine, !lab);
+                    last_battery_check = std::time::Instant::now();
                     if !lab {
                         app.state::<Cloak>().sync(true);
+                        // The admin notice stays while that window is in front.
+                        if started.elapsed() > QUIET_START && blocked_by.is_none() {
+                            overlay::flash_notice(&app, "connected", battery_words(battery), PAD_NOTICE_FOR);
+                        }
                     }
                 }
                 Event::Disconnected => {
                     let _ = app.emit("pad-connected", false);
+                    *app.state::<AppState>().battery.lock().unwrap() = None;
+                    let _ = app.emit("battery", None::<padcore::xinput::Battery>);
+                    if !lab {
+                        app.state::<events::Events>().log("control desconectado");
+                        if blocked_by.is_none() {
+                            overlay::flash_notice(&app, "disconnected", "", PAD_NOTICE_FOR);
+                        }
+                    }
                 }
             }
         }
@@ -322,6 +380,41 @@ fn engine_loop(app: AppHandle, rx: Receiver<EngineCmd>, lab: bool, open_home: bo
         };
         std::thread::sleep(tick);
     }
+}
+
+/// Reads the battery, tells the pages and, when `warn`, shows a notice the
+/// moment it drops to low.
+fn update_battery(app: &AppHandle, engine: &Engine, warn: bool) -> Option<padcore::xinput::Battery> {
+    let now = engine.battery();
+    let before = std::mem::replace(&mut *app.state::<AppState>().battery.lock().unwrap(), now);
+    if now != before {
+        let _ = app.emit("battery", now);
+    }
+    let low = |b: Option<padcore::xinput::Battery>| b.is_some_and(|b| !b.wired && b.level <= 1);
+    if warn && low(now) && !low(before) {
+        app.state::<events::Events>().log("batería baja del control");
+        overlay::flash_notice(app, "battery", "", PAD_NOTICE_FOR);
+    }
+    now
+}
+
+fn battery_words(b: Option<padcore::xinput::Battery>) -> &'static str {
+    match b {
+        Some(b) if b.wired => "Con cable",
+        Some(b) => ["Batería vacía", "Batería baja", "Batería media", "Batería llena"][b.level as usize],
+        None => "",
+    }
+}
+
+#[tauri::command]
+fn pad_battery(state: State<AppState>) -> Option<padcore::xinput::Battery> {
+    *state.battery.lock().unwrap()
+}
+
+/// Commands that type, launch, read learned words or power off answer only
+/// the windows that use them: a bug in another page can't reach them.
+pub(crate) fn only_from(webview: &tauri::Webview, labels: &[&str]) -> Result<(), String> {
+    if labels.contains(&webview.label()) { Ok(()) } else { Err("no permitido".into()) }
 }
 
 #[tauri::command]
@@ -338,7 +431,10 @@ fn current_mode(state: State<AppState>) -> &'static str {
 /// Logs where the keyboard is typing (the program, never the text), at most
 /// once per foreground program change.
 #[tauri::command]
-fn note_typing(events: State<events::Events>, last: State<Mutex<String>>) {
+fn note_typing(webview: tauri::Webview, events: State<events::Events>, last: State<Mutex<String>>) {
+    if crate::only_from(&webview, &[overlay::LABEL, "lab"]).is_err() {
+        return;
+    }
     let now = events::foreground_program();
     if let Ok(mut l) = last.lock() {
         if *l != now {
@@ -349,7 +445,8 @@ fn note_typing(events: State<events::Events>, last: State<Mutex<String>>) {
 }
 
 #[tauri::command]
-fn type_text(app: AppHandle, text: String) -> Result<(), String> {
+fn type_text(webview: tauri::Webview, app: AppHandle, text: String) -> Result<(), String> {
+    crate::only_from(&webview, &[overlay::LABEL, "lab"])?;
     if !valid_typed(&text) {
         return Err("texto no permitido".into());
     }
@@ -364,7 +461,8 @@ fn valid_typed(text: &str) -> bool {
 
 /// Swaps the word being typed for a suggestion.
 #[tauri::command]
-fn replace_word(app: AppHandle, delete: usize, text: String) -> Result<(), String> {
+fn replace_word(webview: tauri::Webview, app: AppHandle, delete: usize, text: String) -> Result<(), String> {
+    crate::only_from(&webview, &[overlay::LABEL, "lab"])?;
     if delete > MAX_TYPED || !valid_typed(&text) {
         return Err("reemplazo no permitido".into());
     }
@@ -374,7 +472,8 @@ fn replace_word(app: AppHandle, delete: usize, text: String) -> Result<(), Strin
 }
 
 #[tauri::command]
-fn press_key(app: AppHandle, events: State<events::Events>, key: String) -> Result<(), String> {
+fn press_key(webview: tauri::Webview, app: AppHandle, events: State<events::Events>, key: String) -> Result<(), String> {
+    crate::only_from(&webview, &[overlay::LABEL, "lab"])?;
     if key == "enter" {
         events.log("teclado: intro");
     }
@@ -386,7 +485,8 @@ fn press_key(app: AppHandle, events: State<events::Events>, key: String) -> Resu
 }
 
 #[tauri::command]
-fn set_mode(state: State<AppState>, mode: String) -> Result<(), String> {
+fn set_mode(webview: tauri::Webview, state: State<AppState>, mode: String) -> Result<(), String> {
+    crate::only_from(&webview, &[home::LABEL, "lab"])?;
     let m = match mode.as_str() {
         "off" => Mode::Off,
         "cursor" => Mode::Cursor,
@@ -398,7 +498,8 @@ fn set_mode(state: State<AppState>, mode: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn set_layout(app: AppHandle, layout: String) -> Result<(), String> {
+fn set_layout(webview: tauri::Webview, app: AppHandle, layout: String) -> Result<(), String> {
+    crate::only_from(&webview, &["lab"])?;
     if !matches!(layout.as_str(), "grid" | "split") {
         return Err(format!("diseño desconocido: {layout}"));
     }
@@ -406,12 +507,14 @@ fn set_layout(app: AppHandle, layout: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn set_suggest(app: AppHandle, on: bool) -> Result<(), String> {
+fn set_suggest(webview: tauri::Webview, app: AppHandle, on: bool) -> Result<(), String> {
+    crate::only_from(&webview, &["lab"])?;
     app.emit_to(overlay::LABEL, "suggest", on).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-fn keyboard_config(state: State<AppState>, store: State<Store>) -> Result<KeyboardConfig, String> {
+fn keyboard_config(webview: tauri::Webview, state: State<AppState>, store: State<Store>) -> Result<KeyboardConfig, String> {
+    crate::only_from(&webview, &[overlay::LABEL, "lab"])?;
     let settings = store.settings.lock().map_err(|e| e.to_string())?.clone();
     Ok(KeyboardConfig {
         languages: settings.languages,
@@ -424,35 +527,45 @@ fn keyboard_config(state: State<AppState>, store: State<Store>) -> Result<Keyboa
 }
 
 #[tauri::command]
-fn set_languages(store: State<Store>, languages: Vec<String>) -> Result<(), String> {
+fn set_languages(webview: tauri::Webview, store: State<Store>, languages: Vec<String>) -> Result<(), String> {
+    crate::only_from(&webview, &[overlay::LABEL, "lab"])?;
     store.set_languages(languages)
 }
 
 #[tauri::command]
-async fn learn_word(app: AppHandle, prev: String, word: String) -> Result<(), String> {
+async fn learn_word(webview: tauri::Webview, app: AppHandle, prev: String, word: String) -> Result<(), String> {
+    crate::only_from(&webview, &[overlay::LABEL, "lab"])?;
     // Checked again here, as the page may not know yet that the focus moved
     // to a password (sign-ins that ask for it on a second page).
     let password = tauri::async_runtime::spawn_blocking(padcore::hover::focused_is_password).await.unwrap_or(true);
-    if app.state::<AppState>().lab || password {
+    // Consoles and remote desktops never mark their password prompts.
+    let program = events::foreground_program();
+    let unmarked = UNMARKED_PASSWORDS.iter().any(|p| program.eq_ignore_ascii_case(p));
+    if app.state::<AppState>().lab || password || unmarked {
         return Ok(());
     }
     app.state::<Store>().learn(&prev, &word)
 }
 
 #[tauri::command]
-fn forget_learned(store: State<Store>) -> Result<(), String> {
+fn forget_learned(webview: tauri::Webview, store: State<Store>) -> Result<(), String> {
+    crate::only_from(&webview, &[overlay::LABEL, "lab", home::LABEL])?;
     store.forget()
 }
 
 /// Suggestions and learning stay off in password fields.
 #[tauri::command]
-async fn focus_is_password() -> bool {
+async fn focus_is_password(webview: tauri::Webview) -> bool {
+    if crate::only_from(&webview, &[overlay::LABEL, "lab"]).is_err() {
+        return true;
+    }
     tauri::async_runtime::spawn_blocking(padcore::hover::focused_is_password).await.unwrap_or(true)
 }
 
 /// Saves a lab result next to the lab's notes. Returns the file path.
 #[tauri::command]
-fn lab_save(json: String) -> Result<String, String> {
+fn lab_save(webview: tauri::Webview, json: String) -> Result<String, String> {
+    crate::only_from(&webview, &["lab"])?;
     serde_json::from_str::<serde_json::Value>(&json).map_err(|e| e.to_string())?;
     let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../labs/keyboard-lab/results");
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
@@ -489,17 +602,20 @@ fn main() {
             mode: AtomicU8::new(1),
             guide_from: AtomicU8::new(1),
             declined: Default::default(),
+            battery: Mutex::new(None),
         })
         .manage(guide::GuideState::default())
         .manage(home::HomeState::default())
         .manage(guard::Guard::default())
         .manage(events::Events::default())
+        .manage(tv::Tv::default())
         .manage(Mutex::new(String::new()))
         .register_asynchronous_uri_scheme_protocol("cui", home::protocol)
         .invoke_handler(tauri::generate_handler![
             type_text,
             note_typing,
             current_mode,
+            pad_battery,
             replace_word,
             press_key,
             set_mode,
@@ -532,6 +648,13 @@ fn main() {
             guide::guide_switch,
             guide::guide_back,
             guide::guide_close_window,
+            guide::guide_power,
+            tv::tv_state,
+            tv::tv_choose,
+            tv::tv_set,
+            tv::tv_confirm,
+            welcome::welcome_open,
+            welcome::welcome_done,
             home::game_trailer,
             home::browse_folders,
             home::add_wallpaper_folder,
@@ -559,6 +682,8 @@ fn main() {
             if !lab {
                 home::create(&handle)?;
                 guide::create(&handle)?;
+                radial::create(&handle)?;
+                tv::recover(&handle);
                 media::Media::start(handle.clone());
             }
 
@@ -613,11 +738,16 @@ fn main() {
             if !lab {
                 guard::spawn_watchdog();
             }
+            // The first time, the welcome comes before Inicio.
+            let show_welcome = open_home && welcome::needed(&handle);
+            if show_welcome {
+                welcome::open(&handle)?;
+            }
             let rx = rx.lock().ok().and_then(|mut r| r.take()).expect("engine channel");
             let h = handle.clone();
             let join = std::thread::Builder::new()
                 .name("engine".into())
-                .spawn(move || engine_loop(h, rx, lab, open_home))?;
+                .spawn(move || engine_loop(h, rx, lab, open_home && !show_welcome))?;
             *app.state::<AppState>().engine.lock().expect("state") = Some(join);
             Ok(())
         })
@@ -637,6 +767,8 @@ fn main() {
             if let Some(store) = app.try_state::<Store>() {
                 let _ = store.flush();
             }
+            // Screens and sound back as they were.
+            tv::turn_off(app);
             // Never leave the controller hidden from games after we are gone.
             if let Some(g) = app.try_state::<guard::Guard>() {
                 g.set_hidden(false);

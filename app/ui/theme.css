@@ -10,7 +10,7 @@
   --ring: rgba(255, 255, 255, 0.06);
   --ring-strong: #3a3c41;
   --text: #ece8df;
-  --muted: #9a9790;
+  --muted: #b0ada6;
   --accent: #4c8dff;
   /* Text on the accent; the settings switch it to a dark tone for light accents. */
   --on-accent: #ffffff;
@@ -49,6 +49,12 @@
 
 * { box-sizing: border-box; }
 
+/* Windows' "Show animations" off: no transitions or CSS animations (the
+   canvases check the same query). */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+
 html, body { margin: 0; color: var(--text); font-family: var(--font-text); }
 
 /* Controller button hint: the buttons drawn as on the controller, in the
@@ -70,8 +76,9 @@ html, body { margin: 0; color: var(--text); font-family: var(--font-text); }
 /* Two characters in a round button (L3, R3). */
 .btn-face.wide { font-size: 0.7em; height: 2.06em; min-width: 2.06em; letter-spacing: -0.02em; }
 .btn-face { border-radius: 50%; }
-.btn-bumper { padding: 0 0.45em; border-radius: 0.45em; }
-.btn-trigger { padding: 0 0.45em; border-radius: 0.75em 0.75em 0.3em 0.3em; }
+/* A bumper is flat on top and rounded below; a trigger is round on top. */
+.btn-bumper { padding: 0 0.45em; border-radius: 0.25em 0.25em 0.6em 0.6em; }
+.btn-trigger { padding: 0 0.45em; height: 1.9em; border-radius: 0.9em 0.9em 0.25em 0.25em; }
 .btn-plain { box-shadow: none; min-width: 0; }
 .btn .glyph-icon { display: block; width: 1.05em; height: 1.05em; }
 /* A button inside a sentence. */
