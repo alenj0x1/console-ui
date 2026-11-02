@@ -19,7 +19,11 @@ $Url = 'https://github.com/nefarius/HidHide/releases/download/v1.5.230.0/HidHide
 $Sha256 = 'F4BBBCB82E6258641B887C74BC81C4C5F66E4AA811808DFC304347687B7605F6'
 $Signer = 'CN=Nefarius Software Solutions e.U.,'
 
-$File = Join-Path $Folder 'HidHide_1.5.230_x64.exe'
+# A new, empty folder of its own: nothing else that sits next to the
+# installer (plugin DLLs, a planted file) is next to the one we run elevated.
+$Dir = Join-Path $Folder ([guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Path $Dir | Out-Null
+$File = Join-Path $Dir 'HidHide_1.5.230_x64.exe'
 
 try {
     # Windows PowerShell 5.1 may still default to TLS 1.0.
@@ -30,22 +34,27 @@ try {
     exit 10
 }
 
-if ((Get-FileHash -LiteralPath $File -Algorithm SHA256).Hash -ne $Sha256) {
-    Remove-Item -LiteralPath $File -Force -ErrorAction SilentlyContinue
-    exit 11
+# Kept open, readable but not writable by anyone else, from the hash check
+# until HidHide's installer has finished: the file checked is the file run.
+$Lock = [IO.File]::Open($File, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::Read)
+function Drop([int]$Code) {
+    $Lock.Dispose()
+    Remove-Item -LiteralPath $Dir -Recurse -Force -ErrorAction SilentlyContinue
+    exit $Code
+}
+
+if ((Get-FileHash -InputStream $Lock -Algorithm SHA256).Hash -ne $Sha256) {
+    Drop 11
 }
 
 $sig = Get-AuthenticodeSignature -LiteralPath $File
 if ($sig.Status -ne 'Valid' -or -not $sig.SignerCertificate.Subject.StartsWith($Signer)) {
-    Remove-Item -LiteralPath $File -Force -ErrorAction SilentlyContinue
-    exit 12
+    Drop 12
 }
 
 try {
     $p = Start-Process -FilePath $File -Verb RunAs -Wait -PassThru
 } catch {
-    Remove-Item -LiteralPath $File -Force -ErrorAction SilentlyContinue
-    exit 13
+    Drop 13
 }
-Remove-Item -LiteralPath $File -Force -ErrorAction SilentlyContinue
-exit $p.ExitCode
+Drop $p.ExitCode
