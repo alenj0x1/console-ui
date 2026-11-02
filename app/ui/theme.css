@@ -19,10 +19,15 @@
   --on-accent-muted: color-mix(in srgb, var(--on-accent) 70%, transparent);
   --danger: #e06c5f;
   --radius: 10px;
+  /* Focus ring width on the home screen and the guide (rem: scales with them). */
+  --focus: 0.1875rem;
   --font-display: "Fredoka", "Segoe UI", sans-serif;
   --font-text: "Nunito", "Segoe UI", sans-serif;
   --font-mono: "DM Mono", Consolas, monospace;
 }
+
+/* Settings: a thicker focus ring. */
+:root.thick-focus { --focus: 0.3125rem; }
 
 * { box-sizing: border-box; }
 

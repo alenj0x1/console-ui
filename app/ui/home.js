@@ -16,7 +16,7 @@ const listen = here.listen.bind(here);
 // Controller events count only while the home screen is the active mode.
 let active = false;
 
-const TABS = ["games", "apps", "media"];
+const TABS = ["games", "apps", "media", "settings"];
 // Served by the app (see home.rs); overridable for the dev harness.
 const ASSET = window.__ASSET ?? "http://cui.localhost";
 const CLOCK_EVERY_MS = 15000;
@@ -55,6 +55,10 @@ const state = {
   picks: null,
   // Its edit grid lists every app only once asked to.
   allApps: false,
+  // The settings tab: the category list or its rows has the focus.
+  // sub: a list opened from a row (the keyboard's languages), with its own focus.
+  settings: { zone: "cats", cat: 0, row: 0, forget: "", sub: "", subRow: 0 },
+  prefs: null,
   // A grid over the apps tab instead of the row: "edit" (pinned apps),
   // "medit" (the media tab's apps and sites),
   // "wall" (background) or "folder" (adding a folder of backgrounds); ""
@@ -634,6 +638,223 @@ function folderItems() {
   return [here, ...subs].filter(Boolean);
 }
 
+// ---------- settings ----------
+
+// Every option here works; ids match prefs.rs.
+// Language names, each in its own language.
+const LANGUAGE_NAMES = { es: "Español", en: "English", pt: "Português", fr: "Français", de: "Deutsch", it: "Italiano" };
+const languageName = (code) => LANGUAGE_NAMES[code] ?? code;
+const ACCENT_NAMES = { blue: "Azul", violet: "Violeta", green: "Verde", amber: "Ámbar", pink: "Rosa", ivory: "Marfil" };
+const CATEGORIES = [
+  {
+    name: "Apariencia",
+    icon: "palette",
+    rows: () => [
+      { kind: "swatch", name: "Color de acento", pref: "accent", options: Object.keys(Prefs.ACCENTS) },
+      { kind: "choice", name: "Tamaño del texto", pref: "text_size", options: [[100, "100 %"], [110, "110 %"], [120, "120 %"]] },
+      { kind: "toggle", name: "Foco más grueso", pref: "thick_focus" },
+      { kind: "link", name: "Fondo", value: state.wallpaper?.title ?? "Color liso", run: openWalls },
+      { kind: "toggle", name: "Arte de los juegos", pref: "game_art" },
+    ],
+  },
+  {
+    name: "Teclado",
+    icon: "keyboard",
+    rows: () => [
+      { kind: "choice", name: "Diseño", pref: "keyboard_layout", options: [["grid", "Cuadrícula"], ["split", "Dos mitades"]] },
+      { kind: "toggle", name: "Sugerencias", pref: "suggestions" },
+      { kind: "toggle", name: "Aprender mis palabras", pref: "learn" },
+      { kind: "link", name: "Idiomas", value: (state.prefs?.languages ?? []).map(languageName).join(", "), run: () => openSub("languages") },
+      { kind: "action", name: "Olvidar lo aprendido", danger: true, run: forgetLearned },
+    ],
+  },
+  {
+    name: "Modo juego",
+    icon: "gamepad",
+    rows: () => [{ kind: "toggle", name: "Dar el control al juego que pasa al frente", pref: "auto_game" }],
+  },
+  {
+    name: "General",
+    icon: "settings",
+    rows: () => [
+      { kind: "toggle", name: "Abrir con Windows", pref: "start_with_windows" },
+      { kind: "toggle", name: "Vibración", pref: "rumble" },
+      { kind: "choice", name: "Vista de Ajustes", pref: "settings_view", options: [["list", "Lista"], ["tiles", "Tarjetas"]] },
+    ],
+  },
+];
+
+async function setPref(name, value) {
+  try {
+    state.prefs = await invoke("set_preference", { name, value });
+  } catch (e) {
+    console.error(e);
+  }
+  render();
+}
+
+function rowControl(r) {
+  const p = state.prefs ?? {};
+  switch (r.kind) {
+    case "toggle":
+      return el("span", { className: `switch${p[r.pref] ? " on" : ""}` });
+    case "check":
+      return el("span", { className: `check${r.on ? " on" : ""}` }, r.on ? svg("check") : null);
+    case "choice":
+      return el("span", { className: "choice" }, ...r.options.map(([v, label]) => el("span", { className: v === p[r.pref] ? "sel" : "", textContent: label })));
+    case "swatch":
+      return el("span", { className: "swatches" }, ...r.options.map((id) => el("span", { className: `swatch${id === p[r.pref] ? " sel" : ""}`, style: `background:${Prefs.ACCENTS[id]}`, title: ACCENT_NAMES[id] })));
+    case "link":
+      return el("span", { className: "value" }, r.value, svg("chevron"));
+    case "action":
+      return el("span", { className: "value", textContent: state.settings.forget === "ask" ? "Presiona A otra vez" : state.settings.forget === "done" ? "Listo" : "" });
+  }
+}
+
+// A list opened from a row: one line per language, ticked when on.
+function subRows() {
+  const p = state.prefs ?? {};
+  return (p.available_languages ?? []).map((lang) => ({ kind: "check", name: languageName(lang), lang, on: (p.languages ?? []).includes(lang) }));
+}
+
+function settingsRows() {
+  return state.settings.sub ? subRows() : CATEGORIES[state.settings.cat].rows();
+}
+
+function openSub(name) {
+  const st = state.settings;
+  st.back = st.row;
+  st.sub = name;
+  st.row = 0;
+  render();
+}
+
+function renderSettings() {
+  const st = state.settings;
+  const tiles = state.prefs?.settings_view === "tiles";
+  const rows = settingsRows();
+  st.row = Math.min(st.row, rows.length - 1);
+  const cats = CATEGORIES.map((c, i) =>
+    el("div", { className: `cat${i === st.cat ? " sel" : ""}${i === st.cat && st.zone === "cats" ? " on" : ""}` }, svg(c.icon), el("span", { textContent: c.name })),
+  );
+  const panel = el("section", { className: "panel" },
+    st.sub ? el("div", { className: "panel-title" }, "Idiomas") : null,
+    ...rows.map((r, i) =>
+      el("div", { className: `setting${r.danger ? " danger" : ""}${st.zone === "rows" && i === st.row ? " on" : ""}` }, el("span", { className: "name", textContent: r.name }), rowControl(r)),
+    ),
+  );
+  const row = rows[st.row];
+  const valued = row && (row.kind === "choice" || row.kind === "swatch");
+  const hints = el("div", { className: "settings-hints" },
+    st.zone === "cats" ? hintEl("A", "Abrir") : hintEl("A", row?.kind === "link" ? "Abrir" : row?.kind === "action" ? "Borrar" : "Cambiar"),
+    st.zone === "rows" && valued ? hintEl("← →", "Elegir") : null,
+    el("span", { className: "spacer" }),
+    hintEl("B", st.zone === "rows" ? "Atrás" : "Cerrar"),
+  );
+  let body;
+  if (!tiles) body = el("div", { className: "settings list" }, el("nav", { className: "cats" }, ...cats), panel);
+  else if (st.zone === "cats") body = el("div", { className: "settings tiles" }, ...cats);
+  else body = el("div", { className: "settings open" }, el("h2", { className: "cat-title" }, svg(CATEGORIES[st.cat].icon), CATEGORIES[st.cat].name), panel);
+  view.replaceChildren(body, hints);
+}
+
+function hintEl(key, text) {
+  return el("span", { className: "hint" }, glyph(key), text);
+}
+
+function settingsNav(dir) {
+  const st = state.settings;
+  const tiles = state.prefs?.settings_view === "tiles";
+  if (st.zone === "cats") {
+    const cols = tiles ? 4 : 1;
+    const step = { up: -cols, down: cols, left: tiles ? -1 : 0, right: tiles ? 1 : 0 }[dir];
+    if (!tiles && dir === "right") return enterRows();
+    const next = st.cat + step;
+    if (step && next >= 0 && next < CATEGORIES.length) {
+      st.cat = next;
+      st.row = 0;
+      st.forget = "";
+    }
+    return render();
+  }
+  const rows = settingsRows();
+  const r = rows[st.row];
+  if (dir === "up" || dir === "down") {
+    st.row = Math.max(0, Math.min(rows.length - 1, st.row + (dir === "up" ? -1 : 1)));
+    st.forget = "";
+    return render();
+  }
+  const d = dir === "left" ? -1 : 1;
+  if (r.kind === "choice") {
+    const at = r.options.findIndex(([v]) => v === state.prefs?.[r.pref]);
+    const next = r.options[at + d];
+    if (next) setPref(r.pref, next[0]);
+  } else if (r.kind === "swatch") {
+    const next = r.options[r.options.indexOf(state.prefs?.[r.pref]) + d];
+    if (next) setPref(r.pref, next);
+  } else if (dir === "left" && !tiles && !st.sub) {
+    st.zone = "cats";
+    render();
+  }
+}
+
+function enterRows() {
+  state.settings.zone = "rows";
+  state.settings.row = 0;
+  state.settings.forget = "";
+  render();
+}
+
+function settingsSelect() {
+  const st = state.settings;
+  if (st.zone === "cats") return enterRows();
+  const r = settingsRows()[st.row];
+  const p = state.prefs ?? {};
+  if (r.kind === "toggle") setPref(r.pref, !p[r.pref]);
+  else if (r.kind === "check") {
+    const langs = p.languages ?? [];
+    const next = langs.includes(r.lang) ? langs.filter((l) => l !== r.lang) : [...langs, r.lang];
+    if (next.length) setPref("languages", next); // at least one stays on
+  } else if (r.kind === "choice") {
+    const at = r.options.findIndex(([v]) => v === p[r.pref]);
+    setPref(r.pref, r.options[(at + 1) % r.options.length][0]);
+  } else if (r.kind === "link" || r.kind === "action") r.run();
+}
+
+// Asks once more before forgetting the learned words.
+async function forgetLearned() {
+  const st = state.settings;
+  if (st.forget !== "ask") {
+    st.forget = "ask";
+    return render();
+  }
+  try {
+    await invoke("forget_learned");
+    st.forget = "done";
+  } catch (e) {
+    console.error(e);
+    st.forget = "";
+  }
+  render();
+}
+
+function settingsBack() {
+  const st = state.settings;
+  if (st.sub) {
+    st.sub = "";
+    st.row = st.back ?? 0;
+    render();
+    return true;
+  }
+  if (state.settings.zone === "rows") {
+    state.settings.zone = "cats";
+    state.settings.forget = "";
+    render();
+    return true;
+  }
+  return false;
+}
+
 function items() {
   if (state.sheet === "edit") return editItems();
   if (state.sheet === "medit") return mediaEditItems();
@@ -667,6 +888,13 @@ function asInfo(i) {
 function render() {
   document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === state.tab));
 
+  if (state.tab === "settings" && !state.sheet) {
+    paintBackground();
+    syncMotion();
+    renderSettings();
+    renderPlayer();
+    return;
+  }
   const list = items();
   paintBackground();
   setStage(state.tab === "media" && !state.sheet && !!list[state.focus.media]?.playing && !!state.media.cover);
@@ -738,7 +966,7 @@ function paintBackground() {
 
 function renderPlayer() {
   const m = state.media;
-  player.hidden = !m.title || state.tab === "media";
+  player.hidden = !m.title || state.tab === "media" || state.tab === "settings";
   if (player.hidden) return;
   const src = m.cover ? coverUrl() : "";
   const art = src ? el("img", { className: "art", src, alt: "" }) : el("span", { className: "art" });
@@ -757,6 +985,7 @@ function columns(grid) {
 }
 
 function onNav(dir) {
+  if (state.tab === "settings" && !state.sheet) return settingsNav(dir);
   // Up / down outside the app grid change the volume.
   if (!state.sheet && (dir === "up" || dir === "down")) {
     changeVolume(invoke("volume_step", { delta: dir === "up" ? VOLUME_STEP : -VOLUME_STEP }));
@@ -778,6 +1007,8 @@ function onNav(dir) {
 
 function switchTab(delta) {
   if (state.sheet) return;
+  state.settings.zone = "cats";
+  state.settings.sub = "";
   state.tab = TABS[(TABS.indexOf(state.tab) + delta + TABS.length) % TABS.length];
   render();
 }
@@ -895,6 +1126,7 @@ function back() {
     render();
     return;
   }
+  if (state.tab === "settings" && settingsBack()) return;
   invoke("set_mode", { mode: "cursor" });
 }
 
@@ -916,7 +1148,8 @@ async function changeVolume(request) {
 function onPress(button) {
   switch (button) {
     case "a":
-      items()[state.focus[focusKey()]]?.select();
+      if (state.tab === "settings" && !state.sheet) settingsSelect();
+      else items()[state.focus[focusKey()]]?.select();
       break;
     case "y":
       changeVolume(invoke("volume_mute"));
@@ -992,3 +1225,10 @@ invoke("media_now").then((m) => {
   render();
 });
 load();
+
+// The settings screen shows the preferences; the background follows game_art.
+Prefs.watch((p) => {
+  state.prefs = p;
+  state.gameArt = p.game_art;
+  render();
+});

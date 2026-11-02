@@ -27,6 +27,7 @@ const MAX_FOLDERS: usize = 16;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Settings {
+    #[serde(default = "spanish")]
     pub languages: Vec<String>,
     /// Apps pinned to the home screen; None until the user changes them.
     #[serde(default)]
@@ -45,15 +46,60 @@ pub struct Settings {
     /// the user changes them (then the installed media apps show).
     #[serde(default)]
     pub media: Option<Vec<String>>,
+    /// One of prefs::ACCENTS.
+    #[serde(default = "blue")]
+    pub accent: String,
+    /// Home screen and guide text size, in percent (prefs::TEXT_SIZES).
+    #[serde(default = "hundred")]
+    pub text_size: u32,
+    #[serde(default)]
+    pub thick_focus: bool,
+    /// "grid" or "split".
+    #[serde(default = "grid")]
+    pub keyboard_layout: String,
+    #[serde(default = "yes")]
+    pub suggestions: bool,
+    /// The keyboard learns the user's words.
+    #[serde(default = "yes")]
+    pub learn: bool,
+    /// A game coming to the front gets the controller.
+    #[serde(default = "yes")]
+    pub auto_game: bool,
+    #[serde(default = "yes")]
+    pub rumble: bool,
+    /// The settings screen: "list" or "tiles".
+    #[serde(default = "list")]
+    pub settings_view: String,
 }
 
 fn yes() -> bool {
     true
 }
 
+fn spanish() -> Vec<String> {
+    vec!["es".into()]
+}
+
+fn blue() -> String {
+    "blue".into()
+}
+
+fn grid() -> String {
+    "grid".into()
+}
+
+fn list() -> String {
+    "list".into()
+}
+
+fn hundred() -> u32 {
+    100
+}
+
 impl Default for Settings {
     fn default() -> Self {
-        Self { languages: vec!["es".into()], pinned: None, wallpaper: None, wallpaper_folders: Vec::new(), game_art: true, media: None }
+        // An empty object takes every field's default.
+        serde_json::from_str("{}").expect("settings defaults")
     }
 }
 
@@ -134,6 +180,10 @@ impl Store {
 
     pub fn set_game_art(&self, on: bool) -> Result<(), String> {
         self.update_settings(|s| s.game_art = on)
+    }
+
+    pub fn update(&self, f: impl FnOnce(&mut Settings)) -> Result<(), String> {
+        self.update_settings(f)
     }
 
     fn update_settings(&self, f: impl FnOnce(&mut Settings)) -> Result<(), String> {

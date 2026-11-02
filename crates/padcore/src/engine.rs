@@ -145,6 +145,7 @@ pub struct Engine {
     rescue: bool,
     /// Mode the guide was opened from: closing it goes back there.
     guide_from: Mode,
+    rumble_on: bool,
     /// After input was blocked, Windows may have dropped a button release
     /// (the button stays "pressed" system-wide); until then, release any
     /// button the controller is not holding.
@@ -185,6 +186,7 @@ impl Engine {
             rescue: false,
             resync_until: None,
             guide_from: Mode::Cursor,
+            rumble_on: true,
         }
     }
 
@@ -500,7 +502,15 @@ impl Engine {
         }
     }
 
+    /// Vibration on mode changes (on by default).
+    pub fn set_rumble(&mut self, on: bool) {
+        self.rumble_on = on;
+    }
+
     fn queue_rumble(&mut self, pattern: &[(u64, u64)]) {
+        if !self.rumble_on {
+            return;
+        }
         let mut t = Instant::now();
         self.rumble.clear();
         for &(on, off) in pattern {

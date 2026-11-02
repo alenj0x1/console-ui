@@ -17,6 +17,7 @@ mod overlay;
 mod sources;
 mod store;
 mod guide;
+mod prefs;
 mod switcher;
 
 use std::path::PathBuf;
@@ -48,6 +49,7 @@ const CLICK_SETTLE: Duration = Duration::from_millis(150);
 
 enum EngineCmd {
     SetMode(Mode),
+    SetRumble(bool),
     Stop,
 }
 
@@ -71,6 +73,12 @@ impl AppState {
             let _ = tx.send(EngineCmd::SetMode(m));
         }
     }
+
+    fn set_rumble(&self, on: bool) {
+        if let Ok(tx) = self.cmd.lock() {
+            let _ = tx.send(EngineCmd::SetRumble(on));
+        }
+    }
 }
 
 fn mode_code(m: Mode) -> u8 {
@@ -87,6 +95,9 @@ fn mode_code(m: Mode) -> u8 {
 struct KeyboardConfig {
     languages: Vec<String>,
     available: Vec<&'static str>,
+    /// None in the lab, which picks its own.
+    layout: Option<String>,
+    suggest: bool,
     learn: bool,
     learned: store::Learned,
 }
@@ -148,8 +159,9 @@ fn apply_mode(app: &AppHandle, m: Mode) {
 fn follow_games(app: &AppHandle, engine: &mut Engine, playing: &mut Option<isize>) {
     let state = app.state::<AppState>();
     let dirs = app.state::<guide::GuideState>().game_dirs.lock().unwrap().clone();
+    let auto = app.state::<Store>().settings.lock().unwrap().auto_game;
     match engine.mode() {
-        Mode::Cursor => {
+        Mode::Cursor if auto => {
             let Some((hwnd, program, why)) = switcher::foreground_game(&dirs) else {
                 state.declined.store(0, Ordering::Relaxed);
                 return;
@@ -188,6 +200,7 @@ fn engine_loop(app: AppHandle, rx: Receiver<EngineCmd>, lab: bool, open_home: bo
     let hover_state = Hover::new();
     let probe = hover::spawn_probe(hover_state.clone(), stop.clone());
     let mut engine = Engine::new(cfg).with_hover(hover_state);
+    engine.set_rumble(app.state::<Store>().settings.lock().unwrap().rumble);
     let mut events = Vec::new();
     // Admin window in front: its handle (as a number), shown in the notice.
     let mut blocked_by: Option<isize> = None;
@@ -206,6 +219,7 @@ fn engine_loop(app: AppHandle, rx: Receiver<EngineCmd>, lab: bool, open_home: bo
                     engine.set_mode(m);
                     apply_mode(&app, m);
                 }
+                EngineCmd::SetRumble(on) => engine.set_rumble(on),
                 EngineCmd::Stop => {
                     stop.store(true, Ordering::Relaxed);
                     let _ = probe.join();
@@ -383,10 +397,13 @@ fn set_suggest(app: AppHandle, on: bool) -> Result<(), String> {
 
 #[tauri::command]
 fn keyboard_config(state: State<AppState>, store: State<Store>) -> Result<KeyboardConfig, String> {
+    let settings = store.settings.lock().map_err(|e| e.to_string())?.clone();
     Ok(KeyboardConfig {
-        languages: store.settings.lock().map_err(|e| e.to_string())?.languages.clone(),
+        languages: settings.languages,
         available: store::LANGUAGES.to_vec(),
-        learn: !state.lab,
+        layout: if state.lab { None } else { Some(settings.keyboard_layout) },
+        suggest: settings.suggestions || state.lab,
+        learn: !state.lab && settings.learn,
         learned: if state.lab { store::Learned::default() } else { store.learned.lock().map_err(|e| e.to_string())?.clone() },
     })
 }
@@ -492,6 +509,8 @@ fn main() {
             home::open_workshop,
             home::open_service,
             home::set_media,
+            prefs::preferences,
+            prefs::set_preference,
             guide::guide_windows,
             guide::guide_ready,
             guide::guide_switch,

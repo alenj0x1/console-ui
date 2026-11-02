@@ -117,6 +117,10 @@ async function init() {
   state.languages = cfg.languages;
   state.available = cfg.available;
   state.learn = cfg.learn;
+  // The lab chooses its own layout and keeps suggestions on; otherwise the settings do.
+  state.lab = cfg.layout === null;
+  if (cfg.layout) state.layout = cfg.layout;
+  state.suggest = cfg.suggest;
   suggester.setLearned(cfg.learned);
   await applyLanguages();
 }
@@ -594,6 +598,16 @@ listen("layout", ({ payload }) => {
   resetFocus();
   state.prev = START;
   setWord("");
+});
+
+// Learning and languages changed in the settings.
+Prefs.watch((p) => {
+  if (state.lab !== false) return;
+  state.learn = p.learn;
+  if (p.languages.join() !== state.languages.join()) {
+    state.languages = p.languages;
+    applyLanguages();
+  }
 });
 
 listen("suggest", ({ payload }) => {
