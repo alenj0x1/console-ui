@@ -21,7 +21,7 @@ function write(path, content) {
 
 // Song covers: shapes on a flat colour.
 const COVERS = [
-  ["cover-1", "#2c3e66", "#f2b880", "#e86f5a"],
+  ["cover-1", "#1f2c46", "#9cbbe6", "#5f7fb5"],
   ["cover-2", "#20463d", "#e9d8a6", "#94d2bd"],
   ["cover-3", "#4a2c4f", "#f6c1cc", "#8e7dbe"],
 ];
