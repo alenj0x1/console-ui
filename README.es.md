@@ -1,6 +1,10 @@
 [English](README.md) | Español
 
-# Console UI
+<p align="center">
+  <img src="site/favicon.svg" width="72" alt="Logo de Console UI">
+</p>
+
+<h1 align="center">Console UI</h1>
 
 Usa todo Windows desde el sillón con el control: un cursor asistido, un teclado en pantalla con sugerencias inteligentes y una pantalla de inicio tipo consola.
 

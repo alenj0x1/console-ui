@@ -1,6 +1,10 @@
 English | [Español](README.es.md)
 
-# Console UI
+<p align="center">
+  <img src="site/favicon.svg" width="72" alt="Console UI logo">
+</p>
+
+<h1 align="center">Console UI</h1>
 
 Use all of Windows from the couch with a game controller: an assisted cursor, an on-screen keyboard with smart suggestions, and a console-style home screen.
 
