@@ -44,6 +44,24 @@ const SERVICES = [
   { id: "disney-plus", name: "Disney+", icon: "services/disney-plus.png" },
 ];
 const SOURCES = { steam: "Steam", epic: "Epic Games" };
+// Official colours of well-known apps and sites, matched by name; any other
+// app takes the main colour of its own icon (see toneTile).
+const BRANDS = [
+  [/youtube/i, [255, 0, 0]],
+  [/spotify/i, [30, 215, 96]],
+  [/netflix/i, [229, 9, 20]],
+  [/twitch/i, [145, 70, 255]],
+  [/prime video/i, [0, 168, 225]],
+  [/disney/i, [17, 60, 207]],
+  [/discord/i, [88, 101, 242]],
+  [/vlc/i, [255, 136, 0]],
+  [/plex/i, [229, 160, 13]],
+  [/kodi/i, [23, 178, 231]],
+  [/apple music|itunes/i, [250, 36, 60]],
+  [/deezer/i, [162, 56, 255]],
+  [/amazon music/i, [37, 209, 218]],
+  [/steam/i, [42, 71, 94]],
+];
 
 const state = {
   tab: "games",
@@ -276,6 +294,82 @@ function coverTones(image) {
   return [dark(first.rgb, 70), dark(second.rgb, 52)];
 }
 
+// An app's card takes its brand's colour or its icon's main colour, darkened
+// for ivory text. Colours are kept per icon so rebuilt cards never flash.
+const tones = new Map();
+// Darkened, then a fifth of the graphite surface mixed in so no card is loud.
+const GRAPHITE = [42, 43, 47];
+const deep = (rgb) => `rgb(${rgb.map((v, i) => Math.round(((v * 62) / Math.max(...rgb, 1)) * 0.8 + GRAPHITE[i] * 0.2)).join(",")})`;
+
+// The icon's most present clearly coloured tone; null for grey icons.
+function iconColour(image) {
+  const c = Object.assign(document.createElement("canvas"), { width: 24, height: 24 });
+  const ctx = c.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(image, 0, 0, 24, 24);
+  const px = ctx.getImageData(0, 0, 24, 24).data;
+  const groups = new Map();
+  for (let i = 0; i < px.length; i += 4) {
+    if (px[i + 3] < 160) continue;
+    const [r, g, b] = [px[i], px[i + 1], px[i + 2]];
+    const key = (r >> 5) * 64 + (g >> 5) * 8 + (b >> 5);
+    const e = groups.get(key) ?? { n: 0, r: 0, g: 0, b: 0 };
+    Object.assign(e, { n: e.n + 1, r: e.r + r, g: e.g + g, b: e.b + b });
+    groups.set(key, e);
+  }
+  let best = null;
+  for (const e of groups.values()) {
+    const rgb = [e.r / e.n, e.g / e.n, e.b / e.n];
+    const max = Math.max(...rgb);
+    const sat = max ? (max - Math.min(...rgb)) / max : 0;
+    if (sat < 0.35 || max < 60) continue;
+    if (!best || e.n * sat > best.score) best = { rgb, score: e.n * sat };
+  }
+  return best?.rgb ?? null;
+}
+
+function toneTile(tile, name, icon) {
+  const set = (rgb) => rgb && tile.style.setProperty("--tone", deep(rgb));
+  const brand = BRANDS.find(([re]) => re.test(name))?.[1];
+  if (brand) set(brand);
+  else if (tones.has(icon)) set(tones.get(icon));
+  else if (icon) {
+    const probe = new Image();
+    probe.crossOrigin = "anonymous";
+    probe.onload = () => {
+      let rgb = null;
+      try {
+        rgb = iconColour(probe);
+      } catch {}
+      tones.set(icon, rgb);
+      set(rgb);
+    };
+    probe.src = icon;
+  }
+  return tile;
+}
+
+// The playing card shows the cover on its right; a new cover replaces the
+// old one only once it has loaded.
+function tileCover(tile) {
+  if (!state.media.cover) {
+    tile.querySelector("img.cover")?.remove();
+    tile.classList.remove("with-cover");
+    delete tile.dataset.cover;
+    return;
+  }
+  const src = coverUrl();
+  if (!src || tile.dataset.cover === src) return;
+  tile.dataset.cover = src;
+  const next = el("img", { alt: "", className: "cover" });
+  next.onload = () => {
+    if (tile.dataset.cover !== src) return;
+    tile.querySelector("img.cover")?.remove();
+    tile.append(next);
+    tile.classList.add("with-cover");
+  };
+  next.src = src;
+}
+
 // Music tab with something playing: the cover big on the right over its own colour.
 // Some players send the cover as a card: the art on a transparent or plain
 // background with the player's logo below it. Only the square art is kept,
@@ -461,7 +555,11 @@ function jumpLetter(dir) {
 }
 
 function appTile(app, extra) {
-  return el("div", { className: "tile" }, img(appIcon(app.id), "tile-icon"), el("span", { className: "name", textContent: app.name }), extra);
+  return toneTile(el("div", { className: "tile" }, img(appIcon(app.id), "tile-icon"), el("span", { className: "name", textContent: app.name }), extra), app.name, appIcon(app.id));
+}
+
+function siteTile(s, extra) {
+  return toneTile(el("div", { className: "tile" }, img(s.icon, "tile-icon"), el("span", { className: "name", textContent: s.name }), extra), s.name, s.icon);
 }
 
 function appItems() {
@@ -563,7 +661,7 @@ function mediaItems() {
     if (s) {
       return {
         key: id,
-        tile: () => el("div", { className: "tile" }, img(s.icon, "tile-icon"), el("span", { className: "name", textContent: s.name })),
+        tile: () => siteTile(s),
         info: () => ({ lead: img(s.icon, "lead-icon"), title: s.name, meta: "Se abre en tu navegador", action: ["Abrir", "A"] }),
         select: () => openService(s.id),
       };
@@ -578,11 +676,15 @@ function mediaItems() {
     const item = at >= 0 ? list.splice(at, 1)[0] : { key: playing?.id ?? "__player", app: playing, select: () => playing && open(playing.id) };
     item.playing = true;
     item.rev = "~"; // a new song only changes the card's text (see render)
-    item.tile = () =>
-      el("div", { className: "tile playing" },
+    item.tile = () => {
+      const name = playing?.name ?? playerName(m.source);
+      const tile = el("div", { className: "tile playing" },
         playing ? img(appIcon(playing.id), "tile-icon") : svg("music", "icon symbol"),
-        el("span", { className: "name", textContent: playing?.name ?? playerName(m.source) }),
+        el("span", { className: "name", textContent: name }),
         el("span", { className: "song", textContent: m.title }));
+      tileCover(tile);
+      return toneTile(tile, name, playing ? appIcon(playing.id) : "");
+    };
     item.info = () => playingInfo(playing);
     list.unshift(item);
   }
@@ -605,7 +707,7 @@ function mediaItems() {
 function mediaEditItems() {
   const picks = mediaPicks();
   const media = (a) => MEDIA_APPS.test(a.name) && !NOT_APPS.test(a.name);
-  const sites = SERVICES.map((s) => ({ id: `web:${s.id}`, tile: (on) => el("div", { className: "tile" }, img(s.icon, "tile-icon"), el("span", { className: "name", textContent: s.name }), on ? badge() : null) }));
+  const sites = SERVICES.map((s) => ({ id: `web:${s.id}`, tile: (on) => siteTile(s, on ? badge() : null) }));
   const shown = state.apps.filter((a) => state.allApps || media(a) || picks.includes(a.id));
   const apps = shown.map((a) => ({ id: a.id, tile: (on) => appTile(a, on ? badge() : null) }));
   const list = [...sites, ...apps].map((x) => {
@@ -1760,6 +1862,11 @@ function render() {
   if (!strip || strip.dataset.key !== key) {
     strip = el("div", { className: state.sheet ? "grid" : "row" });
     strip.dataset.key = key;
+    // The focused tile grows after it is scrolled to, so it is scrolled again
+    // once it has its full size.
+    strip.addEventListener("transitionend", (e) => {
+      if (e.propertyName === "width" && e.target.classList.contains("on")) e.target.scrollIntoView({ inline: "nearest", block: "nearest" });
+    });
     list.forEach((item) => strip.append(item.tile()));
     view.replaceChildren(headFor(), strip);
   } else if (state.sheet === "search") {
@@ -1775,6 +1882,8 @@ function render() {
   [...strip.children].forEach((t, k) => t.classList.toggle("on", ringed && k === at));
   const song = strip.querySelector(".tile.playing .song");
   if (song && song.textContent !== state.media.title) song.textContent = state.media.title;
+  const nowTile = strip.querySelector(".tile.playing");
+  if (nowTile) tileCover(nowTile);
   strip.children[at]?.scrollIntoView({ inline: "nearest", block: "nearest" });
   updateMusic();
   renderPlayer();

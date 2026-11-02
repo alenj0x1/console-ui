@@ -347,7 +347,8 @@ fn respond(status: StatusCode, mime: &str, body: Vec<u8>) -> Response<Vec<u8>> {
         .status(status)
         .header("Content-Type", mime)
         .header("Cache-Control", "max-age=3600")
-        // Lets the home page read the cover's colours (canvas) for the music stage.
+        // Lets the home page read colours (canvas): the cover's for the music
+        // stage and each app icon's for its card.
         .header("Access-Control-Allow-Origin", "http://tauri.localhost")
         .body(body)
         .unwrap()

@@ -69,23 +69,29 @@ body { position: relative; }
 .info .source { margin: 0; font-weight: 600; font-size: 1.125rem; color: var(--muted); }
 .info .progress { margin-top: 1.25rem; max-width: 36rem; }
 
-/* Padding leaves room for the focus ring so nothing is clipped. */
+/* Padding leaves room for the focus ring so nothing is clipped. The focused
+   tile grows and the rest stay on the bottom line. */
 .row {
   flex: none;
   margin-top: auto;
   padding: 0.5rem 4rem;
   display: flex;
+  align-items: flex-end;
   gap: 1.25rem;
   overflow: hidden;
   scroll-padding: 0 4rem;
 }
 
 .tile {
+  --w: calc(20 * var(--u));
+  --h: calc(9.4 * var(--u));
   flex: none;
-  width: calc(17.5 * var(--u));
-  height: calc(8.2 * var(--u) + 2.5rem - 2.5 * var(--u));
+  width: var(--w);
+  height: calc(var(--h) + 2.5rem - 2.5 * var(--u));
+  transition: width 160ms ease, height 160ms ease, background-color 200ms ease;
   border-radius: 0.75rem;
-  background: var(--surface);
+  /* --tone: the app's brand or icon colour (toneTile). */
+  background: var(--tone, var(--surface));
   box-shadow: inset 0 0 0 var(--line) var(--ring);
   position: relative;
   overflow: hidden;
@@ -96,6 +102,7 @@ body { position: relative; }
   gap: 0.75rem;
 }
 .tile.on { box-shadow: 0 0 0 var(--focus) var(--accent); }
+.row .tile.on { --w: calc(26 * var(--u)); --h: calc(12.2 * var(--u)); }
 .tile > img.art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 200ms ease; }
 .tile > img.art.loaded { opacity: 1; }
 .tile .tile-icon { width: calc(3.5 * var(--u)); height: calc(3.5 * var(--u)); object-fit: contain; }
@@ -107,13 +114,18 @@ body { position: relative; }
 /* The player's card: the song under the app's name. */
 .tile.playing { gap: 0.5rem; }
 .tile.playing .song { max-width: 15rem; padding: 0 1rem; margin-top: -0.25rem; font-size: 0.9375rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* With a cover: the cover square on the right, the text on the left. */
+.tile.with-cover { align-items: flex-start; padding: 0 calc(var(--h) + 2.5rem - 2.5 * var(--u)) 0 1.25rem; }
+.tile.with-cover .name, .tile.with-cover .song { max-width: 100%; padding: 0; text-align: left; }
+.tile > img.cover { position: absolute; top: 0; right: 0; height: 100%; aspect-ratio: 1; object-fit: cover; }
+.high-contrast .tile { background: var(--surface); }
 
 /* Editing pinned apps: the same tiles in a grid that scrolls with the focus. */
 .grid {
   margin-top: 2rem;
   padding: 0.5rem 4rem;
   display: grid;
-  grid-template-columns: repeat(auto-fill, calc(17.5 * var(--u)));
+  grid-template-columns: repeat(auto-fill, calc(20 * var(--u)));
   gap: 1.25rem;
   align-content: start;
   overflow: hidden;

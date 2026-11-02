@@ -31,6 +31,7 @@ Los cambios que esperan la próxima versión van en **Sin publicar**, arriba (es
 - Las opciones de Puntero y Botones muestran al lado una vista previa animada de lo que cambian, hecha con los mismos valores que el control, con el valor anterior en tenue para comparar y una línea que explica el valor elegido. Mientras Ajustes está abierto, el fondo se atenúa.
 - Tráileres en Juegos: tras unos segundos sobre un juego de Steam, su tráiler aparece sobre el arte en silencio y en bucle (los primeros segundos, descargados de la tienda de Steam una vez y guardados).
 - Multimedia: el fondo combina los dos colores principales de la portada, y las portadas que llegan como tarjeta con el logo del reproductor se recortan a la carátula.
+- Tarjetas de Inicio: banners más grandes, y el enfocado crece mientras los demás quedan alineados abajo. Las tarjetas de apps y de Multimedia toman el color de su marca (Spotify, YouTube, Netflix…) o el color principal de su ícono, oscurecido, y la de lo que suena muestra su portada a la derecha.
 - Los indicadores de View y Menu muestran el símbolo impreso en esos botones en lugar de su nombre.
 - Un toque en RT envía Intro, también en el teclado (la primera sugerencia va con Vista).
 - Volumen desde cualquier lugar: mantener RT y usar la cruceta (arriba/abajo volumen, izquierda/derecha canción anterior/siguiente).

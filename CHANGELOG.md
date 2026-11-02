@@ -31,6 +31,7 @@ Changes waiting for the next version sit under **Unreleased** at the top (this s
 - The Puntero and Botones options show an animated preview of what they change next to them, built from the same values the controller uses, with the previous value faded in for comparison and a line about the chosen value. The background dims while Settings is open.
 - Game trailers: after a few seconds on a Steam game, its trailer plays over the art, silent and looping (the first seconds, downloaded once from the Steam store and kept).
 - Media tab: the background blends the cover's two main colours, and covers sent as a card with the player's logo are trimmed to the artwork.
+- Home tiles: larger banners, and the focused one grows while the rest stay on the bottom line. App and media cards take their brand's colour (Spotify, YouTube, Netflix…) or their icon's main colour, darkened, and the card of what is playing shows its cover on the right.
 - View and Menu hints show the symbols printed on those buttons instead of their names.
 - A tap on RT presses Enter, in the keyboard too (the first suggestion is on View).
 - Volume from anywhere: hold RT and use the d-pad (up/down volume, left/right previous/next track).
