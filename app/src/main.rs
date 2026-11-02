@@ -594,7 +594,19 @@ fn main() {
     let (tx, rx) = mpsc::channel();
     let rx = Mutex::new(Some(rx));
 
-    let app = tauri::Builder::default()
+    // A second launch (Start menu, shortcut) opens the home screen of the
+    // running one; a second `--background` start (sign-in) does nothing.
+    let builder = tauri::Builder::default();
+    let builder = if lab {
+        builder
+    } else {
+        builder.plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            if !args.iter().any(|a| a == "--background") {
+                app.state::<AppState>().send(Mode::Home);
+            }
+        }))
+    };
+    let app = builder
         .manage(AppState {
             cmd: Mutex::new(tx),
             engine: Mutex::new(None),

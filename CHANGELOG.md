@@ -47,3 +47,4 @@ Changes waiting for the next version sit under **Unreleased** at the top (this s
 - With Windows' "Show animations" off, backgrounds and previews stay still and trailers don't play.
 - Commands that type, open programs, read learned words or power off answer only the window that uses them; network folders are refused as backgrounds, and words typed in consoles or remote desktops are never learned.
 - Cursor and keyboard labs with their data and notes.
+- Windows installer (NSIS, per user, Spanish or English): Start menu shortcut, WebView2 downloaded if missing, and an optional HidHide step that downloads the official release, checks its SHA-256 and signature and runs its installer. Uninstalling removes the "start with Windows" entry, shows the controller to games again and deletes settings only when asked. Opening the app while it runs brings up its home screen instead of a second copy.
