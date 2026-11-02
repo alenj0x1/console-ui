@@ -91,12 +91,31 @@ function buttonShape(b) {
   return s;
 }
 
-// Text that names buttons: "{B}" or "{View}" inside it becomes the button.
-// `literal` false shows the button that does it now instead.
+// Text that names buttons: "{B}", "{View}" or "{↕}" (the d-pad) inside it
+// becomes the button, and " + " between two of them a combination (pressed
+// together). `literal` false shows the button that does it now instead.
 function withButtons(text, literal = true) {
-  return text.split(/\{([A-Za-z0-9]+)\}/).map((part, i) =>
-    i % 2 ? setGlyph(Object.assign(document.createElement("span"), { className: "glyph inline" }), part, literal) : document.createTextNode(part),
-  );
+  const out = [];
+  text.split(/\{([A-Za-z0-9↑↓←→↕]+)\}/).forEach((part, i) => {
+    if (i % 2) {
+      const button = setGlyph(Object.assign(document.createElement("span"), { className: "glyph inline" }), part, literal);
+      // After a +, the button joins the combination before it.
+      const combo = out.at(-1)?.classList?.contains("combo") && out.at(-1).lastChild?.classList?.contains("plus") ? out.at(-1) : null;
+      if (combo) combo.append(button);
+      else out.push(button);
+    } else if (part === " + " && out.at(-1)?.classList?.contains("glyph")) {
+      // A combination never breaks across lines.
+      const combo = Object.assign(document.createElement("span"), { className: "combo" });
+      combo.append(out.pop(), plusSign());
+      out.push(combo);
+    } else out.push(document.createTextNode(part));
+  });
+  return out;
+}
+
+// The + between buttons pressed together.
+function plusSign() {
+  return Object.assign(document.createElement("span"), { className: "plus", textContent: "+" });
 }
 
 function icon(name, cls = "icon") {

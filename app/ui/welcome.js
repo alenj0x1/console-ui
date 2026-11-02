@@ -104,7 +104,7 @@ function endStep() {
   const tips = el("ul", { className: "tips" },
     el("li", {}, ...say("Con {LT} presionado, la cruceta salta de un botón a otro.")),
     el("li", {}, ...say("Mantén {View} para el menú rápido. Apunta con la palanca derecha y suelta.")),
-    el("li", {}, ...say("En un juego, mantén {View} y {Menu} juntos para el centro de control.")),
+    el("li", {}, ...say("En un juego, mantén {View} + {Menu} para el centro de control.")),
     el("li", {}, ...say("Todo esto se cambia en Ajustes, dentro de Inicio.")));
   const go = el("button", { className: "action", textContent: "Empezar" });
   go.addEventListener("click", finish);

@@ -83,5 +83,8 @@ html, body { margin: 0; color: var(--text); font-family: var(--font-text); }
 /* A button inside a sentence: its letter sits on the text's baseline; a
    symbol is centred on the capitals around it. */
 .glyph.inline { font-size: 1em; color: inherit; vertical-align: baseline; margin: 0 0.1em; }
+/* Buttons pressed together: a muted + with room on both sides. */
+.plus { margin: 0 0.375em; color: var(--muted); font-weight: 400; }
+.combo { white-space: nowrap; }
 .glyph.inline .btn { font-size: 0.8em; }
 .glyph.inline:has(.glyph-icon) { vertical-align: -0.16em; }

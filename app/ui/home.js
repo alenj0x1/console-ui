@@ -938,7 +938,7 @@ const CATEGORIES = [
       { kind: "toggle", name: "Marco de selección más grueso", pref: "thick_focus", desc: "Un borde más ancho alrededor de lo que tienes elegido, para verlo mejor desde el sillón." },
       { kind: "link", name: "Fondo", value: state.wallpaper?.title ?? "Color liso", run: openWalls, desc: "Lo que se ve detrás de Inicio, sea una animación, un video o una imagen." },
       { kind: "toggle", name: "Imágenes de los juegos", pref: "game_art", desc: "Muestra el arte del juego elegido detrás de la pestaña Juegos." },
-      { kind: "choice", name: "Forma de Inicio", pref: "library_view", options: [["banners", "Anchas"], ["covers", "Portadas"], ["grid", "Cuadrícula"], ["list", "Lista"]], desc: "Cómo se ven Juegos, Apps y Multimedia. En Cuadrícula y Lista, arriba y abajo se mueven por ellas y el volumen queda en {RT} con la cruceta." },
+      { kind: "choice", name: "Forma de Inicio", pref: "library_view", options: [["banners", "Anchas"], ["covers", "Portadas"], ["grid", "Cuadrícula"], ["list", "Lista"]], desc: "Cómo se ven Juegos, Apps y Multimedia. En Cuadrícula y Lista, arriba y abajo se mueven por ellas y el volumen queda en {RT} + {↕}." },
     ].filter(Boolean),
   },
   {
@@ -950,7 +950,7 @@ const CATEGORIES = [
       { kind: "link", name: "Color del control", value: padThemeById(state.prefs?.pad_theme).name, run: () => openSub("pad_theme"), desc: "Los colores del control que se dibuja en Personalizar botones. Como vienen los controles, o una combinación al azar." },
       { kind: "toggle", name: "Aceptar con {B}", pref: "swap_ab", desc: "{B} acepta y {A} vuelve atrás. Para volver a lo normal, entra aquí y presiona {B}." },
       { kind: "toggle", name: "Puntero con la palanca derecha", pref: "swap_sticks", desc: "La palanca derecha mueve el puntero y la izquierda sube o baja la página." },
-      { kind: "choice", name: "Tiempo para mantener presionado", pref: "hold_time", options: [["short", "Corto"], ["normal", "Normal"], ["long", "Largo"]], desc: "Cuánto hay que sostener {Menu} para abrir Inicio, o {View} y {Menu} juntos para el centro de control. Un toque tiene que ser más corto que esto." },
+      { kind: "choice", name: "Tiempo para mantener presionado", pref: "hold_time", options: [["short", "Corto"], ["normal", "Normal"], ["long", "Largo"]], desc: "Cuánto hay que sostener {Menu} para abrir Inicio, o {View} + {Menu} para el centro de control. Un toque tiene que ser más corto que esto." },
     ],
   },
   {
@@ -980,7 +980,7 @@ const CATEGORIES = [
     icon: "player-play",
     rows: () => [
       { kind: "toggle", name: "Tráileres con sonido", pref: "trailer_sound", desc: "Los tráileres de los juegos suenan. También se cambia con {X} mientras se ve uno." },
-      { kind: "toggle", name: "Dejar el control al juego que abras", pref: "auto_game", desc: "Cuando abres un juego, el control es solo del juego. Al cerrarlo, vuelve el puntero. Para usar el puntero sin cerrarlo, mantén {View} y {Menu} y elige otra ventana." },
+      { kind: "toggle", name: "Dejar el control al juego que abras", pref: "auto_game", desc: "Cuando abres un juego, el control es solo del juego. Al cerrarlo, vuelve el puntero. Para usar el puntero sin cerrarlo, mantén {View} + {Menu} y elige otra ventana." },
     ],
   },
   {
@@ -1883,7 +1883,7 @@ function infoEl(i) {
 // grid or a list (RT + the d-pad, with room between them).
 function volumeHint(head) {
   const held = libraryView() === "grid" || libraryView() === "list";
-  const keys = held ? [glyph("RT"), el("span", { className: "plus", textContent: "+" }), glyph("↕")] : [glyph("↕")];
+  const keys = held ? [glyph("RT"), plusSign(), glyph("↕")] : [glyph("↕")];
   const hint = el("span", { className: "hint" }, ...keys, "Volumen");
   const hints = head.querySelector(".hints");
   if (hints) hints.append(hint);
