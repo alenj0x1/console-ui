@@ -4,7 +4,17 @@
 
 Usa todo Windows desde el sillón con el control: un cursor asistido, un teclado en pantalla con sugerencias inteligentes y una pantalla de inicio tipo consola.
 
-> En desarrollo. Aún sin versión publicada; se compila desde el código.
+[![Versión](https://img.shields.io/github/v/release/alenj0x1/console-ui?label=versi%C3%B3n)](https://github.com/alenj0x1/console-ui/releases/latest) [![Licencia: MIT](https://img.shields.io/badge/licencia-MIT-blue)](LICENSE) [![Sitio](https://img.shields.io/badge/sitio-console--ui-4c8dff)](https://alenj0x1.github.io/console-ui/) [![Documentación](https://img.shields.io/badge/docs-Espa%C3%B1ol%20%7C%20English-4c8dff)](https://alenj0x1.github.io/console-ui/docs/es/)
+
+**[Descargar para Windows](https://github.com/alenj0x1/console-ui/releases/latest)** · [Sitio web](https://alenj0x1.github.io/console-ui/) (pruébalo en vivo) · [Documentación](https://alenj0x1.github.io/console-ui/docs/es/)
+
+![Inicio con tus juegos](docs/public/screenshots/home-es.webp)
+
+| Multimedia, con lo que suena | Ajustes, con una vista previa de cada opción | Centro de control, sobre un juego |
+|---|---|---|
+| ![Multimedia](docs/public/screenshots/media-es.webp) | ![Ajustes](docs/public/screenshots/settings-es.webp) | ![Centro de control](docs/public/screenshots/control-center-es.webp) |
+
+<sub>Capturas de la app con datos de ejemplo. Las imágenes de los juegos pertenecen a sus dueños.</sub>
 
 ## Qué hace
 
@@ -39,6 +49,10 @@ Usa todo Windows desde el sillón con el control: un cursor asistido, un teclado
 - WebView2 (incluido en Windows actual; si falta, el instalador lo descarga).
 - Opcional: [HidHide](https://github.com/nefarius/HidHide) (MIT), para que el menú Inicio y otras apps de la Tienda no reaccionen al control mientras mueve el cursor. El instalador lo ofrece si no está instalado.
 
+### Instalar
+
+Descarga `Console UI_X.Y.Z_x64-setup.exe` de la [última versión](https://github.com/alenj0x1/console-ui/releases/latest) y ejecútalo. La primera vez, una práctica corta enseña lo básico con el control. La interfaz está en español e inglés (Ajustes › General › Idioma) y de entrada sigue el idioma de Windows.
+
 ### Instalador
 
 `Console UI_X.Y.Z_x64-setup.exe` instala solo para el usuario actual (`%LOCALAPPDATA%\Console UI`, sin permisos de administrador), en español o inglés según Windows, con acceso directo en el menú Inicio. Si abres la app otra vez mientras está abierta, aparece la pantalla de Inicio de la que ya corre.
@@ -62,6 +76,8 @@ npm --prefix app ci && npm --prefix app run build   # instalador
 - `python -I tools/build_language_data.py`: regenera los datos de sugerencias (descarga fuentes fijadas y verificadas por hash).
 - `node labs/keyboard-lab/suggest_eval.js es`: calidad de las sugerencias sin conexión.
 - `python scripts/release.py X.Y.Z`: publica una versión (sube versiones, cierra la sección del changelog, hace commit y tag).
+- `node scripts/site/build-app.mjs && node scripts/site/serve.mjs`: el sitio en http://localhost:4600 con las pantallas de la app funcionando en vivo (`site/`).
+- `npm --prefix docs ci && npm --prefix docs run dev`: la documentación (`docs/`, Astro Starlight).
 
 | Ruta | Qué |
 |---|---|
@@ -70,12 +86,16 @@ npm --prefix app ci && npm --prefix app run build   # instalador
 | `app` | App Tauri 2: bandeja, teclado (`app/ui`), ajustes y palabras aprendidas |
 | `labs` | Experimentos con datos y notas |
 | `tools` | Generadores de datos |
+| `docs` | Sitio de documentación (inglés y español) |
+| `site` | Sitio web; `site/demo` corre las pantallas de la app con datos de ejemplo |
+| `scripts` | Scripts de versiones y del sitio |
 
 ## Créditos
 
 - [Tauri](https://tauri.app) (MIT / Apache-2.0), [egui/eframe](https://github.com/emilk/egui) para el laboratorio del cursor (MIT / Apache-2.0), [windows-rs](https://github.com/microsoft/windows-rs) (MIT / Apache-2.0).
 - Fuentes [Figtree](https://github.com/erikdkennedy/figtree) y [DM Mono](https://github.com/googlefonts/dm-mono), SIL Open Font License 1.1 (`app/ui/fonts`).
 - Listas de palabras derivadas de [FrequencyWords](https://github.com/hermitdave/FrequencyWords) de Hermit Dave (OpenSubtitles 2018), CC BY-SA 4.0. Pares de palabras calculados con frases de [Tatoeba](https://tatoeba.org), CC BY 2.0 FR. Detalle en `app/ui/data/LICENSE-data.txt`.
+- Arte de juegos en el sitio y en las capturas: arte oficial de biblioteca de Steam de Hollow Knight, Hollow Knight: Silksong, Cyberpunk 2077, Muse Dash y Little Nightmares II; pertenece a sus dueños.
 
 ## Licencia
 

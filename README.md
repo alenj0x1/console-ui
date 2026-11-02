@@ -4,7 +4,17 @@ English | [Español](README.es.md)
 
 Use all of Windows from the couch with a game controller: an assisted cursor, an on-screen keyboard with smart suggestions, and a console-style home screen.
 
-> Early development. Not released yet; build it from source.
+[![Release](https://img.shields.io/github/v/release/alenj0x1/console-ui)](https://github.com/alenj0x1/console-ui/releases/latest) [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Website](https://img.shields.io/badge/website-console--ui-4c8dff)](https://alenj0x1.github.io/console-ui/) [![Docs](https://img.shields.io/badge/docs-English%20%7C%20Espa%C3%B1ol-4c8dff)](https://alenj0x1.github.io/console-ui/docs/)
+
+**[Download for Windows](https://github.com/alenj0x1/console-ui/releases/latest)** · [Website](https://alenj0x1.github.io/console-ui/) (try it live) · [Documentation](https://alenj0x1.github.io/console-ui/docs/)
+
+![Home with your games](docs/public/screenshots/home-en.webp)
+
+| Media, with what is playing | Settings, with a preview of each option | Control center, over a game |
+|---|---|---|
+| ![Media](docs/public/screenshots/media-en.webp) | ![Settings](docs/public/screenshots/settings-en.webp) | ![Control center](docs/public/screenshots/control-center-en.webp) |
+
+<sub>Screenshots of the app on sample data. Game images belong to their owners.</sub>
 
 ## What it does
 
@@ -39,6 +49,10 @@ Use all of Windows from the couch with a game controller: an assisted cursor, an
 - WebView2 runtime (included in current Windows; the installer downloads it if it is missing).
 - Optional: [HidHide](https://github.com/nefarius/HidHide) (MIT), so the Start menu and other Store apps don't react to the controller while it moves the cursor. The installer offers it when it is not installed.
 
+### Install
+
+Download `Console UI_X.Y.Z_x64-setup.exe` from the [latest release](https://github.com/alenj0x1/console-ui/releases/latest) and run it. The first time, a short practice shows the basics with the controller. The interface is in English and Spanish (Settings › General › Language) and follows Windows by default.
+
 ### Installer
 
 `Console UI_X.Y.Z_x64-setup.exe` installs for the current user only (`%LOCALAPPDATA%\Console UI`, no administrator rights), in Spanish or English following Windows, with a Start menu shortcut. Opening the app again while it runs brings up the home screen of the running one.
@@ -62,6 +76,8 @@ npm --prefix app ci && npm --prefix app run build   # installer
 - `python -I tools/build_language_data.py`: rebuilds the suggestion data (downloads pinned, hash-checked sources).
 - `node labs/keyboard-lab/suggest_eval.js es`: offline suggestion quality.
 - `python scripts/release.py X.Y.Z`: cuts a release (bumps versions, closes the changelog section, commits and tags).
+- `node scripts/site/build-app.mjs && node scripts/site/serve.mjs`: the website at http://localhost:4600 with the app's pages running live (`site/`).
+- `npm --prefix docs ci && npm --prefix docs run dev`: the documentation (`docs/`, Astro Starlight).
 
 | Path | What |
 |---|---|
@@ -70,12 +86,16 @@ npm --prefix app ci && npm --prefix app run build   # installer
 | `app` | Tauri 2 app: tray, keyboard overlay (`app/ui`), settings and learned words |
 | `labs` | Experiments with data and notes |
 | `tools` | Data builders |
+| `docs` | Documentation site (English and Spanish) |
+| `site` | Website; `site/demo` runs the app's pages on sample data |
+| `scripts` | Release and website scripts |
 
 ## Credits
 
 - [Tauri](https://tauri.app) (MIT / Apache-2.0), [egui/eframe](https://github.com/emilk/egui) for the cursor lab (MIT / Apache-2.0), [windows-rs](https://github.com/microsoft/windows-rs) (MIT / Apache-2.0).
 - Fonts [Figtree](https://github.com/erikdkennedy/figtree) and [DM Mono](https://github.com/googlefonts/dm-mono), SIL Open Font License 1.1 (`app/ui/fonts`).
 - Word lists derived from [FrequencyWords](https://github.com/hermitdave/FrequencyWords) by Hermit Dave (OpenSubtitles 2018), CC BY-SA 4.0. Word pairs computed from [Tatoeba](https://tatoeba.org) sentences, CC BY 2.0 FR. Details in `app/ui/data/LICENSE-data.txt`.
+- Game art on the website and in the screenshots: official Steam library art of Hollow Knight, Hollow Knight: Silksong, Cyberpunk 2077, Muse Dash and Little Nightmares II; it belongs to their owners.
 
 ## License
 
