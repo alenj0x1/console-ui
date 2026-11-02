@@ -16,8 +16,26 @@ const ICONS = {
   "folder-plus": '<path d="M12 19h-7a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2h4l3 3h7a2 2 0 0 1 2 2v3.5"/><path d="M16 19h6"/><path d="M19 16v6"/>',
   "folder-minus": '<path d="M12 19h-7a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2h4l3 3h7a2 2 0 0 1 2 2v3.5"/><path d="M16 19h6"/>',
   download: '<path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 11l5 5l5 -5"/><path d="M12 4l0 12"/>',
+  "window-maximize": '<path d="M5 5m0 1a1 1 0 0 1 1 -1h12a1 1 0 0 1 1 1v12a1 1 0 0 1 -1 1h-12a1 1 0 0 1 -1 -1z"/>',
+  apps: '<path d="M4 4m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/><path d="M4 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/><path d="M14 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/><path d="M14 7l6 0"/><path d="M17 4l0 6"/>',
+  // The Xbox controller's View and Menu buttons, as printed on them.
+  "btn-view": '<rect x="3" y="4" width="12" height="10" rx="2"/><path d="M9 14v4a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2v-6a2 2 0 0 0 -2 -2h-4"/>',
+  "btn-menu": '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>',
   gamepad: '<path d="M2 6m0 2a2 2 0 0 1 2 -2h16a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-16a2 2 0 0 1 -2 -2z"/><path d="M6 12h4m-2 -2v4"/><path d="M15 11l0 .01"/><path d="M18 13l0 .01"/>',
 };
+
+// A controller button hint: letters as text, View and Menu as their symbols
+// (their names mean nothing to most people).
+function setGlyph(span, button) {
+  const symbol = { View: "btn-view", Menu: "btn-menu" }[button];
+  if (symbol) {
+    span.innerHTML = icon(symbol, "glyph-icon");
+    span.setAttribute("aria-label", button);
+  } else {
+    span.textContent = button;
+  }
+  return span;
+}
 
 function icon(name, cls = "icon") {
   return `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;

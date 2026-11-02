@@ -1,11 +1,12 @@
-// Home screen: games, pinned apps and music, driven by controller events
+// Home screen: games, pinned apps and media, driven by controller events
 // from the engine ("pad"). Every tab has the same look: a full background,
 // information on the left and a row of tiles at the bottom. The user's
 // background (an animation, a video or a picture) is always there and the
-// focused game's art fades in over it on the games tab; music fills the
-// screen with the cover and its colour. LB / RB switch tabs, A opens, X plays
-// or pauses the music, up / down change the volume and Y mutes it, B goes
-// back or closes; holding Menu closes too (engine).
+// focused game's art fades in over it on the games tab; on the media tab,
+// what is playing fills the screen with its cover and colour. LB / RB switch
+// tabs, A opens, X plays or pauses, LT / RT change the song, up / down change
+// the volume and Y mutes it, B goes back or closes; holding Menu closes too
+// (engine).
 
 const { invoke } = window.__TAURI__.core;
 // Only events sent to this window or to every window: the keyboard and the
@@ -15,7 +16,7 @@ const listen = here.listen.bind(here);
 // Controller events count only while the home screen is the active mode.
 let active = false;
 
-const TABS = ["games", "apps", "music"];
+const TABS = ["games", "apps", "media"];
 // Served by the app (see home.rs); overridable for the dev harness.
 const ASSET = window.__ASSET ?? "http://cui.localhost";
 const CLOCK_EVERY_MS = 15000;
@@ -29,7 +30,19 @@ const KINDS = { animated: "Animado", video: "Video", image: "Imagen" };
 const PREVIEW_DELAY_MS = 350;
 // How long a game keeps the focus before its trailer starts.
 const TRAILER_DELAY_MS = 2000;
-const CONTROLS = ["prev", "toggle", "next"];
+// Media apps found among the installed ones.
+const MEDIA_APPS = /spotify|vlc|plex|kodi|apple music|itunes|amazon music|deezer|tidal|stremio|netflix|prime video|disney/i;
+const NOT_APPS = /uninstall|desinstal|readme|léame|website|sitio web|help|ayuda/i;
+// Streaming sites the user can add, opened in the default browser (see
+// open_service in home.rs).
+const SERVICES = [
+  { id: "youtube", name: "YouTube", icon: "services/youtube.png" },
+  { id: "youtube-music", name: "YouTube Music", icon: "services/youtube-music.png" },
+  { id: "netflix", name: "Netflix", icon: "services/netflix.svg" },
+  { id: "twitch", name: "Twitch", icon: "services/twitch.svg" },
+  { id: "prime-video", name: "Prime Video", icon: "services/prime-video.png" },
+  { id: "disney-plus", name: "Disney+", icon: "services/disney-plus.png" },
+];
 const SOURCES = { steam: "Steam", epic: "Epic Games" };
 
 const state = {
@@ -37,8 +50,13 @@ const state = {
   games: [],
   apps: [],
   pinned: [],
-  focus: { games: 0, apps: 0, music: 1, edit: 0, wall: 0, folder: 0 },
+  focus: { games: 0, apps: 0, media: 0, edit: 0, medit: 0, wall: 0, folder: 0 },
+  // The media tab's apps and sites (null = the installed media apps).
+  picks: null,
+  // Its edit grid lists every app only once asked to.
+  allApps: false,
   // A grid over the apps tab instead of the row: "edit" (pinned apps),
+  // "medit" (the media tab's apps and sites),
   // "wall" (background) or "folder" (adding a folder of backgrounds); ""
   // when closed.
   sheet: "",
@@ -408,44 +426,134 @@ function volumeEl() {
     el("div", { className: "bar" }, el("div", { className: "fill", style: `width:${v.muted ? 0 : Math.round(v.level * 100)}%` })));
 }
 
-// The music tab is a player: what plays on the left, like every tab, and one
-// bar where the other tabs have their row: transport buttons, progress and
-// volume side by side. The cover fills the right side over its own colour.
-function renderMusic() {
-  const m = state.media;
-  if (!m.title) {
-    view.replaceChildren(infoEl({ lead: el("div", { className: "lead-symbol" }, svg("music")), title: "Nada sonando", meta: "Pon música en Spotify, el navegador u otra app y se controla desde aquí.", action: ["Abrir Spotify", "A"] }));
-    return;
-  }
-  const key = [m.title, m.artist, m.playing, m.duration_ms > 0, state.focus.music].join("|");
-  const current = view.querySelector(".player");
-  if (current && current.dataset.key === key) return updateMusic();
-  const buttons = CONTROLS.map((c, k) => {
-    const name = c === "toggle" ? (m.playing ? "pause" : "play") : c;
-    return el("div", { className: "transport-button" + (c === "toggle" ? " main" : "") + (k === state.focus.music ? " on" : ""), innerHTML: icon(name) });
-  });
-  const progress = m.duration_ms
-    ? el("div", { className: "progress" }, el("span", { className: "time now" }), el("div", { className: "bar" }, el("div", { className: "fill" })), el("span", { className: "time", textContent: clock(m.duration_ms) }))
-    : null;
-  const info = infoEl({ lead: el("p", { className: "source", textContent: playerName(m.source) }), title: m.title, meta: m.artist });
-  const bar = el("div", { className: "player-bar" }, el("div", { className: "transport" }, ...buttons), progress ?? el("div", { className: "progress" }), volumeEl());
-  const player = el("div", { className: "player" }, info, bar);
-  player.dataset.key = key;
-  view.replaceChildren(player);
-  updateMusic();
+// The media tab's apps and sites: the user's picks, or the installed media
+// apps until they choose.
+function mediaPicks() {
+  if (state.picks) return state.picks;
+  const seen = new Set();
+  return state.apps.filter((a) => MEDIA_APPS.test(a.name) && !NOT_APPS.test(a.name) && !seen.has(a.name) && seen.add(a.name)).map((a) => a.id);
 }
 
-// Moves the progress bar and refreshes the volume without rebuilding.
+const site = (id) => SERVICES.find((s) => `web:${s.id}` === id);
+const norm = (s) => s.toLowerCase().replace(/\.exe$/, "");
+
+// The app a player reports (Windows gives its AppUserModelID or exe name).
+function sourceApp(source) {
+  const s = norm(source);
+  if (!s) return null;
+  return state.apps.find((a) => norm(a.id) === s) ?? state.apps.find((a) => s.includes(norm(a.name)) || norm(a.id).includes(s)) ?? null;
+}
+
+// What plays shows on its own app's card: the song under the name and, while
+// the card has the focus, the player on the left over the cover's colour.
+function playingInfo(app) {
+  const m = state.media;
+  const head = infoEl({
+    lead: app ? img(appIcon(app.id), "lead-icon") : el("p", { className: "source", textContent: playerName(m.source) }),
+    title: m.title,
+    meta: [m.artist, app?.name ?? ""].filter(Boolean).join(" · "),
+    action: app ? ["Abrir", "A"] : null,
+  });
+  if (m.duration_ms) {
+    head.querySelector(".meta").after(
+      el("div", { className: "progress" }, el("span", { className: "time now" }), el("div", { className: "bar" }, el("div", { className: "fill" })), el("span", { className: "time", textContent: clock(m.duration_ms) })),
+    );
+  }
+  const hints = el("span", { className: "hints" },
+    el("span", { className: "hint" }, glyph("X"), m.playing ? "Pausar" : "Reproducir"),
+    el("span", { className: "hint" }, glyph("LT RT"), "Canción"));
+  (head.querySelector(".action") ?? head.querySelector(".progress") ?? head.querySelector(".meta")).after(hints);
+  return head;
+}
+
+function mediaItems() {
+  const m = state.media;
+  const playing = m.title ? sourceApp(m.source) : null;
+  const ids = mediaPicks();
+  const list = ids.map((id) => {
+    const s = site(id);
+    if (s) {
+      return {
+        key: id,
+        tile: () => el("div", { className: "tile" }, img(s.icon, "tile-icon"), el("span", { className: "name", textContent: s.name })),
+        info: () => ({ lead: img(s.icon, "lead-icon"), title: s.name, meta: "Se abre en tu navegador", action: ["Abrir", "A"] }),
+        select: () => openService(s.id),
+      };
+    }
+    const app = appById(id);
+    return app && { key: app.id, app, tile: () => appTile(app), info: () => ({ lead: img(appIcon(app.id), "lead-icon"), title: app.name, meta: "", action: ["Abrir", "A"] }), select: () => open(app.id) };
+  }).filter(Boolean);
+  // The player's card comes first; one that is not in the list (a browser
+  // playing a video) joins while it plays.
+  if (m.title) {
+    let at = list.findIndex((x) => x.app && x.app === playing);
+    const item = at >= 0 ? list.splice(at, 1)[0] : { key: playing?.id ?? "__player", app: playing, select: () => playing && open(playing.id) };
+    item.playing = true;
+    item.rev = "~"; // a new song only changes the card's text (see render)
+    item.tile = () =>
+      el("div", { className: "tile playing" },
+        playing ? img(appIcon(playing.id), "tile-icon") : svg("music", "icon symbol"),
+        el("span", { className: "name", textContent: playing?.name ?? playerName(m.source) }),
+        el("span", { className: "song", textContent: m.title }));
+    item.info = () => playingInfo(playing);
+    list.unshift(item);
+  }
+  const edit = {
+    key: "__medit",
+    tile: () => el("div", { className: "tile" }, svg("edit", "icon symbol"), el("span", { className: "name", textContent: "Editar" })),
+    info: () => ({ lead: el("div", { className: "lead-symbol" }, svg("edit")), title: "Editar Multimedia", meta: "", action: ["Editar", "A"] }),
+    select: () => {
+      state.sheet = "medit";
+      state.focus.medit = 0;
+      state.allApps = false;
+      render();
+    },
+  };
+  return [...list, edit];
+}
+
+// Adding or removing apps and sites: the sites, the media apps and the
+// apps already added; "Todas las apps" opens the rest.
+function mediaEditItems() {
+  const picks = mediaPicks();
+  const media = (a) => MEDIA_APPS.test(a.name) && !NOT_APPS.test(a.name);
+  const sites = SERVICES.map((s) => ({ id: `web:${s.id}`, tile: (on) => el("div", { className: "tile" }, img(s.icon, "tile-icon"), el("span", { className: "name", textContent: s.name }), on ? badge() : null) }));
+  const shown = state.apps.filter((a) => state.allApps || media(a) || picks.includes(a.id));
+  const apps = shown.map((a) => ({ id: a.id, tile: (on) => appTile(a, on ? badge() : null) }));
+  const list = [...sites, ...apps].map((x) => {
+    const on = picks.includes(x.id);
+    return { key: x.id + (on ? "+" : ""), on, tile: () => x.tile(on), select: () => toggleMedia(x.id) };
+  });
+  if (!state.allApps && shown.length < state.apps.length) {
+    list.push({
+      key: "__all",
+      more: true,
+      tile: () => symbolTile("apps", "Todas las apps"),
+      select: () => {
+        state.allApps = true;
+        render();
+      },
+    });
+  }
+  return list;
+}
+
+async function toggleMedia(id) {
+  const picks = mediaPicks();
+  state.picks = picks.includes(id) ? picks.filter((p) => p !== id) : [...picks, id];
+  render();
+  await invoke("set_media", { ids: state.picks }).catch(console.error);
+}
+
+// Moves the progress bar without rebuilding.
 function updateMusic() {
   const m = state.media;
-  const now = view.querySelector(".player .time.now");
+  const now = view.querySelector(".info .time.now");
   if (now && m.duration_ms) {
     const p = position();
     now.textContent = clock(p);
-    view.querySelector(".progress .fill").style.width = `${(p / m.duration_ms) * 100}%`;
+    view.querySelector(".info .progress .fill").style.width = `${(p / m.duration_ms) * 100}%`;
   }
-  const vol = view.querySelector(".player .volume");
-  if (vol) vol.replaceWith(volumeEl());
 }
 
 function editItems() {
@@ -528,9 +636,10 @@ function folderItems() {
 
 function items() {
   if (state.sheet === "edit") return editItems();
+  if (state.sheet === "medit") return mediaEditItems();
   if (state.sheet === "wall") return wallItems();
   if (state.sheet === "folder") return folderItems();
-  return { games: gameItems, apps: appItems }[state.tab]();
+  return { games: gameItems, apps: appItems, media: mediaItems }[state.tab]();
 }
 
 function focusKey() {
@@ -550,19 +659,19 @@ function infoEl(i) {
     action);
 }
 
+// An item's info is a description for infoEl, or an element it built itself.
+function asInfo(i) {
+  return i instanceof Element ? i : infoEl(i);
+}
+
 function render() {
   document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === state.tab));
 
+  const list = items();
   paintBackground();
-  setStage(state.tab === "music" && !state.sheet && !!state.media.title && !!state.media.cover);
+  setStage(state.tab === "media" && !state.sheet && !!list[state.focus.media]?.playing && !!state.media.cover);
   syncMotion();
 
-  if (state.tab === "music" && !state.sheet) {
-    renderMusic();
-    renderPlayer();
-    return;
-  }
-  const list = items();
   const fk = focusKey();
   state.focus[fk] = Math.max(0, Math.min(state.focus[fk], list.length - 1));
   const at = state.focus[fk];
@@ -574,14 +683,19 @@ function render() {
   }
 
   // Only what changed is rebuilt, so tiles never reload while moving.
-  const key = `${state.tab}|${state.sheet}|` + list.map((x) => x.key).join("|");
+  const key = `${state.tab}|${state.sheet}|` + list.map((x) => x.key + (x.rev ?? "")).join("|");
   let strip = view.querySelector(".row, .grid");
-  const editing = state.sheet === "edit";
+  const editing = state.sheet === "edit" || state.sheet === "medit";
+  const editLabel = () => {
+    if (state.sheet !== "medit") return state.pinned.includes(state.apps[at]?.id) ? "Quitar" : "Fijar";
+    return list[at]?.more ? "Mostrar" : list[at]?.on ? "Quitar" : "Agregar";
+  };
   const headFor = () => {
     const head = editing
-      ? infoEl({ lead: el("div", { className: "lead-symbol" }, svg("edit")), title: "Editar apps", meta: "", action: [state.pinned.includes(state.apps[at]?.id) ? "Quitar" : "Fijar", "A"] })
-      : infoEl(list[at].info());
-    head.dataset.item = editing ? "edit" : list[at].key + "|" + state.media.title + "|" + state.media.artist;
+      ? infoEl({ lead: el("div", { className: "lead-symbol" }, svg("edit")), title: state.sheet === "medit" ? "Editar Multimedia" : "Editar apps", meta: "", action: [editLabel(), "A"] })
+      : asInfo(list[at].info());
+    const m = state.media;
+    head.dataset.item = editing ? "edit" : [list[at].key, m.title, m.artist, m.playing, m.duration_ms > 0].join("|");
     return head;
   };
   if (!strip || strip.dataset.key !== key) {
@@ -591,13 +705,16 @@ function render() {
     view.replaceChildren(headFor(), strip);
   } else if (editing) {
     const label = view.querySelector(".info .action span");
-    if (label) label.textContent = state.pinned.includes(state.apps[at]?.id) ? "Quitar" : "Fijar";
+    if (label) label.textContent = editLabel();
   } else {
     const head = headFor();
     if (view.querySelector(".info").dataset.item !== head.dataset.item) view.querySelector(".info").replaceWith(head);
   }
   [...strip.children].forEach((t, k) => t.classList.toggle("on", k === at));
+  const song = strip.querySelector(".tile.playing .song");
+  if (song && song.textContent !== state.media.title) song.textContent = state.media.title;
   strip.children[at]?.scrollIntoView({ inline: "nearest", block: "nearest" });
+  updateMusic();
   renderPlayer();
 }
 
@@ -621,7 +738,7 @@ function paintBackground() {
 
 function renderPlayer() {
   const m = state.media;
-  player.hidden = !m.title || state.tab === "music";
+  player.hidden = !m.title || state.tab === "media";
   if (player.hidden) return;
   const src = m.cover ? coverUrl() : "";
   const art = src ? el("img", { className: "art", src, alt: "" }) : el("span", { className: "art" });
@@ -643,11 +760,6 @@ function onNav(dir) {
   // Up / down outside the app grid change the volume.
   if (!state.sheet && (dir === "up" || dir === "down")) {
     changeVolume(invoke("volume_step", { delta: dir === "up" ? VOLUME_STEP : -VOLUME_STEP }));
-    return;
-  }
-  if (state.tab === "music" && !state.sheet) {
-    state.focus.music = Math.max(0, Math.min(CONTROLS.length - 1, state.focus.music + (dir === "left" ? -1 : 1)));
-    render();
     return;
   }
   const fk = focusKey();
@@ -721,10 +833,10 @@ async function toggleGameArt() {
   await invoke("set_game_art", { on: state.gameArt }).catch(console.error);
 }
 
-// Spotify's web player in its own window, driven with the cursor.
-async function openSpotify() {
+// A streaming site in the default browser, driven with the cursor.
+async function openService(id) {
   try {
-    await invoke("open_spotify");
+    await invoke("open_service", { id });
     await invoke("set_mode", { mode: "cursor" });
   } catch (e) {
     console.error(e);
@@ -786,7 +898,7 @@ function back() {
   invoke("set_mode", { mode: "cursor" });
 }
 
-// Shows the new level: in the player on the music tab, as a toast elsewhere.
+// Shows the new level in a toast next to the clock.
 let toastTimer = null;
 async function changeVolume(request) {
   try {
@@ -794,7 +906,6 @@ async function changeVolume(request) {
   } catch (e) {
     return console.error(e);
   }
-  if (state.tab === "music" && !state.sheet && state.media.title) return updateMusic();
   const toast = document.getElementById("volume-toast");
   toast.replaceChildren(...volumeEl().childNodes);
   toast.hidden = false;
@@ -805,10 +916,7 @@ async function changeVolume(request) {
 function onPress(button) {
   switch (button) {
     case "a":
-      if (state.tab === "music" && !state.sheet) {
-        if (state.media.title) invoke("media_control", { action: CONTROLS[state.focus.music] });
-        else openSpotify();
-      } else items()[state.focus[focusKey()]]?.select();
+      items()[state.focus[focusKey()]]?.select();
       break;
     case "y":
       changeVolume(invoke("volume_mute"));
@@ -818,6 +926,10 @@ function onPress(button) {
       break;
     case "x":
       if (state.media.title) invoke("media_control", { action: "toggle" });
+      break;
+    case "lt":
+    case "rt":
+      if (state.media.title) invoke("media_control", { action: button === "lt" ? "prev" : "next" });
       break;
     case "lb":
       switchTab(-1);
@@ -842,6 +954,7 @@ async function load() {
   state.apps = data.apps;
   state.pinned = data.pinned;
   state.wallpaper = data.wallpaper;
+  state.picks = data.media;
   state.gameArt = data.game_art;
   render();
 }
@@ -863,7 +976,7 @@ listen("mode", ({ payload }) => {
 
 // The progress bar moves on its own between the player's reports.
 setInterval(() => {
-  if (state.tab === "music" && state.media.playing) updateMusic();
+  if (state.tab === "media" && state.media.playing) updateMusic();
 }, 500);
 
 function tick() {

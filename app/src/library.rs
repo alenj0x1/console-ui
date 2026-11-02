@@ -141,6 +141,17 @@ pub fn thumbnail_png(path: &Path, size: i32) -> windows::core::Result<Vec<u8>> {
     })
 }
 
+/// A program's own icon (from its .exe), as PNG.
+pub fn file_icon_png(path: &Path, size: i32) -> windows::core::Result<Vec<u8>> {
+    with_com(|| unsafe {
+        let item: IShellItemImageFactory = SHCreateItemFromParsingName(&HSTRING::from(path.as_os_str()), None)?;
+        let bmp = item.GetImage(SIZE { cx: size, cy: size }, SIIGBF_ICONONLY | SIIGBF_BIGGERSIZEOK)?;
+        let result = bitmap_png(bmp);
+        let _ = DeleteObject(HGDIOBJ(bmp.0));
+        result
+    })
+}
+
 unsafe fn bitmap_png(bmp: windows::Win32::Graphics::Gdi::HBITMAP) -> windows::core::Result<Vec<u8>> {
     unsafe {
         let mut info = BITMAP::default();

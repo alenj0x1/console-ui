@@ -58,14 +58,13 @@ impl WallpaperSource for WallpaperEngine {
                 else {
                     continue;
                 };
-                let file = dir.join(&project.file);
-                // The file must stay inside its project folder.
-                if !project.kind.eq_ignore_ascii_case("video") || project.file.contains("..") || !ext_in(&file, &VIDEO) || !file.is_file() {
+                // Workshop items are anyone's: their files must stay inside
+                // their folder (no "..", drive or network path).
+                let Some(file) = inside(&dir, &project.file) else { continue };
+                if !project.kind.eq_ignore_ascii_case("video") || !ext_in(&file, &VIDEO) || !file.is_file() {
                     continue;
                 }
-                let preview = (!project.preview.is_empty() && !project.preview.contains(".."))
-                    .then(|| dir.join(&project.preview))
-                    .filter(|p| p.is_file() && ext_in(p, &IMAGE));
+                let preview = inside(&dir, &project.preview).filter(|p| p.is_file() && ext_in(p, &IMAGE));
                 let name = dir.file_name().unwrap_or_default().to_string_lossy();
                 let title = project.title.trim();
                 out.push(Wallpaper {
@@ -80,5 +79,28 @@ impl WallpaperSource for WallpaperEngine {
         }
         out.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
         out
+    }
+}
+
+/// `rel` joined to `dir` when it is a plain relative path (only normal names).
+fn inside(dir: &std::path::Path, rel: &str) -> Option<std::path::PathBuf> {
+    let rel = std::path::Path::new(rel);
+    let plain = rel.components().next().is_some() && rel.components().all(|c| matches!(c, std::path::Component::Normal(_)));
+    plain.then(|| dir.join(rel))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::inside;
+    use std::path::Path;
+
+    #[test]
+    fn keeps_files_inside_their_folder() {
+        let dir = Path::new(r"C:\we\123");
+        assert_eq!(inside(dir, "video.mp4"), Some(dir.join("video.mp4")));
+        assert_eq!(inside(dir, r"sub\preview.jpg"), Some(dir.join(r"sub\preview.jpg")));
+        for bad in ["", r"..\x.mp4", r"sub\..\..\x.mp4", r"C:\Users\x.mp4", r"\\host\share\p.jpg", r"\x.mp4", "C:x.mp4"] {
+            assert_eq!(inside(dir, bad), None, "{bad}");
+        }
     }
 }

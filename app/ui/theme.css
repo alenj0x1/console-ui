@@ -12,7 +12,11 @@
   --text: #ece8df;
   --muted: #9a9790;
   --accent: #4c8dff;
+  /* Text on the accent; the settings switch it to a dark tone for light accents. */
   --on-accent: #ffffff;
+  /* Derived from the accent, so a different accent changes them too. */
+  --accent-press: color-mix(in srgb, var(--accent) 85%, black);
+  --on-accent-muted: color-mix(in srgb, var(--on-accent) 70%, transparent);
   --danger: #e06c5f;
   --radius: 10px;
   --font-display: "Fredoka", "Segoe UI", sans-serif;
@@ -24,17 +28,15 @@
 
 html, body { margin: 0; color: var(--text); font-family: var(--font-text); }
 
-/* Controller button glyph: a filled tone, no outline; the letters say which button. */
+/* Controller button hint: just the button's letters in the secondary grey,
+   no pill (white on an accent background). */
 .glyph {
   display: inline-grid;
   place-items: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.1);
-  font-family: var(--font-mono);
-  font-size: 11px;
+  font-family: var(--font-text);
+  font-weight: 700;
+  font-size: 13px;
   line-height: 1;
   color: var(--muted);
 }
+.glyph .glyph-icon { display: block; width: 1.15em; height: 1.15em; }

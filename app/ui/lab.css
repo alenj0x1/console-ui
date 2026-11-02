@@ -50,7 +50,7 @@ h1 { margin: 0; font-family: var(--font-display); font-weight: 500; font-size: 4
   font-size: 17px;
   cursor: pointer;
 }
-.button:hover { background: #3d78e0; }
+.button:hover { background: var(--accent-press); }
 
 .rating { display: flex; flex-direction: column; gap: 10px; }
 .rating-row { display: flex; gap: 16px; }

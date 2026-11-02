@@ -181,8 +181,7 @@ function menuItems() {
 function glyphEl(text) {
   const glyph = document.createElement("span");
   glyph.className = "glyph";
-  glyph.textContent = text;
-  return glyph;
+  return setGlyph(glyph, text);
 }
 
 function keyEl(key, id, focused) {

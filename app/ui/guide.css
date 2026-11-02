@@ -1,0 +1,49 @@
+/* Same scale as the home screen: rem follows the screen height (16 px at 1080p). */
+html { font-size: calc(100vh / 67.5); }
+html, body { height: 100%; margin: 0; overflow: hidden; user-select: none; cursor: default; }
+/* Over a game: the game stays visible underneath, dimmed. */
+body { background: color-mix(in srgb, var(--bg) 95%, transparent); display: flex; flex-direction: column; padding: 2.5rem 4rem; }
+
+.icon { width: 1.5rem; height: 1.5rem; display: block; }
+.glyph { font-size: 0.9375rem; }
+
+.topbar { display: flex; justify-content: flex-end; align-items: center; height: 2.5rem; }
+#clock { font-weight: 600; font-size: 1.25rem; }
+
+main { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 2.5rem; }
+
+/* One row of windows; it slides to keep the focused one in view. */
+.windows { display: flex; gap: 1.5rem; overflow: hidden; padding: 0.375rem; margin: -0.375rem; }
+/* Five fit across; more slide in as the focus moves. */
+.window { flex: none; width: calc((100% - 4 * 1.5rem) / 5); border-radius: 0.75rem; background: var(--surface); overflow: hidden; }
+.window.on { box-shadow: 0 0 0 0.1875rem var(--accent); }
+.window .shot { position: relative; aspect-ratio: 16 / 9; background: var(--surface-hover); display: grid; place-items: center; }
+/* The guide shows once its pictures are ready: no fade. */
+.window .shot img.picture { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; }
+.window .shot img.picture.loaded { opacity: 1; }
+.window .shot .big { width: 4rem; height: 4rem; object-fit: contain; }
+.window .label { display: flex; align-items: center; gap: 0.75rem; height: 3.5rem; padding: 0 1rem; }
+.window .label img { width: 1.5rem; height: 1.5rem; flex: none; object-fit: contain; }
+.window .label .title { min-width: 0; font-weight: 600; font-size: 1.0625rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.window .label .kind { margin-left: auto; flex: none; color: var(--muted); }
+
+/* Empty: same look as the other empty states. */
+.empty { display: flex; align-items: center; gap: 1.25rem; }
+.empty .box { width: 3.5rem; height: 3.5rem; border-radius: 0.75rem; background: var(--surface); display: grid; place-items: center; color: var(--muted); }
+.empty b { display: block; font-weight: 600; font-size: 1.25rem; }
+.empty span { color: var(--muted); }
+
+/* What is playing, with the same round buttons as the music tab. */
+.music { display: flex; align-items: center; gap: 1.5rem; padding: 1rem 1.25rem; border-radius: 0.75rem; background: var(--surface); max-width: 48rem; }
+.music[hidden] { display: none; }
+.music .art { width: 4.5rem; height: 4.5rem; border-radius: 0.5rem; object-fit: cover; background: var(--surface-hover); flex: none; }
+.music .text { min-width: 0; flex: 1; }
+.music .text b { display: block; font-weight: 600; font-size: 1.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.music .text span { display: block; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.transport { display: flex; gap: 0.75rem; flex: none; }
+.transport-button { width: 3.5rem; height: 3.5rem; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, 0.1); color: var(--text); }
+.transport-button .icon { width: 1.375rem; height: 1.375rem; fill: currentColor; }
+
+.hints { display: flex; gap: 2rem; align-items: center; height: 2.5rem; font-weight: 600; font-size: 1.0625rem; }
+.hints .hint { display: flex; align-items: center; gap: 0.625rem; }
+.hints .back { margin-left: auto; }

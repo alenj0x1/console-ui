@@ -5,8 +5,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); user-select:
 body { position: relative; }
 
 .icon { width: 1.5rem; height: 1.5rem; display: block; }
-/* Button hints on the home screen are just the button's letters, no pill. */
-.glyph { min-width: 0; height: auto; padding: 0; background: none; font-family: var(--font-text); font-weight: 700; font-size: 0.9375rem; color: var(--muted); }
+.glyph { font-size: 0.9375rem; }
 
 /* ---------- background: the user's video or picture, the focused game's art over it ---------- */
 .backdrop { position: absolute; inset: 0; }
@@ -59,6 +58,12 @@ body { position: relative; }
 .meta { margin: 1.25rem 0 0; color: var(--muted); font-size: 1.125rem; min-height: 1.5rem; }
 .action { margin-top: 1.75rem; display: inline-flex; align-items: center; gap: 0.75rem; height: 3rem; padding: 0 1.25rem 0 1.5rem; border-radius: var(--radius); background: var(--accent); color: var(--on-accent); font-weight: 600; font-size: 1.125rem; }
 .action .glyph { color: var(--on-accent); }
+/* Next to the action: other buttons that work here. */
+.info .hints { display: inline-flex; gap: 1.5rem; margin-left: 1.5rem; vertical-align: middle; }
+.info .progress + .hints, .info .meta + .hints { display: flex; margin: 1.75rem 0 0; }
+.info .hint { display: inline-flex; align-items: center; gap: 0.625rem; font-weight: 600; font-size: 1.125rem; }
+.info .source { margin: 0; font-weight: 600; font-size: 1.125rem; color: var(--muted); }
+.info .progress { margin-top: 1.25rem; max-width: 36rem; }
 
 /* Padding leaves room for the focus ring so nothing is clipped. */
 .row {
@@ -94,6 +99,9 @@ body { position: relative; }
 .tile .badge { position: absolute; top: 0.625rem; right: 0.625rem; width: 1.5rem; height: 1.5rem; border-radius: 0.375rem; display: grid; place-items: center; background: var(--accent); color: var(--on-accent); }
 .tile .badge .icon { width: 1rem; height: 1rem; }
 .tile.on .icon.symbol, .tile .icon.symbol { width: 2.25rem; height: 2.25rem; }
+/* The player's card: the song under the app's name. */
+.tile.playing { gap: 0.5rem; }
+.tile.playing .song { max-width: 15rem; padding: 0 1rem; margin-top: -0.25rem; font-size: 0.9375rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Editing pinned apps: the same tiles in a grid that scrolls with the focus. */
 .grid {

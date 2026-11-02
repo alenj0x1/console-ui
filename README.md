@@ -11,8 +11,9 @@ Use all of Windows from the couch with a game controller: an assisted cursor, an
 - **Assisted cursor**: the left stick moves the mouse with a predictable acceleration, slows down over buttons and links (read through UI Automation) and holds still for a moment when you click. Right stick scrolls; the d-pad sends arrow keys.
 - **On-screen keyboard**: press Y (or click a text field) to open it over any app without stealing focus, on the monitor under the cursor and clear of the text being typed. QWERTY grid with ñ, accents on hold, symbols, and a two-halves layout as an option.
 - **Suggestions**: complete the word and restore accents (`esta` → `está`), use the previous word as context and predict the next one. They learn from you, stored encrypted with DPAPI and never in password fields. Spanish by default; English can be turned on from the keyboard.
-- **Home screen**: hold Menu for a full-screen view of your Steam and Epic games (official art as the background), pinned apps with their real icons and the music that is playing, over a built-in animation, a Wallpaper Engine video wallpaper or your own videos and pictures. Spotify's web player opens inside the app. Launching a game hands the controller to it.
-- **Game mode**: hold View + Menu to leave the controller to games (two short rumbles) and again to get the cursor back (one rumble).
+- **Home screen**: hold Menu for a full-screen view of your Steam and Epic games (official art as the background), pinned apps with their real icons and a media tab (your media apps and the streaming sites you add, with what is playing first), over a built-in animation, a Wallpaper Engine video wallpaper or your own videos and pictures. Launching a game hands the controller to it.
+- **Game mode**: a game coming to the front (from the home screen, Steam or anywhere else) gets the controller (two short rumbles), and the cursor comes back when it closes.
+- **Guide**: hold View + Menu (the two small buttons in the middle of the controller: two squares and three lines), even in a game, to see your open windows and switch to one with A (a game gets the controller, anything else the cursor), close one with Y, or control the music without leaving the game; B goes back. In the desktop, a tap on View opens it too.
 - **Labs**: every design choice was measured with the user before adopting it (see `labs/`).
 
 ## Controls
@@ -26,8 +27,8 @@ Use all of Windows from the couch with a game controller: an assisted cursor, an
 | Y | Open the keyboard (also by clicking a text field) | Space |
 | LB / RB | Back / forward | Shift / symbols |
 | RT | Tap: Enter. Hold + d-pad: volume, previous/next track | Take the first suggestion |
-| View / Menu | Task view / Start menu (hold: home screen) | – / Enter |
-| Hold View + Menu | Turn the controller over to games, and back | |
+| View / Menu | Guide / Start menu (hold: home screen) | – / Enter |
+| Hold View + Menu | Guide (also in a game) | |
 
 ## Requirements
 

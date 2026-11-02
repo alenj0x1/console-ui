@@ -40,7 +40,8 @@ pub struct Trailers {
 
 impl Trailers {
     pub fn new(dir: PathBuf) -> Self {
-        let agent = ureq::Agent::config_builder().timeout_global(Some(Duration::from_secs(30))).build().into();
+        // No redirects: every request must stay on the Steam hosts checked above.
+        let agent = ureq::Agent::config_builder().timeout_global(Some(Duration::from_secs(30))).max_redirects(0).build().into();
         Self { dir, agent }
     }
 

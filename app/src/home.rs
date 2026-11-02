@@ -61,6 +61,8 @@ pub struct HomeData {
     pinned: Vec<String>,
     wallpaper: Option<Wallpaper>,
     game_art: bool,
+    /// The media tab's picks; None = not chosen yet.
+    media: Option<Vec<String>>,
 }
 
 #[derive(Serialize)]
@@ -151,8 +153,9 @@ fn pinned(store: &Store, lib: &Library) -> Vec<String> {
 pub fn home_data(state: tauri::State<HomeState>, store: tauri::State<Store>) -> HomeData {
     let lib = state.library.lock().unwrap();
     let wallpaper = state.wallpaper(&current_wallpaper(&store));
-    let game_art = store.settings.lock().unwrap().game_art;
-    HomeData { games: lib.games.clone(), apps: lib.apps.clone(), pinned: pinned(&store, &lib), wallpaper, game_art }
+    let settings = store.settings.lock().unwrap().clone();
+    let media = settings.media.map(|m| m.into_iter().filter(|id| valid_media(&lib, id)).collect());
+    HomeData { games: lib.games.clone(), apps: lib.apps.clone(), pinned: pinned(&store, &lib), wallpaper, game_art: settings.game_art, media }
 }
 
 impl HomeState {
@@ -204,10 +207,24 @@ pub fn game_trailer(app: AppHandle, state: tauri::State<HomeState>, id: String) 
     false
 }
 
-/// Async: creating a window from a sync command blocks on Windows.
+/// Streaming sites of the media tab; the page asks by id, never by address.
+const SERVICES: [(&str, &str); 6] = [
+    ("youtube", "https://www.youtube.com/"),
+    ("youtube-music", "https://music.youtube.com/"),
+    ("netflix", "https://www.netflix.com/"),
+    ("twitch", "https://www.twitch.tv/"),
+    ("prime-video", "https://www.primevideo.com/"),
+    ("disney-plus", "https://www.disneyplus.com/"),
+];
+
+/// Opens a streaming site in the default browser (where the user is signed in).
 #[tauri::command]
-pub async fn open_spotify(app: AppHandle) -> Result<(), String> {
-    crate::web_player::open(&app)
+pub fn open_service(app: AppHandle, id: String) -> Result<(), String> {
+    if app.state::<crate::AppState>().mode.load(std::sync::atomic::Ordering::Relaxed) != crate::mode_code(padcore::Mode::Home) {
+        return Err("la pantalla de Inicio no está activa".into());
+    }
+    let url = SERVICES.iter().find(|(s, _)| *s == id).map(|(_, u)| *u).ok_or("servicio desconocido")?;
+    library::shell_open(url)
 }
 
 #[tauri::command]
@@ -253,6 +270,22 @@ pub fn set_pinned(state: tauri::State<HomeState>, store: tauri::State<Store>, id
         return Err("app desconocida".into());
     }
     store.set_pinned(ids)
+}
+
+fn valid_media(lib: &Library, id: &str) -> bool {
+    match id.strip_prefix("web:") {
+        Some(site) => SERVICES.iter().any(|(s, _)| *s == site),
+        None => lib.has_app(id),
+    }
+}
+
+#[tauri::command]
+pub fn set_media(state: tauri::State<HomeState>, store: tauri::State<Store>, ids: Vec<String>) -> Result<(), String> {
+    let lib = state.library.lock().unwrap();
+    if ids.iter().any(|id| !valid_media(&lib, id)) {
+        return Err("app o sitio desconocido".into());
+    }
+    store.set_media(ids)
 }
 
 /// Launches a game or app; returns true for games (the caller hands the
@@ -304,8 +337,8 @@ fn respond(status: StatusCode, mime: &str, body: Vec<u8>) -> Response<Vec<u8>> {
         .status(status)
         .header("Content-Type", mime)
         .header("Cache-Control", "max-age=3600")
-        // Lets the page read the cover's colours (canvas) for the music stage.
-        .header("Access-Control-Allow-Origin", "*")
+        // Lets the home page read the cover's colours (canvas) for the music stage.
+        .header("Access-Control-Allow-Origin", "http://tauri.localhost")
         .body(body)
         .unwrap()
 }
@@ -419,12 +452,28 @@ fn wallpaper_preview(w: &Wallpaper) -> Option<Response<Vec<u8>>> {
 }
 
 pub fn protocol(ctx: UriSchemeContext<'_, Wry>, request: Request<Vec<u8>>, responder: UriSchemeResponder) {
+    // Every webview of the app gets the scheme: only the home
+    // screen may read the user's games, apps and backgrounds, and the guide
+    // its windows and the music.
+    let guide = ctx.webview_label() == crate::guide::LABEL;
+    if ctx.webview_label() != LABEL && !guide {
+        return responder.respond(respond(StatusCode::FORBIDDEN, "text/plain", Vec::new()));
+    }
     let app = ctx.app_handle().clone();
     let path = request.uri().path().to_owned();
     let range = request.headers().get("range").and_then(|v| v.to_str().ok()).map(str::to_owned);
     std::thread::spawn(move || {
         let parts: Vec<String> = path.trim_start_matches('/').split('/').map(decode).collect();
-        let response = match parts.iter().map(String::as_str).collect::<Vec<_>>().as_slice() {
+        let parts: Vec<&str> = parts.iter().map(String::as_str).collect();
+        let switcher = &app.state::<crate::guide::GuideState>().switcher;
+        let response = match parts.as_slice() {
+            ["window-shot", id] if guide => switcher.shot(id).map_or_else(not_found, |b| respond(StatusCode::OK, "image/png", b)),
+            ["window-icon", id] if guide => switcher.icon(id).map_or_else(not_found, |b| respond(StatusCode::OK, "image/png", b)),
+            ["cover"] => match MEDIA.cover.lock().unwrap().clone() {
+                Some(b) => respond(StatusCode::OK, "image/jpeg", b),
+                None => not_found(),
+            },
+            _ if guide => not_found(),
             ["art", game, kind] => {
                 let file = app.state::<HomeState>().library.lock().unwrap().art(game, kind).map(PathBuf::from);
                 match file.and_then(|f| std::fs::read(&f).ok().map(|b| (f, b))) {
@@ -436,10 +485,6 @@ pub fn protocol(ctx: UriSchemeContext<'_, Wry>, request: Request<Vec<u8>>, respo
                 }
             }
             ["icon", id] => icon(&app, id).map_or_else(not_found, |b| respond(StatusCode::OK, "image/png", b)),
-            ["cover"] => match MEDIA.cover.lock().unwrap().clone() {
-                Some(b) => respond(StatusCode::OK, "image/jpeg", b),
-                None => not_found(),
-            },
             ["wallpaper", id] => match app.state::<HomeState>().wallpaper(id) {
                 Some(w) => file_response(&w.file, range.as_deref()),
                 None => not_found(),

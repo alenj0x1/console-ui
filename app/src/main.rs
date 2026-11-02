@@ -16,7 +16,8 @@ mod media;
 mod overlay;
 mod sources;
 mod store;
-mod web_player;
+mod guide;
+mod switcher;
 
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
@@ -57,6 +58,11 @@ struct AppState {
     lab: bool,
     /// Current mode, mirrored for the tray menu.
     mode: AtomicU8,
+    /// Mode the guide was opened from (a mode code).
+    guide_from: AtomicU8,
+    /// A game the user took the controller back from (tray): not handed to
+    /// it again automatically while it stays in front.
+    declined: std::sync::atomic::AtomicIsize,
 }
 
 impl AppState {
@@ -73,6 +79,7 @@ fn mode_code(m: Mode) -> u8 {
         Mode::Cursor => 1,
         Mode::Keyboard => 2,
         Mode::Home => 3,
+        Mode::Guide => 4,
     }
 }
 
@@ -90,20 +97,85 @@ fn mode_name(m: Mode) -> &'static str {
         Mode::Cursor => "cursor",
         Mode::Keyboard => "keyboard",
         Mode::Home => "home",
+        Mode::Guide => "guide",
+    }
+}
+
+/// HidHide changes, applied in order by one thread and always for the mode
+/// the app is in when they run (a burst of mode changes can't leave the
+/// controller hidden from a game).
+struct Cloak(Mutex<Sender<bool>>);
+
+impl Cloak {
+    /// `register`: add the app to HidHide's allowed list first (on connect).
+    fn sync(&self, register: bool) {
+        let _ = self.0.lock().unwrap().send(register);
+    }
+}
+
+fn cloak_worker(app: AppHandle, rx: Receiver<bool>) {
+    while let Ok(mut register) = rx.recv() {
+        while let Ok(r) = rx.try_recv() {
+            register |= r;
+        }
+        let g = app.state::<guard::Guard>();
+        if register {
+            g.register();
+        }
+        g.set_hidden(app.state::<AppState>().mode.load(Ordering::Relaxed) != mode_code(Mode::Off));
     }
 }
 
 fn apply_mode(app: &AppHandle, m: Mode) {
-    app.state::<AppState>().mode.store(mode_code(m), Ordering::Relaxed);
+    let before = app.state::<AppState>().mode.swap(mode_code(m), Ordering::Relaxed);
+    if m == Mode::Guide && before != mode_code(Mode::Guide) {
+        app.state::<AppState>().guide_from.store(before, Ordering::Relaxed);
+    }
     app.state::<events::Events>().log(&format!("modo {}", mode_name(m)));
     if !app.state::<AppState>().lab {
         // Games get the controller only in game mode; otherwise only we see it.
-        let handle = app.clone();
-        std::thread::spawn(move || handle.state::<guard::Guard>().set_hidden(m != Mode::Off));
+        app.state::<Cloak>().sync(false);
     }
     overlay::set_visible(app, m == Mode::Keyboard);
     home::set_visible(app, m == Mode::Home);
+    guide::set_visible(app, m == Mode::Guide);
     let _ = app.emit("mode", mode_name(m));
+}
+
+/// Game mode follows the games: a game coming to the front (from anywhere,
+/// not only the home screen) gets the controller, and when the game it was
+/// handed to closes, the cursor comes back.
+fn follow_games(app: &AppHandle, engine: &mut Engine, playing: &mut Option<isize>) {
+    let state = app.state::<AppState>();
+    let dirs = app.state::<guide::GuideState>().game_dirs.lock().unwrap().clone();
+    match engine.mode() {
+        Mode::Cursor => {
+            let Some((hwnd, program, why)) = switcher::foreground_game(&dirs) else {
+                state.declined.store(0, Ordering::Relaxed);
+                return;
+            };
+            if state.declined.load(Ordering::Relaxed) == hwnd as isize {
+                return;
+            }
+            app.state::<events::Events>().log(&format!("juego al frente: {program} ({why}); el control pasa al juego"));
+            *playing = Some(hwnd as isize);
+            engine.set_mode(Mode::Off);
+            apply_mode(app, Mode::Off);
+            overlay::flash_notice(app, "game", "", Duration::from_secs(4));
+        }
+        Mode::Off => match *playing {
+            Some(g) if !switcher::alive(g as _) => {
+                app.state::<events::Events>().log("el juego se cerró; vuelve el cursor");
+                *playing = None;
+                engine.set_mode(Mode::Cursor);
+                apply_mode(app, Mode::Cursor);
+            }
+            Some(_) => {}
+            // Game mode from the home screen or the tray: follow the game once it shows up.
+            None => *playing = switcher::foreground_game(&dirs).map(|(h, _, _)| h as isize),
+        },
+        _ => {}
+    }
 }
 
 fn engine_loop(app: AppHandle, rx: Receiver<EngineCmd>, lab: bool, open_home: bool) {
@@ -111,6 +183,7 @@ fn engine_loop(app: AppHandle, rx: Receiver<EngineCmd>, lab: bool, open_home: bo
     let mut cfg = EngineConfig::with_profile(profile);
     cfg.keyboard_enabled = true;
     cfg.keyboard_locked = lab;
+    cfg.guide_enabled = !lab;
     let stop = Arc::new(AtomicBool::new(false));
     let hover_state = Hover::new();
     let probe = hover::spawn_probe(hover_state.clone(), stop.clone());
@@ -119,6 +192,9 @@ fn engine_loop(app: AppHandle, rx: Receiver<EngineCmd>, lab: bool, open_home: bo
     // Admin window in front: its handle (as a number), shown in the notice.
     let mut blocked_by: Option<isize> = None;
     let mut last_admin_check = std::time::Instant::now();
+    // The game that has the controller (game mode): when it closes, the
+    // cursor comes back.
+    let mut playing: Option<isize> = None;
     if open_home {
         engine.set_mode(Mode::Home);
         apply_mode(&app, Mode::Home);
@@ -147,9 +223,12 @@ fn engine_loop(app: AppHandle, rx: Receiver<EngineCmd>, lab: bool, open_home: bo
                 if let Some(f) = &now {
                     let left = padcore::inject::button_is_down(padcore::inject::MouseButton::Left);
                     app.state::<events::Events>().log(&format!("ventana de administrador al frente (izquierdo presionado: {left})"));
-                    let _ = app.emit_to(overlay::NOTICE, "notice", f.title.clone());
+                    let _ = app.emit_to(overlay::NOTICE, "notice", serde_json::json!({ "kind": "admin", "name": f.title }));
                 }
                 overlay::set_notice_visible(&app, now.is_some());
+            }
+            if !lab {
+                follow_games(&app, &mut engine, &mut playing);
             }
         }
         engine.step(&mut events);
@@ -187,18 +266,17 @@ fn engine_loop(app: AppHandle, rx: Receiver<EngineCmd>, lab: bool, open_home: bo
                 }
                 Event::Click => {}
                 Event::Ui(u) => {
-                    let target = if engine.mode() == Mode::Home { home::LABEL } else { overlay::LABEL };
+                    let target = match engine.mode() {
+                        Mode::Home => home::LABEL,
+                        Mode::Guide => guide::LABEL,
+                        _ => overlay::LABEL,
+                    };
                     let _ = app.emit_to(target, "pad", u);
                 }
                 Event::Connected(_) => {
                     let _ = app.emit("pad-connected", true);
                     if !lab {
-                        let (handle, mode) = (app.clone(), engine.mode());
-                        std::thread::spawn(move || {
-                            let g = handle.state::<guard::Guard>();
-                            g.register();
-                            g.set_hidden(mode != Mode::Off);
-                        });
+                        app.state::<Cloak>().sync(true);
                     }
                 }
                 Event::Disconnected => {
@@ -208,7 +286,7 @@ fn engine_loop(app: AppHandle, rx: Receiver<EngineCmd>, lab: bool, open_home: bo
         }
         let tick = if !engine.connected() {
             NO_PAD_TICK
-        } else if matches!(engine.mode(), Mode::Keyboard | Mode::Home) || engine.idle_for() <= IDLE_AFTER {
+        } else if matches!(engine.mode(), Mode::Keyboard | Mode::Home | Mode::Guide) || engine.idle_for() <= IDLE_AFTER {
             ACTIVE_TICK
         } else {
             IDLE_TICK
@@ -223,6 +301,7 @@ fn current_mode(state: State<AppState>) -> &'static str {
         0 => "off",
         2 => "keyboard",
         3 => "home",
+        4 => "guide",
         _ => "cursor",
     }
 }
@@ -318,11 +397,14 @@ fn set_languages(store: State<Store>, languages: Vec<String>) -> Result<(), Stri
 }
 
 #[tauri::command]
-fn learn_word(state: State<AppState>, store: State<Store>, prev: String, word: String) -> Result<(), String> {
-    if state.lab {
+async fn learn_word(app: AppHandle, prev: String, word: String) -> Result<(), String> {
+    // Checked again here, as the page may not know yet that the focus moved
+    // to a password (sign-ins that ask for it on a second page).
+    let password = tauri::async_runtime::spawn_blocking(padcore::hover::focused_is_password).await.unwrap_or(true);
+    if app.state::<AppState>().lab || password {
         return Ok(());
     }
-    store.learn(&prev, &word)
+    app.state::<Store>().learn(&prev, &word)
 }
 
 #[tauri::command]
@@ -368,7 +450,15 @@ fn main() {
     let rx = Mutex::new(Some(rx));
 
     let app = tauri::Builder::default()
-        .manage(AppState { cmd: Mutex::new(tx), engine: Mutex::new(None), lab, mode: AtomicU8::new(1) })
+        .manage(AppState {
+            cmd: Mutex::new(tx),
+            engine: Mutex::new(None),
+            lab,
+            mode: AtomicU8::new(1),
+            guide_from: AtomicU8::new(1),
+            declined: Default::default(),
+        })
+        .manage(guide::GuideState::default())
         .manage(home::HomeState::default())
         .manage(guard::Guard::default())
         .manage(events::Events::default())
@@ -400,7 +490,13 @@ fn main() {
             home::set_wallpaper,
             home::set_game_art,
             home::open_workshop,
-            home::open_spotify,
+            home::open_service,
+            home::set_media,
+            guide::guide_windows,
+            guide::guide_ready,
+            guide::guide_switch,
+            guide::guide_back,
+            guide::guide_close_window,
             home::game_trailer,
             home::browse_folders,
             home::add_wallpaper_folder,
@@ -410,6 +506,10 @@ fn main() {
         .setup(move |app| {
             let handle = app.handle().clone();
             app.manage(Store::load(app.path().app_data_dir()?));
+            let (cloak_tx, cloak_rx) = mpsc::channel();
+            app.manage(Cloak(Mutex::new(cloak_tx)));
+            let worker = app.handle().clone();
+            std::thread::spawn(move || cloak_worker(worker, cloak_rx));
             app.state::<events::Events>().open(app.path().app_data_dir()?);
             app.state::<events::Events>().log(&format!("inicio {}", env!("CARGO_PKG_VERSION")));
             {
@@ -423,6 +523,7 @@ fn main() {
             overlay::create_notice(&handle)?;
             if !lab {
                 home::create(&handle)?;
+                guide::create(&handle)?;
                 media::Media::start(handle.clone());
             }
 
@@ -447,6 +548,10 @@ fn main() {
                         "games" => {
                             // Toggles: games get the controller, or it comes back as the cursor.
                             let off = state.mode.load(Ordering::Relaxed) == mode_code(Mode::Off);
+                            if off {
+                                // Taken back from the game in front: don't hand it over again.
+                                state.declined.store(switcher::foreground() as isize, Ordering::Relaxed);
+                            }
                             state.send(if off { Mode::Cursor } else { Mode::Off });
                             let _ = games_item.set_text(if off { "Dejar el control a los juegos" } else { "Volver a usar el control en Windows" });
                         }

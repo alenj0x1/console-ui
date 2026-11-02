@@ -1,0 +1,5 @@
+Service logos (YouTube, YouTube Music, Netflix, Twitch, Prime Video, Disney+)
+are trademarks of their owners. They are shown only to identify each service
+on the home screen's media tab, as downloaded from the services' own sites
+(Netflix and Twitch from their official logo files on Wikimedia Commons).
+They are not covered by this project's MIT license.

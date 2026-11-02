@@ -2,11 +2,11 @@
 //! window you are typing into keeps focus while keys are injected. It opens
 //! on the monitor under the cursor and keeps clear of the text being typed.
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::Duration;
 
 use padcore::hover::{self, ScreenRect};
-use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
+use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 use windows_sys::Win32::Foundation::{HWND, POINT, RECT};
 use windows_sys::Win32::Graphics::Gdi::{GetMonitorInfoW, MONITOR_DEFAULTTOPRIMARY, MONITORINFO, MonitorFromPoint};
 use windows_sys::Win32::UI::HiDpi::{GetDpiForMonitor, MDT_EFFECTIVE_DPI};
@@ -71,6 +71,7 @@ pub fn create_notice(app: &AppHandle) -> tauri::Result<()> {
 }
 
 pub fn set_notice_visible(app: &AppHandle, visible: bool) {
+    NOTICE_TURN.fetch_add(1, Ordering::Relaxed);
     let handle = app.clone();
     let _ = app.run_on_main_thread(move || {
         let Some(w) = handle.get_webview_window(NOTICE) else { return };
@@ -87,6 +88,24 @@ pub fn set_notice_visible(app: &AppHandle, visible: bool) {
             } else {
                 ShowWindow(hwnd, SW_HIDE);
             }
+        }
+    });
+}
+
+/// Counts notice changes, so a timed notice only hides itself.
+static NOTICE_TURN: AtomicU64 = AtomicU64::new(0);
+
+/// Shows a notice of `kind` for a while, then hides it (unless another
+/// notice took its place meanwhile).
+pub fn flash_notice(app: &AppHandle, kind: &'static str, name: &str, how_long: Duration) {
+    let _ = app.emit_to(NOTICE, "notice", serde_json::json!({ "kind": kind, "name": name }));
+    set_notice_visible(app, true);
+    let turn = NOTICE_TURN.load(Ordering::Relaxed);
+    let handle = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(how_long);
+        if NOTICE_TURN.load(Ordering::Relaxed) == turn {
+            set_notice_visible(&handle, false);
         }
     });
 }

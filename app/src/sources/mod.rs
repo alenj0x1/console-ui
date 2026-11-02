@@ -22,6 +22,14 @@ pub mod wallpaper_engine;
 
 pub trait GameSource: Sync {
     fn games(&self) -> Vec<Game>;
+    /// Folders its games are installed in (a program there is a game).
+    fn install_dirs(&self) -> Vec<PathBuf> {
+        Vec::new()
+    }
+}
+
+pub fn game_dirs() -> Vec<PathBuf> {
+    GAMES.iter().flat_map(|s| s.install_dirs()).collect()
 }
 
 pub trait WallpaperSource: Sync {

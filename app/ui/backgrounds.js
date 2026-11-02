@@ -10,12 +10,22 @@ const Backgrounds = (() => {
   // A tile is about a seventh of the screen's width: zoomed in, it shows the
   // dots at the size they have on screen.
   const PREVIEW_ZOOM = 2.5;
+  // Per animation: a moment that shows it well and how much brighter its
+  // dots are drawn, since a tile only shows a small part of the field.
+  const PREVIEW = { rain: { t: 57.5, gain: 1.5 }, breath: { t: 9, gain: 1.6 } };
 
-  const css = getComputedStyle(document.documentElement);
+  // A theme colour as RGB in 0..1, whatever CSS form it has (a 2D canvas
+  // normalises it to #rrggbb).
+  const probe = document.createElement("canvas").getContext("2d");
   const color = (name) => {
-    const hex = css.getPropertyValue(name).trim().replace("#", "");
+    probe.fillStyle = "#000";
+    probe.fillStyle = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    const hex = probe.fillStyle.replace("#", "");
     return [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
   };
+  const themeColors = () => ({ bg: color("--bg"), text: color("--text"), accent: color("--accent") });
+  // Read again by refresh() when the settings change the accent.
+  let colors = themeColors();
 
   const VERTEX = `attribute vec2 a; void main() { gl_Position = vec4(a, 0.0, 1.0); }`;
 
@@ -28,6 +38,7 @@ const Backgrounds = (() => {
     uniform vec3 uBg;
     uniform vec3 uText;
     uniform vec3 uAccent;
+    uniform float uGain;
     const vec2 FIELD = vec2(768.0, 432.0);
     const float STEP = 16.0;
     float scale() { return max(uRes.x / FIELD.x, uRes.y / FIELD.y) * uZoom; }
@@ -128,17 +139,16 @@ const Backgrounds = (() => {
       const fragment = `${COMMON}${BODY[key]}
         void main() {
           vec4 c = paint(field());
-          gl_FragColor = vec4(mix(uBg, c.rgb, c.a), 1.0);
+          gl_FragColor = vec4(mix(uBg, c.rgb, min(1.0, c.a * uGain)), 1.0);
         }`;
       const p = gl.createProgram();
       gl.attachShader(p, shader(gl.VERTEX_SHADER, VERTEX));
       gl.attachShader(p, shader(gl.FRAGMENT_SHADER, fragment));
       gl.linkProgram(p);
       const u = (n) => gl.getUniformLocation(p, n);
-      return { p, a: gl.getAttribLocation(p, "a"), res: u("uRes"), time: u("uTime"), zoom: u("uZoom"), bg: u("uBg"), text: u("uText"), accent: u("uAccent") };
+      return { p, a: gl.getAttribLocation(p, "a"), res: u("uRes"), time: u("uTime"), zoom: u("uZoom"), bg: u("uBg"), text: u("uText"), accent: u("uAccent"), gain: u("uGain") };
     };
-    const colors = { bg: color("--bg"), text: color("--text"), accent: color("--accent") };
-    return (id, t, zoom = 1) => {
+    return (id, t, zoom = 1, gain = 1) => {
       const key = name(id);
       if (!(key in BODY)) return;
       const prog = (programs[key] ??= compile(key));
@@ -150,6 +160,7 @@ const Backgrounds = (() => {
       gl.uniform2f(prog.res, canvas.width, canvas.height);
       gl.uniform1f(prog.time, t);
       gl.uniform1f(prog.zoom, zoom);
+      gl.uniform1f(prog.gain, gain);
       gl.uniform3fv(prog.bg, colors.bg);
       gl.uniform3fv(prog.text, colors.text);
       gl.uniform3fv(prog.accent, colors.accent);
@@ -191,14 +202,20 @@ const Backgrounds = (() => {
 
     running: () => running?.id ?? null,
 
+    // The theme's colours changed: draw with the new ones.
+    refresh() {
+      colors = themeColors();
+    },
+
     // One still frame as a picture, for the tiles.
     preview(id, w = 560, h = 262) {
+      const { t = 7, gain = 1 } = PREVIEW[name(id)] ?? {};
       if (!previewer) {
         const canvas = Object.assign(document.createElement("canvas"), { width: w, height: h });
         previewer = { canvas, draw: renderer(canvas, { preserveDrawingBuffer: true }) };
       }
       if (!previewer.draw) return "";
-      previewer.draw(id, 7, PREVIEW_ZOOM);
+      previewer.draw(id, t, PREVIEW_ZOOM, gain);
       return previewer.canvas.toDataURL("image/png");
     },
   };

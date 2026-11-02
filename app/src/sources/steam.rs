@@ -12,6 +12,10 @@ impl GameSource for Steam {
     fn games(&self) -> Vec<Game> {
         root().map(|r| games_in(&r)).unwrap_or_default()
     }
+
+    fn install_dirs(&self) -> Vec<PathBuf> {
+        root().map(|r| libraries(&r).into_iter().map(|l| l.join("steamapps").join("common")).collect()).unwrap_or_default()
+    }
 }
 
 /// Steam tools that are not games.

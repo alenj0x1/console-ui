@@ -41,6 +41,10 @@ pub struct Settings {
     /// Show the focused game's art over the background.
     #[serde(default = "yes")]
     pub game_art: bool,
+    /// The media tab's apps ("app id") and sites ("web:<id>"); None until
+    /// the user changes them (then the installed media apps show).
+    #[serde(default)]
+    pub media: Option<Vec<String>>,
 }
 
 fn yes() -> bool {
@@ -49,7 +53,7 @@ fn yes() -> bool {
 
 impl Default for Settings {
     fn default() -> Self {
-        Self { languages: vec!["es".into()], pinned: None, wallpaper: None, wallpaper_folders: Vec::new(), game_art: true }
+        Self { languages: vec!["es".into()], pinned: None, wallpaper: None, wallpaper_folders: Vec::new(), game_art: true, media: None }
     }
 }
 
@@ -118,6 +122,14 @@ impl Store {
             return Err("demasiadas carpetas".into());
         }
         self.update_settings(|s| s.wallpaper_folders = folders)
+    }
+
+    /// `ids` must already be validated against the library and the sites.
+    pub fn set_media(&self, ids: Vec<String>) -> Result<(), String> {
+        if ids.len() > MAX_PINNED {
+            return Err("demasiadas apps en Multimedia".into());
+        }
+        self.update_settings(|s| s.media = Some(ids))
     }
 
     pub fn set_game_art(&self, on: bool) -> Result<(), String> {

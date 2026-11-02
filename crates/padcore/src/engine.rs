@@ -2,9 +2,11 @@
 //!
 //! Modes: `Off` lets games have the controller untouched; `Cursor` drives the
 //! mouse and a few keys; `Keyboard` hands navigation events to the on-screen
-//! keyboard; `Home` hands them to the home screen. Holding View + Menu toggles
-//! Off ↔ on; Y opens the keyboard and B closes it; holding Menu opens and
-//! closes the home screen. A tap on RT presses Enter.
+//! keyboard; `Home` hands them to the home screen; `Guide` to the guide (open
+//! windows and music, over a game too). Holding View + Menu toggles Off ↔ on,
+//! or with a host that shows the guide, opens and closes it from any mode
+//! (View alone opens it from the cursor); Y opens the keyboard and B closes
+//! it; holding Menu opens and closes the home screen. A tap on RT presses Enter.
 
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -24,6 +26,7 @@ pub enum Mode {
     Cursor,
     Keyboard,
     Home,
+    Guide,
 }
 
 #[derive(Clone, Debug)]
@@ -55,6 +58,10 @@ pub struct EngineConfig {
     pub keyboard_enabled: bool,
     /// B does not close the keyboard (lab).
     pub keyboard_locked: bool,
+    /// View + Menu opens the guide instead of toggling Off ↔ on, and a View
+    /// tap opens it from the cursor instead of Task View (needs a host that
+    /// shows it).
+    pub guide_enabled: bool,
 }
 
 impl EngineConfig {
@@ -69,6 +76,7 @@ impl EngineConfig {
             repeat_every: Duration::from_millis(60),
             keyboard_enabled: false,
             keyboard_locked: false,
+            guide_enabled: false,
         }
     }
 }
@@ -135,6 +143,8 @@ pub struct Engine {
     /// focus): B asks the host to hand the focus back instead of sending Esc.
     blocked: bool,
     rescue: bool,
+    /// Mode the guide was opened from: closing it goes back there.
+    guide_from: Mode,
     /// After input was blocked, Windows may have dropped a button release
     /// (the button stays "pressed" system-wide); until then, release any
     /// button the controller is not holding.
@@ -174,6 +184,7 @@ impl Engine {
             blocked: false,
             rescue: false,
             resync_until: None,
+            guide_from: Mode::Cursor,
         }
     }
 
@@ -210,6 +221,11 @@ impl Engine {
         self.mode
     }
 
+    /// Where closing the guide goes back to (Off when it opened over a game).
+    pub fn guide_from(&self) -> Mode {
+        self.guide_from
+    }
+
     pub fn connected(&self) -> bool {
         self.connected
     }
@@ -235,6 +251,9 @@ impl Engine {
             h.want(false);
         }
         self.nav.reset();
+        if mode == Mode::Guide {
+            self.guide_from = self.mode;
+        }
         if mode == Mode::Off {
             self.queue_rumble(PULSE_OFF);
         } else if self.mode == Mode::Off {
@@ -296,7 +315,7 @@ impl Engine {
             }
             Mode::Cursor => {
                 self.resync_buttons(&pad, now);
-                self.cursor(&pad, dt, now);
+                self.cursor(&pad, dt, now, out);
                 if std::mem::take(&mut self.rescue) {
                     out.push(Event::Rescue);
                 }
@@ -308,7 +327,7 @@ impl Engine {
                 self.set_mode(Mode::Cursor);
                 out.push(Event::ModeChanged(Mode::Cursor));
             }
-            Mode::Keyboard | Mode::Home => self.navigate(&pad, now, out),
+            Mode::Keyboard | Mode::Home | Mode::Guide => self.navigate(&pad, now, out),
             Mode::Off => {}
         }
         self.prev = pad;
@@ -356,7 +375,12 @@ impl Engine {
             let since = *self.chord_since.get_or_insert(now);
             self.chord_used = true;
             if since != now && now - since >= self.cfg.toggle_hold {
-                let next = if self.mode == Mode::Off { Mode::Cursor } else { Mode::Off };
+                let next = match self.mode {
+                    Mode::Guide => self.guide_from,
+                    _ if self.cfg.guide_enabled => Mode::Guide,
+                    Mode::Off => Mode::Cursor,
+                    _ => Mode::Off,
+                };
                 self.set_mode(next);
                 changed = Some(next);
                 // Re-arm only after both buttons go up.
@@ -374,7 +398,7 @@ impl Engine {
         changed
     }
 
-    fn cursor(&mut self, pad: &PadState, dt: f32, now: Instant) {
+    fn cursor(&mut self, pad: &PadState, dt: f32, now: Instant, out: &mut Vec<Event>) {
         let pressed = pad.buttons & !self.prev.buttons;
         let released = !pad.buttons & self.prev.buttons;
 
@@ -451,15 +475,21 @@ impl Engine {
             }
         }
 
-        // View tap → Task View, Menu tap → Start. Fired on release so the
-        // View + Menu chord never opens either.
+        // View tap → the guide (or Task View), Menu tap → Start. Fired on
+        // release so the View + Menu chord never opens either.
         if pressed & btn::BACK != 0 {
             self.view_down = Some(now);
         }
-        let tap = |down: Option<Instant>| down.is_some_and(|t| now - t < self.cfg.tap_max);
+        let tap_max = self.cfg.tap_max;
+        let tap = |down: Option<Instant>| down.is_some_and(|t| now - t < tap_max);
         if released & btn::BACK != 0 {
             if !self.chord_used && tap(self.view_down) {
-                inject::key_combo(&[VK_LWIN, VK_TAB]);
+                if self.cfg.guide_enabled {
+                    self.set_mode(Mode::Guide);
+                    out.push(Event::ModeChanged(Mode::Guide));
+                } else {
+                    inject::key_combo(&[VK_LWIN, VK_TAB]);
+                }
             }
             self.view_down = None;
         }
